@@ -1,0 +1,102 @@
+{
+  "version": "2025.0",
+  "waypoints": [
+    {
+      "anchor": {
+        "x": 7.194581886574074,
+        "y": 2.8386964699074064
+      },
+      "prevControl": null,
+      "nextControl": {
+        "x": 8.19458188657407,
+        "y": 2.8386964699074064
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 8.068955877767607,
+        "y": 2.6076361405306088
+      },
+      "prevControl": {
+        "x": 8.188370708161651,
+        "y": 2.8272724268813887
+      },
+      "nextControl": {
+        "x": 7.949541047373563,
+        "y": 2.387999854179829
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 6.728958333333333,
+        "y": 1.9064594184027772
+      },
+      "prevControl": {
+        "x": 6.989369586887504,
+        "y": 2.0427551353653675
+      },
+      "nextControl": {
+        "x": 6.468547079779162,
+        "y": 1.7701637014401874
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 7.707897497106481,
+        "y": 4.1453656684027775
+      },
+      "prevControl": {
+        "x": 8.036298358328983,
+        "y": 4.295418281232903
+      },
+      "nextControl": {
+        "x": 7.480509639908496,
+        "y": 4.041467822424584
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 6.728958333333333,
+        "y": 4.02197193287037
+      },
+      "prevControl": {
+        "x": 6.311259765624999,
+        "y": 4.0202832031249995
+      },
+      "nextControl": null,
+      "isLocked": false,
+      "linkedName": null
+    }
+  ],
+  "rotationTargets": [],
+  "constraintZones": [],
+  "pointTowardsZones": [],
+  "eventMarkers": [],
+  "globalConstraints": {
+    "maxVelocity": 4.0,
+    "maxAcceleration": 4.0,
+    "maxAngularVelocity": 540.0,
+    "maxAngularAcceleration": 540.0,
+    "nominalVoltage": 12.0,
+    "unlimited": false
+  },
+  "goalEndState": {
+    "velocity": 0.3,
+    "rotation": 180.0
+  },
+  "reversed": false,
+  "folder": "Tush Push Auto",
+  "idealStartingState": {
+    "velocity": 0,
+    "rotation": 180.0
+  },
+  "useDefaultConstraints": true
+}
