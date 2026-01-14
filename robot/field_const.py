@@ -28,10 +28,11 @@ class FieldConstants:
     X-axis: down the length
     """
 
-    fieldLength = inchesToMeters(690.876)
-    fieldWidth = inchesToMeters(317)
-    startingLineX = inchesToMeters(299.438)  # Measured from the inside of starting line
+    fieldLength = inchesToMeters(651.22)
+    fieldWidth = inchesToMeters(317.69)
+    startingLineX = inchesToMeters(156.61)  # Measured from the inside of starting line
     algaeDiameter = inchesToMeters(16)
+    #algae is not a thing in this game
     shouldFlip = DriverStation.getAlliance() == DriverStation.Alliance.kRed
     reef_tags = {6, 7, 8, 9, 10, 11} if shouldFlip else {17, 18, 19, 20, 21, 22}
     face_to_tag = (
