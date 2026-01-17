@@ -1,7 +1,7 @@
 """
 Ctrl-Z FRC Team 4096
 FIRST Robotics Competition 2022
-Code for robot "swerve drivetrain prototype"
+Code for robot "swerve strain prototype"
 contact@team4096.org
 
 Some code adapted from:
@@ -179,19 +179,6 @@ Y_KD = X_KD
 THETA_KP = 0.2  # 1.9 #0.232  # * 2.866 * 5.0
 THETA_KI = 0.0  # 0.07  # 0.0625  # * 2.866 * 5.0
 THETA_KD = 0.001  # 0.01
-
-FUNNEL_CANRANGE = 14
-FUNNEL_INTAKE_MOTOR_CAN_ID = 15
-
-ELEVATOR_MOTOR_1_CAN_ID = 16
-ELEVATOR_MOTOR_2_CAN_ID = 17
-
-END_EFFECTOR_MOTOR_CAN_ID = 18
-END_EFFECTOR_CANRANGE_ID = 19
-END_EFFECTOR_OUTTAKE_MOTOR_CAN_ID = 20
-
-CLIMBER_ARM_MOTOR_CAN_ID = 21
-END_EFFECTOR_REEF_ALIGNMENT_CANRANGE = 22
 
 COLLISION_JERK_MAX = 50
 SKIDDING_RATIO_MAX = 10
