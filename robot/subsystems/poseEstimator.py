@@ -69,7 +69,6 @@ from pathplannerlib.config import (
 
 from wpilib import BuiltInAccelerometer
 from wpimath.filter import LinearFilter
-from path_gen import PathGenerator
 
 from pathplannerlib.path import PathPlannerTrajectory
 from pathplannerlib.path import PathPlannerPath, PathConstraints
@@ -78,7 +77,6 @@ from photoncamera import WrapperedPhotonCamera
 from wpimath.units import degreesToRadians, inchesToMeters
 from robotpy_apriltag import AprilTagField, AprilTagFieldLayout
 
-from robot_scoring_positions import RobotScoringPositions
 
 
 class PoseEstimator(Subsystem):
@@ -228,15 +226,10 @@ class PoseEstimator(Subsystem):
 
         self.temp_rotation_check = Rotation2d()
 
-        self.tag_layout = AprilTagFieldLayout.loadField(AprilTagField.k2025ReefscapeWelded)
+        self.tag_layout = AprilTagFieldLayout.loadField(AprilTagField.k2026RebuiltWelded)
         self.single_tag = False
         self.possible_pose_gbl = Pose2d()
-
-        # for face in range(1,7):
-        #     for side in range(2):
-        #         object = self.field.getObject("l1 score " + str(face) + " " + ("right side" if side else "left side"))
-        #         object.setPose(self.get_path_to_reef(True, face, side))
-
+        
     def stop(self):
         print("sike this aint stoppin")
 
@@ -345,217 +338,13 @@ class PoseEstimator(Subsystem):
         else:
             return True
 
-    def get_path_to_closest_L1(self):
-        closest_face = self.calculate_closest_reef_tag()[1]
-        L1_score_right_side = self.get_path_to_L1(closest_face, True)
-        L1_score_left_side = self.get_path_to_L1(closest_face, False)
-
-        dist_to_L1_right_side = (self.curEstPose.translation() - L1_score_right_side.translation()).norm()
-        dist_to_L1_left_side = (self.curEstPose.translation() - L1_score_left_side.translation()).norm()
-
-        if dist_to_L1_left_side < dist_to_L1_right_side:
-            # left side is closer
-            return L1_score_left_side
-        else:
-            # right side is closer
-            return L1_score_right_side
-
-    def get_path_to_L1(self, face_to_score : int, right_side : bool):
-        target_face = (face_to_score - 1) % 6 if right_side else (face_to_score + 1) % 6
-        target_translation = self.get_path_to_reef(False, target_face, not right_side, margin_dist_offset=8.625, do_side_offset=True, do_manip_offset=False).translation()
-        face_angle = self.robot.fieldConstants.flip_Rotation2d(self.robot.fieldConstants.Reef.centerFaces[target_face - 1].rotation())
-        target_angle = Rotation2d()
-        if right_side:
-            target_angle = face_angle + Rotation2d.fromDegrees(-14 - 65)
-        else:
-            target_angle = face_angle + Rotation2d.fromDegrees(194 + 65)
-        target_pose = Pose2d(target_translation, target_angle)
-        return target_pose
-
-
-    def calculate_closest_reef_tag(self):
-        min_distance_to_tag = math.inf
-        closest_reef_tag = None
-        for tagID in self.robot.fieldConstants.reef_tags:
-            tag_pose = self.tag_layout.getTagPose(tagID).toPose2d()
-            distance = (self.curEstPose - tag_pose).translation().norm()
-            if distance < min_distance_to_tag:
-                min_distance_to_tag = distance
-                closest_reef_tag = tagID
-        return [closest_reef_tag, self.robot.fieldConstants.tag_to_face[closest_reef_tag]]
-    
-    def calculate_closest_tag_on_the_move(self):
-        cur_speeds = const.SWERVE_KINEMATICS.toChassisSpeeds(self.get_module_states())
-        # x seconds into the future (cur_speeds is distance over 1 second)
-        future_pose = Pose2d(self.curEstPose.X() + cur_speeds.vx * 0.75, self.curEstPose.Y() + cur_speeds.vy * 0.75, Rotation2d.fromDegrees(self.curEstPose.rotation().degrees() + cur_speeds.omega_dps * 0.75))
-        
-        min_distance_to_tag = math.inf
-        closest_reef_tag = None
-        for tagID in self.robot.fieldConstants.reef_tags:
-            tag_pose = self.tag_layout.getTagPose(tagID).toPose2d()
-            distance = (future_pose - tag_pose).translation().norm()
-            if distance < min_distance_to_tag:
-                min_distance_to_tag = distance
-                closest_reef_tag = tagID
-        return [closest_reef_tag, self.robot.fieldConstants.tag_to_face[closest_reef_tag]]
-
-
-    def get_path_to_reef(self, use_calibrated_field, face: int, right_branch: bool, margin_dist_offset=1.0, do_side_offset=True, do_manip_offset=True):
-        manip_offset = 3.25
-
-        side_offset = (inchesToMeters(6.47) if not do_manip_offset else (inchesToMeters(6.47 + manip_offset) if right_branch else inchesToMeters(6.47 - manip_offset)))  # distance b/w center of face to branch
-        dist_offset = (
-            (inchesToMeters(29.5) / 2) + (inchesToMeters(7.25) / 2) + inchesToMeters(margin_dist_offset)
-        )  # robot size + bumper addition + error protection
-
-        center_face_pose = self.robot.fieldConstants.flip_Pose2d(self.robot.fieldConstants.Reef.centerFaces[face - 1])
-        angle_face = center_face_pose.rotation()
-
-        # manip_distance = 38
-        center_face_x = (
-            center_face_pose.X() #+ inchesToMeters(manip_distance)*math.sin(angle_face.radians())
-        )  # pose of center face (this is directly on the side of the reef)
-        center_face_y = center_face_pose.Y() #+ inchesToMeters(manip_distance)*math.cos(angle_face.radians())
-        x_offset = (
-            math.cos(angle_face.radians()) * dist_offset
-        )  # offsetting that pose by a set offset that extends the pose as if there's a vector from the center face with angle: angle_face
-        y_offset = math.sin(angle_face.radians()) * (dist_offset)
-        target_pose_face = Pose2d(
-            center_face_x + x_offset, center_face_y + y_offset, angle_face
-        )
-
-        if do_side_offset:
-            angle_to_branch = (
-                (angle_face.degrees() + 90) % 360
-                if right_branch
-                else (angle_face.degrees() - 90) % 360
-            )  # angle change needed to do math to get to the branch, right branch needs + 90 degrees (CCW), left_branch needs -90 (CW)
-
-            x_offset_branch = (
-                math.cos(degreesToRadians(angle_to_branch)) * side_offset
-            )  # same as above, extending the pose from the point outside of the reef in the direction of the desired branch
-            y_offset_branch = math.sin(degreesToRadians(angle_to_branch)) * side_offset
-
-            target_pose_3 = Pose2d(
-                target_pose_face.X() + x_offset_branch,
-                target_pose_face.Y() + y_offset_branch,
-                Rotation2d.fromDegrees(
-                    angle_face.degrees() - 90
-                ),  # don't know if this + 90 is needed, because our battery is facing forward and we want the camera side (scoring side) to face reef
-            )
-
-            if use_calibrated_field:
-                alliance_color = "red" if self.robot.fieldConstants.shouldFlip else "blue"
-                branch = "right" if right_branch else "left"
-                target_pose_3 = self.robot.fieldConstants.ReefCalibratedToField.calibrated_data[alliance_color][branch][face]
-
-            return target_pose_3
-        else:
-            return Pose2d(target_pose_face.translation(), Rotation2d.fromDegrees(angle_face.degrees() - 90))
-
-    def calculate_closest_source(self):
-        '''
-        returns list [is_left_source_closest : bool, tag_of_closest_source : 12 | 13]
-        tag 12, right source
-        tag 13 left source
-        FOR BLUE SIDE
-        tag 2, right source
-        tag 1, left source
-        FOR RED SIDE
-        '''
-        curPose = self.curEstPose
-        right_source_tag = 2 if self.robot.fieldConstants.shouldFlip else 12
-        left_source_tag = 1 if self.robot.fieldConstants.shouldFlip else 13
-        dist_to_right_source = (self.robot.fieldConstants.flip_Pose2d(self.robot.fieldConstants.CoralStation.rightCenterFace).translation() - curPose.translation()).norm()
-        dist_to_left_source = (self.robot.fieldConstants.flip_Pose2d(self.robot.fieldConstants.CoralStation.leftCenterFace).translation() - curPose.translation()).norm()
-        left_source_closer = True if (dist_to_left_source <= dist_to_right_source) else False
-        SmartDashboard.putBoolean("left source closer", left_source_closer)
-        SmartDashboard.putNumber("dist to right source", dist_to_right_source)
-        SmartDashboard.putNumber("dist to left source", dist_to_left_source)
-        proper_tag = left_source_tag if left_source_closer else right_source_tag
-
-        return [left_source_closer, proper_tag]
-
-    def get_path_to_source(self, left_source : bool, place_on_source=1, extra_dist_offset=0.0):
-        '''
-        Use calculate_closest source
-        Place on source (default 2):
-        1 - closest towards DS wall
-        2- center source
-        3 - closest to PROCESSOR WALL
-        '''
-        dist_offset = (inchesToMeters(29.5) / 2) + (inchesToMeters(7.25) / 2) + (inchesToMeters(extra_dist_offset))
-        side_offset = inchesToMeters(24) + inchesToMeters(1) # test for 2
-
-        if left_source:
-            source_pose = self.robot.fieldConstants.flip_Pose2d(self.robot.fieldConstants.CoralStation.leftCenterFace)
-            source_rotation = source_pose.rotation()
-            x_offset = math.cos(source_rotation.radians()) * dist_offset  # offsetting that pose by a set offset that extends the pose as if there's a vector from the center face with angle: angle_face
-            y_offset = math.sin(source_rotation.radians()) * dist_offset
-
-            offset_pose = Pose2d(source_pose.X() + x_offset, source_pose.Y() + y_offset, source_rotation.rotateBy(Rotation2d.fromDegrees(90)))
-            if place_on_source == 2:
-                return offset_pose
-            elif place_on_source == 1 or place_on_source == 3:
-                x_side_offset = math.cos(degreesToRadians(source_rotation.degrees() + (-1 * 90 if place_on_source == 1 else 90))) * side_offset
-                y_side_offset = math.sin(degreesToRadians(source_rotation.degrees() + (-1 * 90 if place_on_source == 1 else 90))) * side_offset
-                target_pose = Pose2d(offset_pose.X() + x_side_offset, offset_pose.Y() + y_side_offset, source_rotation.rotateBy(Rotation2d.fromDegrees(90)))
-                return target_pose
-        else:
-            source_pose = self.robot.fieldConstants.flip_Pose2d(self.robot.fieldConstants.CoralStation.rightCenterFace)
-            source_rotation = source_pose.rotation()
-            x_offset = math.cos(source_rotation.radians()) * dist_offset  # offsetting that pose by a set offset that extends the pose as if there's a vector from the center face with angle: angle_face
-            y_offset = math.sin(source_rotation.radians()) * dist_offset
-
-            offset_pose = Pose2d(source_pose.X() + x_offset, source_pose.Y() + y_offset, source_rotation + Rotation2d.fromDegrees(90))
-            target_pose = Pose2d()
-            if place_on_source == 2:
-                target_pose = offset_pose
-            elif place_on_source == 1 or place_on_source == 3:
-                x_side_offset = math.cos(degreesToRadians(source_rotation.degrees() + (90 if place_on_source == 1 else -90))) * side_offset
-                y_side_offset = math.sin(degreesToRadians(source_rotation.degrees() + (90 if place_on_source == 1 else -90))) * side_offset
-                target_pose = Pose2d(offset_pose.X() + x_side_offset, offset_pose.Y() + y_side_offset, source_rotation + Rotation2d.fromDegrees(90))
-            return target_pose
-
-    def useSingleTag(self, distance=2):
-        return True #Only use single tag
-        return (self.curEstPose - self.tag_layout.getTagPose(self.calculate_closest_reef_tag()[0]).toPose2d()).translation().norm() < distance
-
-    def calculate_algae_height_at_closest_side(self):
-        closest_face = self.calculate_closest_reef_tag()[1]
-        return (closest_face % 2) + 2 # CHANGE THIS BACK TO + 2
 
     def periodic(self):
-        if self.robot.descoring_algae:
-            algae_height_at_closest_side = self.robot.poseEstimator.calculate_algae_height_at_closest_side()
-            if algae_height_at_closest_side == 3:
-                self.robot.score_state = RobotScoringPositions.Descore_Algae_L3
-            elif algae_height_at_closest_side == 2:
-                self.robot.score_state = RobotScoringPositions.Descore_Algae_L2
-
-        if (self.robot.score_intent) and (self.robot.previous_right_branch != self.robot.right_branch) and not self.robot.in_autonomous_mode:
-            self.robot.previous_right_branch = self.robot.right_branch
-            self.robot.final_lineup_pose = self.get_path_to_reef(
-                    True, # change to true if wanting to use calibrated field
-                    self.calculate_closest_reef_tag()[1],
-                    self.robot.right_branch,
-                    do_manip_offset=True,
-                )
-        
-        if (self.robot.is_intaking) and (self.robot.previous_position_on_source != self.robot.position_on_source) and not self.robot.in_autonomous_mode:
-            self.robot.previous_position_on_source = self.robot.position_on_source
-            self.robot.final_lineup_pose = self.get_path_to_source(
-                self.robot.poseEstimator.calculate_closest_source()[0], 
-                self.robot.position_on_source, 
-                extra_dist_offset=-3.0
-            )
-
-
         allianceColor = DriverStation.getAlliance()
         self.single_tag_IDs = set()
         single_tag_poses = []
 
-        for idx, cam in enumerate(self.cams):
+        for cam in self.cams:
             cam.update(
                 self.curEstPoseGlobal,
                 self.curEstPoseSingleTag,
@@ -654,17 +443,8 @@ class PoseEstimator(Subsystem):
 
         # ALWAYS USING SINGLE
         if not self.robot.isSimulation():
-            if self.robot.running_pid_lineup or True:
-                if self.useSingleTag() or self.robot.is_intaking:
-                    # (((self.robot.final_lineup_pose.translation() - self.robot.fieldConstants.flip_Translation2d(self.robot.fieldConstants.CoralStation.rightCenterFace.translation())).norm() < 0.75) or ((self.robot.final_lineup_pose.translation() - self.robot.fieldConstants.flip_Translation2d(self.robot.fieldConstants.CoralStation.leftCenterFace.translation())).norm() < 0.75))
-                    self.curEstPose = self.curEstPoseSingleTag
-                    self.single_tag = True
-                else:
-                    self.curEstPose = self.curEstPoseGlobal
-                    self.single_tag = False
-            else:
-                self.curEstPose = self.curEstPoseGlobal
-                self.single_tag = False
+            self.curEstPose = self.curEstPoseSingleTag
+            self.single_tag = True
 
         # if (self.robot.leds.mode == self.robot.leds.MODE_LOST_ODOMETRY) or (
         #     self.robot.leds.mode == self.robot.leds.MODE_ODOMETRY
@@ -728,14 +508,9 @@ class PoseEstimator(Subsystem):
             self.poseEstSingleTag.getEstimatedPosition()
         )
 
-        SmartDashboard.putNumber("closest reef tag", self.calculate_closest_reef_tag()[1])
-
         SmartDashboard.putNumber(
             "rotation of target pose: ", self.temp_rotation_check.degrees()
         )
-
-        SmartDashboard.putBoolean("right branch", self.robot.right_branch)
-        SmartDashboard.putNumber("face to path ", self.robot.oi.face)
 
         SmartDashboard.putNumber("skidding ratio", self.get_skidding_ratio())
         SmartDashboard.putNumber("jerk val", self.get_jerk_val())
