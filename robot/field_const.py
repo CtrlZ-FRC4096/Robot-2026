@@ -31,9 +31,10 @@ class FieldConstants:
     fieldLength = inchesToMeters(651.22)
     fieldWidth = inchesToMeters(317.69)
     startingLineX = inchesToMeters(156.61)  # Measured from the inside of starting line
-    algaeDiameter = inchesToMeters(16)
-    #algae is not a thing in this game
+    fuelDiameter = 0.15 # meters
     shouldFlip = DriverStation.getAlliance() == DriverStation.Alliance.kRed
+
+    # Will need to update tags. Reference 2024 code
     reef_tags = {6, 7, 8, 9, 10, 11} if shouldFlip else {17, 18, 19, 20, 21, 22}
     face_to_tag = (
         {1: 7, 2: 6, 3: 11, 4: 10, 5: 9, 6: 8}
