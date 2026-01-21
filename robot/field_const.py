@@ -19,7 +19,6 @@ from wpilib import DriverStation
 from robotpy_apriltag import AprilTagField, AprilTagFieldLayout
 import json
 
-
 class FieldConstants:
     """
     These are field constants and positions from the blue alliance side.
@@ -27,60 +26,92 @@ class FieldConstants:
     Y-axis: across the width of field
     X-axis: down the length
     """
+    def __init__(self):
+        self.fieldLength = inchesToMeters(651.22)
+        self.fieldWidth = inchesToMeters(317.69)
+        self.startingLineX = inchesToMeters(156.61)  # Measured from the inside of starting line
+        self.fuelDiameter = 0.15 # meters
+        self.shouldFlip = DriverStation.getAlliance() == DriverStation.Alliance.kRed
 
-    fieldLength = inchesToMeters(651.22)
-    fieldWidth = inchesToMeters(317.69)
-    startingLineX = inchesToMeters(156.61)  # Measured from the inside of starting line
-    fuelDiameter = 0.15 # meters
-    shouldFlip = DriverStation.getAlliance() == DriverStation.Alliance.kRed
+        # AprilTag related constants
+        self.tag_map = AprilTagFieldLayout.loadField(AprilTagField.k2026RebuiltWelded)
+
+        self.aprilTagCount = len(self.tag_map.getTags())
+        self.aprilTagWidth = inchesToMeters(6.5)
 
     # Will need to update tags. Reference 2024 code
-    reef_tags = {6, 7, 8, 9, 10, 11} if shouldFlip else {17, 18, 19, 20, 21, 22}
-    face_to_tag = (
-        {1: 7, 2: 6, 3: 11, 4: 10, 5: 9, 6: 8}
-        if shouldFlip
-        else {1: 18, 2: 19, 3: 20, 4: 21, 5: 22, 6: 17}
-    )
-    tag_to_face = (
-        {7: 1, 6: 2, 11: 3, 10: 4, 9: 5, 8: 6}
-        if shouldFlip
-        else {18: 1, 19: 2, 20: 3, 21: 4, 22: 5, 17: 6}
-    )
 
-    @staticmethod
-    def flip_X_coord(x):
-        return FieldConstants.fieldLength - x if FieldConstants.shouldFlip else x
+    def flip_X_coord(self, x):
+        return self.fieldLength - x if self.shouldFlip else x
 
-    @staticmethod
-    def flip_Y_coord(y):
-        return FieldConstants.fieldWidth - y if FieldConstants.shouldFlip else y
+    def flip_Y_coord(self, y):
+        return self.fieldWidth - y if self.shouldFlip else y
 
-    @staticmethod
-    def flip_Translation2d(translation):
+    def flip_Translation2d(self, translation):
         return (
             Translation2d(
-                FieldConstants.flip_X_coord(translation.X()),
-                FieldConstants.flip_Y_coord(translation.Y()),
+                self.flip_X_coord(translation.X()),
+                self.flip_Y_coord(translation.Y()),
             )
-            if FieldConstants.shouldFlip
+            if self.shouldFlip
             else translation
         )
 
-    @staticmethod
-    def flip_Rotation2d(rotation):
+    def flip_Rotation2d(self, rotation):
         return (
             rotation.rotateBy(Rotation2d.fromDegrees(180))
-            if FieldConstants.shouldFlip
+            if self.shouldFlip
             else rotation
         )
 
-    @staticmethod
-    def flip_Pose2d(pose):
+    def flip_Pose2d(self, pose):
         return (
             Pose2d(
-                FieldConstants.flip_Translation2d(pose.translation()),
-                FieldConstants.flip_Rotation2d(pose.rotation()),
+                self.flip_Translation2d(pose.translation()),
+                self.flip_Rotation2d(pose.rotation()),
             )
-            if FieldConstants.shouldFlip
+            if self.shouldFlip
             else pose
         )
+    
+    @property
+    def LinesVertical(self):
+        class _LinesVertical:
+            center = self.fieldLength / 2
+            starting = self.tag_map.getTagPose(26).X()
+            allianceZone = starting
+            hubCenter = Hub.width / 2.0 + starting # Note to self: Define Hub Class later on
+            neutralZoneNear = center - inchesToMeters(120)
+            neutralZoneFar = center + inchesToMeters(120)
+            oppHubCenter = self.tag_map.getTagPose(4).X() + Hub.width / 2.0
+            oppAllianceZone = self.tag_map.getTagPose(10).X()
+        return _LinesVertical
+    
+    @property
+    def LinesHorizontal(self):
+        class _LinesHorizontal:
+            center = self.fieldWidth / 2.0
+            rightBumpStart = Hub.nearRightCorner.Y()
+            rightBumpEnd = rightBumpStart - RightBump.width
+            rightTrenchOpenStart = rightBumpEnd - inchesToMeters(12.0)
+            rightTrenchOpenEnd = 0.0
+
+            leftBumpEnd = Hub.nearLeftCorner.Y()
+            leftBumpStart = leftBumpEnd + LeftBump.width
+            leftTrenchOpenEnd = leftBumpStart + inchesToMeters(12.0)
+            leftTrenchOpenStart = self.fieldWidth
+        return _LinesHorizontal
+    
+    @property
+    def Hub(self):
+        class _Hub:
+            width = inchesToMeters(47.0)
+            height = inchesToMeters(72.0)
+            innerWidth = inchesToMeters(41.7)
+            innerHeight = inchesToMeters(56.5)
+
+        return _Hub
+
+
+# fieldConstants = FieldConstants()
+# print(fieldConstants.LinesVertical.center)  
