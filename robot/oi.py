@@ -54,7 +54,7 @@ from wpilibextra.customcontroller import XboxCommandController
 
 from field_const import FieldConstants
 from wpimath.units import inchesToMeters, degreesToRadians, radiansToDegrees
-from phoenix5 import NeutralMode
+# from phoenix5 import NeutralMode
 from phoenix6.controls import CoastOut
 
 ###  IMPORTS ###

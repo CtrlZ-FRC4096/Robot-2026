@@ -125,6 +125,7 @@ class Robot(CoroutineRobot):
         self.scheduler = CommandScheduler.getInstance()
 
         self.previously_scored = True
+        self.has_coral = True
         
         # subsystems
         self.leds = subsystems.leds.LEDs(self)
@@ -152,7 +153,7 @@ class Robot(CoroutineRobot):
 
 		### STATE MACHINE ###
 
-        self.pathplanner_config = RobotConfig.fromGUISettings()
+        # self.pathplanner_config = RobotConfig.fromGUISettings()
 
         self.match_time = -1
 
@@ -163,7 +164,7 @@ class Robot(CoroutineRobot):
         self.remote_shell = RemoteShell(self)
 
 		# PATH CONSTRAINTS
-        self.path_constraints = PathConstraints(4.0, 4.0, degreesToRadians(540), degreesToRadians(540))
+        # self.path_constraints = PathConstraints(4.0, 4.0, degreesToRadians(540), degreesToRadians(540))
         self.autoroutines = autoroutines.AutoRoutines(self)
 
 
@@ -173,6 +174,8 @@ class Robot(CoroutineRobot):
 		### STATE MACHINE VARIABLES ###
         self.running_pid_lineup = False
         self.final_lineup_pose = Pose2d()
+
+        self.timer = Timer()
 
         log_refresh_rate = 0.02 if self.isSimulation() else 0.25
         @self.addPeriodic(period=log_refresh_rate, offset=0)
@@ -222,7 +225,7 @@ class Robot(CoroutineRobot):
         else:
             self.poseEstimator.set_yaw(270)
 
-        self.scheduler.schedule(self.auto)
+        # self.scheduler.schedule(self.auto)
 
     ### TELEOPERATED ###
     def teleop_mode(self):
@@ -230,6 +233,8 @@ class Robot(CoroutineRobot):
         self.running_pid_lineup = False
         self.in_autonomous_mode = False
         self.oi.robot_oriented_angle = self.poseEstimator.getYaw().degrees()
+
+        self.timer.start()
 
         while True:
             yield
@@ -308,7 +313,7 @@ class Robot(CoroutineRobot):
         for s in self.subsystems:
             s.log()
 
-        self.match_time = self.driverstation.getMatchTime()
+        self.match_time = self.timer.get()
         wpilib.SmartDashboard.putNumber("Match Time", self.match_time)
         wpilib.SmartDashboard.putNumber(
             "robot oriented angle", self.oi.robot_oriented_angle

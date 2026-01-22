@@ -37,7 +37,7 @@ from field_const import FieldConstants
 # from leds import LEDs
 # from shooter import Shooter
 
-# from pathplannerlib.path import PathConstraints
+from pathplannerlib.path import PathConstraints
 
 # from commands2 import SubsystemBase
 from wpilibextra.coroutine.subsystem import Subsystem
@@ -155,7 +155,7 @@ class Drivetrain(Subsystem):
             self.final_velo = final_vel.translation()
 
             self.robot.poseEstimator.curEstPose = Pose2d(curPose.X() + final_vel.X() / 30, curPose.Y() + final_vel.Y() / 30, Rotation2d.fromDegrees(curPose.rotation().degrees() + final_vel.rotation().degrees() / 27))
-            if self.robot.poseEstimator.poseIsOffField(self.robot.poseEstimator.curEstPose) or self.in_obstacle(self.robot.poseEstimator.curEstPose.translation()):
+            if self.robot.poseEstimator.poseIsOffField(self.robot.poseEstimator.curEstPose):
                 self.robot.poseEstimator.curEstPose = curPose
             self.robot.poseEstimator.set_yaw(self.robot.poseEstimator.curEstPose.rotation().degrees() + self.log_chassis.omega_dps / 20)
             

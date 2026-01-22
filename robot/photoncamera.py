@@ -92,30 +92,7 @@ class WrapperedPhotonCamera:
 
         self.obsTime = res.getTimestampSeconds()
 
-        ## MultiTag code
-        photon_pose_estimator = photonPoseEstimator.PhotonPoseEstimator(
-            self.tag_map,
-            photonPoseEstimator.PoseStrategy.MULTI_TAG_PNP_ON_COPROCESSOR,
-            self.cam,
-            self.robotToCam,
-        )
-        vision_est = photon_pose_estimator.update(res)
-
-        if vision_est is not None:
-
-            robot_pose = vision_est.estimatedPose.toPose2d()
-
-            # if ((robot_pose.x > -0.5) and (robot_pose.x < const.FIELD_LENGTH_METERS + 0.5) and (robot_pose.y > -0.5) and (robot_pose.y < const.FIELD_WIDTH_METERS + 0.5)): # Check if the robot is on the field
-            self.poseEstimates.append(CameraPoseObservation(self.obsTime, robot_pose))
-            for target in res.getTargets():
-                tgtID = target.getFiducialId()
-
-                tagFieldPose = self.tag_map.getTagPose(tgtID)
-                self.tagAmbiguity.append(target.getPoseAmbiguity())
-                self.tagPositions.append(tagFieldPose)
-                self.tagDistances.append(target.getBestCameraToTarget().translation().norm())
-
-        ## Single Tag Code
+                ## Single Tag Code
         # Process each target.
         # Each target has multiple solutions for where you could have been at on the field
         # when you observed it
@@ -129,7 +106,7 @@ class WrapperedPhotonCamera:
 
             # Transform both poses to on-field poses
             tgtID = target.getFiducialId()
-            if tgtID in self.reef_tags_to_use:  # Only use reef IDs, everything else is not great
+            if True or tgtID in self.reef_tags_to_use:  # Only use reef IDs, everything else is not great
 
                 tagFieldPose = self.tag_map.getTagPose(tgtID)
 

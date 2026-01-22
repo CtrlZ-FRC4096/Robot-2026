@@ -53,7 +53,7 @@ from field_const import FieldConstants
 # from leds import LEDs
 # from shooter import Shooter
 
-# from pathplannerlib.path import PathConstraints
+from pathplannerlib.path import PathConstraints
 
 # from commands2 import SubsystemBase
 from wpilibextra.coroutine.subsystem import Subsystem
