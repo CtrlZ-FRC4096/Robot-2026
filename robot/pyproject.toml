@@ -26,6 +26,6 @@ components = ["apriltag", "commands2", "pathplannerlib", "phoenix6", "phoenix5",
     # "xrp"
 
 # Other pip packages to install
-requires = ["numpy"]
+requires = ["photonlibpy", "numpy"]
 
 # to install opencv on roborio use py -m robotpy installer install robotpy-opencv

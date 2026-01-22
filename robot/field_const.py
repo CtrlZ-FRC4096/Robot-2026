@@ -27,15 +27,16 @@ class FieldConstants:
     X-axis: down the length
     """
     def __init__(self):
-        self.fieldLength = inchesToMeters(651.22)
-        self.fieldWidth = inchesToMeters(317.69)
-        self.startingLineX = inchesToMeters(156.61)  # Measured from the inside of starting line
-        self.fuelDiameter = 0.15 # meters
-        self.shouldFlip = DriverStation.getAlliance() == DriverStation.Alliance.kRed
-
         # AprilTag related constants
         self.tag_map = AprilTagFieldLayout.loadField(AprilTagField.k2026RebuiltWelded)
 
+        
+        self.fieldLength = self.tag_map.getFieldLength()
+        self.fieldWidth = self.tag_map.getFieldWidth()
+        self.fuelDiameter = 0.15 # meters
+        self.shouldFlip = True
+
+        
         self.aprilTagCount = len(self.tag_map.getTags())
         self.aprilTagWidth = inchesToMeters(6.5)
 
@@ -73,17 +74,58 @@ class FieldConstants:
             if self.shouldFlip
             else pose
         )
-    
+    @property
+    def Hub(self):
+        class _Hub:
+            width = inchesToMeters(47.0)
+            height = inchesToMeters(72.0)
+            innerWidth = inchesToMeters(41.7)
+            innerHeight = inchesToMeters(56.5)
+            topCenterPoint = Translation3d(self.tag_map.getTagPose(26).X() + width / 2.0,
+                                           self.fieldWidth / 2.0,
+                                           height)
+            innerCenterPoint = Translation3d(self.tag_map.getTagPose(26).X() + width / 2.0,
+                                             self.fieldWidth / 2.0,
+                                             innerHeight)
+            nearLeftCorner = Translation2d(topCenterPoint.X() - width / 2.0, self.fieldWidth / 2.0 + width / 2.0)
+            nearRightCorner = Translation2d(topCenterPoint.X() - width / 2.0, self.fieldWidth / 2.0 - width / 2.0)
+            farLeftCorner = Translation2d(topCenterPoint.X() + width / 2.0, self.fieldWidth / 2.0 + width / 2.0)
+            farRightCorner = Translation2d(topCenterPoint.X() + width / 2.0, self.fieldWidth / 2.0 - width / 2.0)
+
+            oppTopCenterPoint = Translation3d(self.tag_map.getTagPose(4).X() + width / 2.0,
+                                              self.fieldWidth / 2.0,
+                                              height)
+            oppNearLeftCorner = Translation2d(oppTopCenterPoint.X() - width / 2.0, self.fieldWidth / 2.0 + width / 2.0)
+            oppNearRightCorner = Translation2d(oppTopCenterPoint.X() - width / 2.0, self.fieldWidth / 2.0 - width / 2.0)
+            oppFarLeftCorner = Translation2d(oppTopCenterPoint.X() + width / 2.0, self.fieldWidth / 2.0 + width / 2.0)
+            oppFarRightCorner = Translation2d(oppTopCenterPoint.X() + width / 2.0, self.fieldWidth / 2.0 - width / 2.0)
+
+            nearFace = self.tag_map.getTagPose(26).toPose2d()
+            farFace = self.tag_map.getTagPose(20).toPose2d()
+            rightFace = self.tag_map.getTagPose(18).toPose2d()
+            leftFace = self.tag_map.getTagPose(21).toPose2d()
+        return _Hub
+
+    @property
+    def LeftBump(self):
+        class _LeftBump:
+            width = inchesToMeters(73.0)
+            height = inchesToMeters(6.513)
+            depth = inchesToMeters(44.4)
+
+            nearLeftCorner = Translation2d(self.LinesVertical)
+        return _LeftBump
+
     @property
     def LinesVertical(self):
         class _LinesVertical:
-            center = self.fieldLength / 2
+            center = self.fieldLength / 2.0
             starting = self.tag_map.getTagPose(26).X()
             allianceZone = starting
-            hubCenter = Hub.width / 2.0 + starting # Note to self: Define Hub Class later on
+            hubCenter = self.Hub.width / 2.0 + starting # Note to self: Define Hub Class later on
             neutralZoneNear = center - inchesToMeters(120)
             neutralZoneFar = center + inchesToMeters(120)
-            oppHubCenter = self.tag_map.getTagPose(4).X() + Hub.width / 2.0
+            oppHubCenter = self.tag_map.getTagPose(4).X() + self.Hub.width / 2.0
             oppAllianceZone = self.tag_map.getTagPose(10).X()
         return _LinesVertical
     
@@ -91,7 +133,7 @@ class FieldConstants:
     def LinesHorizontal(self):
         class _LinesHorizontal:
             center = self.fieldWidth / 2.0
-            rightBumpStart = Hub.nearRightCorner.Y()
+            rightBumpStart = self.Hub.nearRightCorner.Y()
             rightBumpEnd = rightBumpStart - RightBump.width
             rightTrenchOpenStart = rightBumpEnd - inchesToMeters(12.0)
             rightTrenchOpenEnd = 0.0
@@ -102,16 +144,8 @@ class FieldConstants:
             leftTrenchOpenStart = self.fieldWidth
         return _LinesHorizontal
     
-    @property
-    def Hub(self):
-        class _Hub:
-            width = inchesToMeters(47.0)
-            height = inchesToMeters(72.0)
-            innerWidth = inchesToMeters(41.7)
-            innerHeight = inchesToMeters(56.5)
-
-        return _Hub
+    
 
 
-# fieldConstants = FieldConstants()
+fieldConstants = FieldConstants()
 # print(fieldConstants.LinesVertical.center)  
