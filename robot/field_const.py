@@ -156,6 +156,16 @@ class FieldConstants:
             )
         return _Tower
     
+    def Output(self):
+        class _Output:
+            # Dimensions
+            width = inchesToMeters(31.8)
+            openingDistanceFromFloor = inchesToMeters(28.1)
+            height = inchesToMeters(7.0)
+            # Reference points 
+            center = Translation2d(self.tag_map.getTagPose(29).X())
+
+        return _Output
     @property
     def LeftBump(self):
         class _LeftBump:
