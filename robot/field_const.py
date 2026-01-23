@@ -165,7 +165,8 @@ class FieldConstants:
             # Reference points 
             center = Translation2d(self.tag_map.getTagPose(29).X())
 
-        return _Output
+        return _Outpost
+    
     @property
     def LeftBump(self):
         class _LeftBump:
