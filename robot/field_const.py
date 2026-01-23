@@ -194,6 +194,27 @@ class FieldConstants:
             oppOpeningTopRight = Translation3d(self.LinesVertical.oppHubCenter, self.fieldWidth - openingWidth, openingHeight)
 
         return _LeftTrench
+    
+    @property
+    def RightTrench(self):
+        class _RightTrench:
+            # dimensions
+            width = inchesToMeters(65.65)
+            depth = inchesToMeters(47.0)
+            height = inchesToMeters(40.25)
+            openingWidth = inchesToMeters(50.34)
+            openingHeight = inchesToMeters(22.25)
+            
+            # relevant reference points on alliance side
+            openingTopLeft = Translation3d(self.LinesVertical.hubCenter, openingWidth, openingHeight)
+            openingTopRight = Translation3d(self.LinesVertical.hubCenter, 0, openingHeight)
+
+            # relevant reference points on opposing side
+            oppOpeningTopLeft = Translation3d(self.LinesVertical.oppHubCenter, openingWidth, openingHeight)
+            oppOpeningTopRight = Translation3d(self.LinesVertical.oppHubCenter, 0, openingHeight)
+
+        return _RightTrench
+
 
     @property
     def RightBump(self):
