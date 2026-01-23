@@ -156,8 +156,8 @@ class FieldConstants:
             )
         return _Tower
     
-    def Output(self):
-        class _Output:
+    def Outpost(self):
+        class _Outpost:
             # Dimensions
             width = inchesToMeters(31.8)
             openingDistanceFromFloor = inchesToMeters(28.1)
