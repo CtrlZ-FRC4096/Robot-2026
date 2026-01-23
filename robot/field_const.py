@@ -155,7 +155,20 @@ class FieldConstants:
                 - inchesToMeters(0.75)
             )
         return _Tower
-    
+
+    @property
+    def Depot(self):
+        class _Depot:
+            width = inchesToMeters(42.0)
+            depth = inchesToMeters(27.0)
+            height = inchesToMeters(1.125)
+            distanceFromCenterY = inchesToMeters(75.93)
+
+            depotCenter = Translation3d(depth, (self.fieldWidth / 2) + distanceFromCenterY, height)
+            leftCorner = Translation3d(depth, (self.fieldWidth / 2) + distanceFromCenterY + width / 2, height)
+            rightCorner = Translation3d(depth, (self.fieldWidth / 2) + distanceFromCenterY - width / 2, height)
+        return _Depot
+
     @property
     def Outpost(self):
         class _Outpost:
@@ -171,32 +184,23 @@ class FieldConstants:
     @property
     def LeftBump(self):
         class _LeftBump:
+            # Dimensions
             width = inchesToMeters(73.0)
             height = inchesToMeters(6.513)
             depth = inchesToMeters(44.4)
             nearLeftCorner = Translation2d(self.LinesVertical)
+            # Reference points - alliance
+            nearLeftCorner = Translation2d(self.LinesVertical.hubCenter - width / 2, inchesToMeters(255))
+            nearRightCorner = nearLeftCorner
+            farLeftCorner = Translation2d(self.LinesVertical.hubCenter + width / 2, inchesToMeters(255))
+            farRightCorner = farLeftCorner
+            # Reference points - opponent
+            oppNearLeftCorner = Translation2d(self.LinesVertical.hubCenter - width / 2, inchesToMeters(255))
+            oppNearRightCorner = oppNearLeftCorner
+            oppFarLeftCorner = Translation2d(self.LinesVertical.hubCenter + width / 2, inchesToMeters(255))
+            oppFarRightCorner = oppFarLeftCorner
         return _LeftBump
-            
-    @property
-    def LeftTrench(self):
-        class _LeftTrench:
-            # dimensions
-            width = inchesToMeters(65.65)
-            depth = inchesToMeters(47.0)
-            height = inchesToMeters(40.25)
-            openingWidth = inchesToMeters(50.34)
-            openingHeight = inchesToMeters(22.25)
-            
-            # relevant reference points on alliance side
-            openingTopLeft = Translation3d(self.LinesVertical.hubCenter, self.fieldWidth, openingHeight)
-            openingTopRight = Translation3d(self.LinesVertical.hubCenter, self.fieldWidth - openingWidth, openingHeight)
 
-            # relevant reference points on opposing side
-            oppOpeningTopLeft = Translation3d(self.LinesVertical.oppHubCenter, self.fieldWidth, openingHeight)
-            oppOpeningTopRight = Translation3d(self.LinesVertical.oppHubCenter, self.fieldWidth - openingWidth, openingHeight)
-
-        return _LeftTrench
-    
     @property
     def RightTrench(self):
         class _RightTrench:
@@ -216,7 +220,26 @@ class FieldConstants:
             oppOpeningTopRight = Translation3d(self.LinesVertical.oppHubCenter, 0, openingHeight)
 
         return _RightTrench
+          
+    @property
+    def LeftTrench(self):
+        class _LeftTrench:
+            # dimensions
+            width = inchesToMeters(65.65)
+            depth = inchesToMeters(47.0)
+            height = inchesToMeters(40.25)
+            openingWidth = inchesToMeters(50.34)
+            openingHeight = inchesToMeters(22.25)
+            
+            # relevant reference points on alliance side
+            openingTopLeft = Translation3d(self.LinesVertical.hubCenter, self.fieldWidth, openingHeight)
+            openingTopRight = Translation3d(self.LinesVertical.hubCenter, self.fieldWidth - openingWidth, openingHeight)
 
+            # relevant reference points on opposing side
+            oppOpeningTopLeft = Translation3d(self.LinesVertical.oppHubCenter, self.fieldWidth, openingHeight)
+            oppOpeningTopRight = Translation3d(self.LinesVertical.oppHubCenter, self.fieldWidth - openingWidth, openingHeight)
+
+        return _LeftTrench
 
     @property
     def RightBump(self):
@@ -265,18 +288,7 @@ class FieldConstants:
             leftTrenchOpenStart = self.fieldWidth
         return _LinesHorizontal
     
-    @property
-    def Depot(self):
-        class _Depot:
-            width = inchesToMeters(42.0)
-            depth = inchesToMeters(27.0)
-            height = inchesToMeters(1.125)
-            distanceFromCenterY = inchesToMeters(75.93)
 
-            depotCenter = Translation3d(depth, (self.fieldWidth / 2) + distanceFromCenterY, height)
-            leftCorner = Translation3d(depth, (self.fieldWidth / 2) + distanceFromCenterY + width / 2, height)
-            rightCorner = Translation3d(depth, (self.fieldWidth / 2) + distanceFromCenterY - width / 2, height)
-        return _Depot
 
 fieldConstants = FieldConstants()
 # print(fieldConstants.LinesVertical.center)  
