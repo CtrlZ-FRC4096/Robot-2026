@@ -191,7 +191,24 @@ class FieldConstants:
             leftTrenchOpenStart = self.fieldWidth
         return _LinesHorizontal
     
-    
+    @property
+    def RightBump(self):
+        class _RightBump:
+            width = inchesToMeters(73.0)
+            height = inchesToMeters(6.513)
+            depth = inchesToMeters(44.4)
+
+            nearLeftCorner = Translation2d(self.LinesVertical.hubCenter + width / 2, inchesToMeters(255))
+            nearRightCorner = self.Hub.nearLeftCorner
+            farLeftCorner = Translation2d(self.LinesVertical.hubCenter - width / 2, inchesToMeters(255))
+            farRightCorner = self.Hub.farLeftCorner
+
+            oppNearLeftCorner = Translation2d(self.LinesVertical.hubCenter + width /2, inchesToMeters(255))
+            oppNearRightCorner = self.Hub.oppNearLeftCorner
+            oppFarLeftCorner = Translation2d(self.LinesVertical.hubCenter - width / 2, inchesToMeters(255))
+            oppFarRightCorner = self.Hub.oppFarLeftCorner
+
+        return _RightBump
 
 
 fieldConstants = FieldConstants()
