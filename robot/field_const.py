@@ -174,6 +174,26 @@ class FieldConstants:
             depth = inchesToMeters(44.4)
             nearLeftCorner = Translation2d(self.LinesVertical)
         return _LeftBump
+            
+    @property
+    def LeftTrench(self):
+        class _LeftTrench:
+            # dimensions
+            width = inchesToMeters(65.65)
+            depth = inchesToMeters(47.0)
+            height = inchesToMeters(40.25)
+            openingWidth = inchesToMeters(50.34)
+            openingHeight = inchesToMeters(22.25)
+            
+            # relevant reference points on alliance side
+            openingTopLeft = Translation3d(self.LinesVertical.hubCenter, self.fieldWidth, openingHeight)
+            openingTopRight = Translation3d(self.LinesVertical.hubCenter, self.fieldWidth - openingWidth, openingHeight)
+
+            # relevant reference points on opposing side
+            oppOpeningTopLeft = Translation3d(self.LinesVertical.oppHubCenter, self.fieldWidth, openingHeight)
+            oppOpeningTopRight = Translation3d(self.LinesVertical.oppHubCenter, self.fieldWidth - openingWidth, openingHeight)
+
+        return _LeftTrench
 
     @property
     def RightBump(self):
@@ -212,12 +232,12 @@ class FieldConstants:
         class _LinesHorizontal:
             center = self.fieldWidth / 2.0
             rightBumpStart = self.Hub.nearRightCorner.Y()
-            rightBumpEnd = rightBumpStart - RightBump.width
+            rightBumpEnd = rightBumpStart - self.RightBump.width
             rightTrenchOpenStart = rightBumpEnd - inchesToMeters(12.0)
             rightTrenchOpenEnd = 0.0
 
-            leftBumpEnd = Hub.nearLeftCorner.Y()
-            leftBumpStart = leftBumpEnd + LeftBump.width
+            leftBumpEnd = self.Hub.nearLeftCorner.Y()
+            leftBumpStart = leftBumpEnd + self.LeftBump.width
             leftTrenchOpenEnd = leftBumpStart + inchesToMeters(12.0)
             leftTrenchOpenStart = self.fieldWidth
         return _LinesHorizontal
