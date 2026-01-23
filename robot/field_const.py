@@ -192,12 +192,12 @@ class FieldConstants:
             nearLeftCorner = Translation2d(self.LinesVertical.hubCenter - width / 2, inchesToMeters(255))
             nearRightCorner = nearLeftCorner
             farLeftCorner = Translation2d(self.LinesVertical.hubCenter + width / 2, inchesToMeters(255))
-            farRightCorner = farLeftCorner
+            farRightCorner = self.Hub.farLeftCorner
             # Reference points - opponent
             oppNearLeftCorner = Translation2d(self.LinesVertical.hubCenter - width / 2, inchesToMeters(255))
             oppNearRightCorner = oppNearLeftCorner
             oppFarLeftCorner = Translation2d(self.LinesVertical.hubCenter + width / 2, inchesToMeters(255))
-            oppFarRightCorner = oppFarLeftCorner
+            oppFarRightCorner = self.Hub.oppFarLeftCorner
         return _LeftBump
 
     @property
