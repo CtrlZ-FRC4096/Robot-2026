@@ -156,6 +156,7 @@ class FieldConstants:
             )
         return _Tower
     
+    @property
     def Outpost(self):
         class _Outpost:
             # Dimensions
@@ -276,7 +277,6 @@ class FieldConstants:
             leftCorner = Translation3d(depth, (self.fieldWidth / 2) + distanceFromCenterY + width / 2, height)
             rightCorner = Translation3d(depth, (self.fieldWidth / 2) + distanceFromCenterY - width / 2, height)
         return _Depot
-
 
 fieldConstants = FieldConstants()
 # print(fieldConstants.LinesVertical.center)  
