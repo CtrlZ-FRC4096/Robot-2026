@@ -195,10 +195,10 @@ class FieldConstants:
             farRightCorner = self.Hub.farLeftCorner
             # Reference points - opponent
             oppNearLeftCorner = Translation2d(self.LinesVertical.hubCenter - width / 2, inchesToMeters(255))
-            oppNearRightCorner = oppNearLeftCorner
+            oppNearRightCorner = self.Hub.oppNearLeftCorner
             oppFarLeftCorner = Translation2d(self.LinesVertical.hubCenter + width / 2, inchesToMeters(255))
             oppFarRightCorner = self.Hub.oppFarLeftCorner
-        return _LeftBump
+        return _LeftBump 
 
     @property
     def RightTrench(self):
