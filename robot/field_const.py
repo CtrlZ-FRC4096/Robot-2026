@@ -232,12 +232,12 @@ class FieldConstants:
         class _LinesHorizontal:
             center = self.fieldWidth / 2.0
             rightBumpStart = self.Hub.nearRightCorner.Y()
-            rightBumpEnd = rightBumpStart - RightBump.width
+            rightBumpEnd = rightBumpStart - self.RightBump.width
             rightTrenchOpenStart = rightBumpEnd - inchesToMeters(12.0)
             rightTrenchOpenEnd = 0.0
 
-            leftBumpEnd = Hub.nearLeftCorner.Y()
-            leftBumpStart = leftBumpEnd + LeftBump.width
+            leftBumpEnd = self.Hub.nearLeftCorner.Y()
+            leftBumpStart = leftBumpEnd + self.LeftBump.width
             leftTrenchOpenEnd = leftBumpStart + inchesToMeters(12.0)
             leftTrenchOpenStart = self.fieldWidth
         return _LinesHorizontal
