@@ -74,6 +74,7 @@ class FieldConstants:
             if self.shouldFlip
             else pose
         )
+    
     @property
     def Hub(self):
         class _Hub:
@@ -105,6 +106,7 @@ class FieldConstants:
             leftFace = self.tag_map.getTagPose(21).toPose2d()
         return _Hub
     
+    @property
     def Tower(self):
         class _Tower:
             # Dimensions
@@ -164,6 +166,25 @@ class FieldConstants:
         return _LeftBump
 
     @property
+    def RightBump(self):
+        class _RightBump:
+            width = inchesToMeters(73.0)
+            height = inchesToMeters(6.513)
+            depth = inchesToMeters(44.4)
+
+            nearLeftCorner = Translation2d(self.LinesVertical.hubCenter + width / 2, inchesToMeters(255))
+            nearRightCorner = self.Hub.nearLeftCorner
+            farLeftCorner = Translation2d(self.LinesVertical.hubCenter - width / 2, inchesToMeters(255))
+            farRightCorner = self.Hub.farLeftCorner
+
+            oppNearLeftCorner = Translation2d(self.LinesVertical.hubCenter + width /2, inchesToMeters(255))
+            oppNearRightCorner = self.Hub.oppNearLeftCorner
+            oppFarLeftCorner = Translation2d(self.LinesVertical.hubCenter - width / 2, inchesToMeters(255))
+            oppFarRightCorner = self.Hub.oppFarLeftCorner
+
+        return _RightBump
+
+    @property
     def LinesVertical(self):
         class _LinesVertical:
             center = self.fieldLength / 2.0
@@ -191,24 +212,6 @@ class FieldConstants:
             leftTrenchOpenStart = self.fieldWidth
         return _LinesHorizontal
     
-    @property
-    def RightBump(self):
-        class _RightBump:
-            width = inchesToMeters(73.0)
-            height = inchesToMeters(6.513)
-            depth = inchesToMeters(44.4)
-
-            nearLeftCorner = Translation2d(self.LinesVertical.hubCenter + width / 2, inchesToMeters(255))
-            nearRightCorner = self.Hub.nearLeftCorner
-            farLeftCorner = Translation2d(self.LinesVertical.hubCenter - width / 2, inchesToMeters(255))
-            farRightCorner = self.Hub.farLeftCorner
-
-            oppNearLeftCorner = Translation2d(self.LinesVertical.hubCenter + width /2, inchesToMeters(255))
-            oppNearRightCorner = self.Hub.oppNearLeftCorner
-            oppFarLeftCorner = Translation2d(self.LinesVertical.hubCenter - width / 2, inchesToMeters(255))
-            oppFarRightCorner = self.Hub.oppFarLeftCorner
-
-        return _RightBump
 
 
 fieldConstants = FieldConstants()
