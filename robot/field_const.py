@@ -91,7 +91,6 @@ class FieldConstants:
             nearRightCorner = Translation2d(topCenterPoint.X() - width / 2.0, self.fieldWidth / 2.0 - width / 2.0)
             farLeftCorner = Translation2d(topCenterPoint.X() + width / 2.0, self.fieldWidth / 2.0 + width / 2.0)
             farRightCorner = Translation2d(topCenterPoint.X() + width / 2.0, self.fieldWidth / 2.0 - width / 2.0)
-
             oppTopCenterPoint = Translation3d(self.tag_map.getTagPose(4).X() + width / 2.0,
                                               self.fieldWidth / 2.0,
                                               height)
@@ -105,26 +104,64 @@ class FieldConstants:
             rightFace = self.tag_map.getTagPose(18).toPose2d()
             leftFace = self.tag_map.getTagPose(21).toPose2d()
         return _Hub
-
+    
+    def Tower(self):
+        class _Tower:
+            # Dimensions
+            width = inchesToMeters(49.25)
+            depth = inchesToMeters(45.0)
+            height = inchesToMeters(78.25)
+            innerOpeningWidth = inchesToMeters(32.250)
+            frontFaceX = inchesToMeters(43.51)
+            uprightHeight = inchesToMeters(72.1)
+            # Rung heights
+            lowRungHeight = inchesToMeters(27.0)
+            midRungHeight = inchesToMeters(45.0)
+            highRungHeight = inchesToMeters(63.0)
+            # Reference points - alliance
+            centerPoint = Translation2d(
+                frontFaceX,
+                self.tag_map().getTagPose(31).get().Y()
+            )
+            leftUpright = Translation2d(
+                frontFaceX,
+                self.tag_map().getTagPose(31).get().Y()
+                + innerOpeningWidth / 2
+                + inchesToMeters(0.75)
+            )
+            rightUpright = Translation2d(
+                frontFaceX,
+                self.tag_map().getTagPose(31).get().Y()
+                - innerOpeningWidth / 2
+                - inchesToMeters(0.75)
+            )
+            # Reference points - opponent
+            oppCenterPoint = Translation2d(
+                self.fieldLength - frontFaceX,
+                self.tag_map().getTagPose(15).get().Y()
+            )
+            oppLeftUpright = Translation2d(
+                self.fieldLength - frontFaceX,
+                self.tag_map().getTagPose(15).get().Y()
+                + innerOpeningWidth / 2
+                + inchesToMeters(0.75)
+            )
+            oppRightUpright = Translation2d(
+                self.fieldLength - frontFaceX,
+                self.tag_map().getTagPose(15).get().Y()
+                - innerOpeningWidth / 2
+                - inchesToMeters(0.75)
+            )
+        return _Tower
+    
     @property
     def LeftBump(self):
         class _LeftBump:
             width = inchesToMeters(73.0)
             height = inchesToMeters(6.513)
             depth = inchesToMeters(44.4)
-
-            nearLeftCorner = Translation2d(self.LinesVertical.hubCenter - width / 2, inchesToMeters(255))
-            nearRightCorner = self.Hub.nearLeftCorner
-            farLeftCorner = Translation2d(self.LinesVertical.hubCenter + width / 2, inchesToMeters(255))
-            farRightCorner = self.Hub.farLeftCorner
-
-            oppNearLeftCorner = Translation2d(self.LinesVertical.hubCenter - width /2, inchesToMeters(255))
-            oppNearRightCorner = self.Hub.oppNearLeftCorner
-            oppFarLeftCorner = Translation2d(self.LinesVertical.hubCenter + width / 2, inchesToMeters(255))
-            oppFarRightCorner = self.Hub.oppFarLeftCorner
-
+            nearLeftCorner = Translation2d(self.LinesVertical)
         return _LeftBump
-            
 
     @property
     def LinesVertical(self):
@@ -144,12 +181,12 @@ class FieldConstants:
         class _LinesHorizontal:
             center = self.fieldWidth / 2.0
             rightBumpStart = self.Hub.nearRightCorner.Y()
-            rightBumpEnd = rightBumpStart - self.RightBump.width
+            rightBumpEnd = rightBumpStart - RightBump.width
             rightTrenchOpenStart = rightBumpEnd - inchesToMeters(12.0)
             rightTrenchOpenEnd = 0.0
 
-            leftBumpEnd = self.Hub.nearLeftCorner.Y()
-            leftBumpStart = leftBumpEnd + self.LeftBump.width
+            leftBumpEnd = Hub.nearLeftCorner.Y()
+            leftBumpStart = leftBumpEnd + LeftBump.width
             leftTrenchOpenEnd = leftBumpStart + inchesToMeters(12.0)
             leftTrenchOpenStart = self.fieldWidth
         return _LinesHorizontal
