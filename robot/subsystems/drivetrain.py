@@ -24,8 +24,8 @@ from wpimath.kinematics import (
     SwerveModuleState
 )
 from phoenix6 import configs
-# from shapely import Polygon, Point
-# from shapely.affinity import translate, rotate
+from shapely import Polygon, Point
+from shapely.affinity import translate, rotate
 
 
 # from pathplannerlib.commands import PathfindHolonomic
@@ -92,6 +92,22 @@ class Drivetrain(Subsystem):
         self.log_chassis = ChassisSpeeds()
 
         self.final_velo = Translation2d()
+
+        # SIM STUFF
+
+
+        field_boundary_points = [
+            (0,0),
+            (inchesToMeters(650.813), 0),
+            (inchesToMeters(650.813), inchesToMeters(317.688)),
+            (0, inchesToMeters(317.688))
+        ]
+        field_boundary = Polygon(field_boundary_points)
+
+        self.sim_obstacles = [
+            (field_boundary, "within"),
+
+        ]
 
     def drive(self, translation: Translation2d, rotation, field_relative, is_open_loop):
         SmartDashboard.putNumber("Swerve/Translation X", translation.x)
@@ -167,6 +183,33 @@ class Drivetrain(Subsystem):
                 SmartDashboard.putNumber("module state " + str(idx + 1), module_states[idx].speed)
                 module.set_desired_state(module_states[idx], is_open_loop)
     
+    def get_robot_shape(self):
+        cur_pose : Pose2d = self.robot.poseEstimator.curEstPose
+        half_length = inchesToMeters(26 + 7.25) / 2.0
+        half_width = inchesToMeters(28.5 + 7.25) / 2.0
+        p1 = (-half_length, -half_width)
+        p2 = (-half_length, half_width)
+        p3  = (half_length, half_width)
+        p4 = (half_length, -half_width)
+
+        base_robot = Polygon([p1, p2, p3, p4])
+        rotated_robot = rotate(base_robot, cur_pose.rotation().degrees())
+        final_robot = translate(rotated_robot, xoff=cur_pose.X(), yoff=cur_pose.Y())
+        return final_robot
+
+    def in_obstacle(self, pose : Translation2d):
+        robot = self.get_robot_shape()
+        for obstacle in self.sim_obstacles:
+            match obstacle[1]:
+                case "overlaps":
+                    if obstacle[0].overlaps(robot):
+                        return True
+                case "within":
+                    if not robot.within(obstacle[0]):
+                        return True
+        return False
+
+
     def drive_with_pid(self, translation: Translation2d, target_angle):
         pid_output = self.angle_pid.calculate(self.robot.poseEstimator.getYaw().degrees(), target_angle)  # type: ignore
 
