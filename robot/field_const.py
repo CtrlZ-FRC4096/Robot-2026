@@ -264,6 +264,18 @@ class FieldConstants:
             leftTrenchOpenStart = self.fieldWidth
         return _LinesHorizontal
     
+    @property
+    def Depot(self):
+        class _Depot:
+            width = inchesToMeters(42.0)
+            depth = inchesToMeters(27.0)
+            height = inchesToMeters(1.125)
+            distanceFromCenterY = inchesToMeters(75.93)
+
+            depotCenter = Translation3d(depth, (self.fieldWidth / 2) + distanceFromCenterY, height)
+            leftCorner = Translation3d(depth, (self.fieldWidth / 2) + distanceFromCenterY + width / 2, height)
+            rightCorner = Translation3d(depth, (self.fieldWidth / 2) + distanceFromCenterY - width / 2, height)
+        return _Depot
 
 
 fieldConstants = FieldConstants()
