@@ -123,34 +123,34 @@ class FieldConstants:
             # Reference points - alliance
             centerPoint = Translation2d(
                 frontFaceX,
-                self.tag_map.getTagPose(31).get().Y()
+                self.tag_map.getTagPose(31).Y()
             )
             leftUpright = Translation2d(
                 frontFaceX,
-                self.tag_map.getTagPose(31).get().Y()
+                self.tag_map.getTagPose(31).Y()
                 + innerOpeningWidth / 2
                 + inchesToMeters(0.75)
             )
             rightUpright = Translation2d(
                 frontFaceX,
-                self.tag_map.getTagPose(31).get().Y()
+                self.tag_map.getTagPose(31).Y()
                 - innerOpeningWidth / 2
                 - inchesToMeters(0.75)
             )
             # Reference points - opponent
             oppCenterPoint = Translation2d(
                 self.fieldLength - frontFaceX,
-                self.tag_map.getTagPose(15).get().Y()
+                self.tag_map.getTagPose(15).Y()
             )
             oppLeftUpright = Translation2d(
                 self.fieldLength - frontFaceX,
-                self.tag_map.getTagPose(15).get().Y()
+                self.tag_map.getTagPose(15).Y()
                 + innerOpeningWidth / 2
                 + inchesToMeters(0.75)
             )
             oppRightUpright = Translation2d(
                 self.fieldLength - frontFaceX,
-                self.tag_map.getTagPose(15).get().Y()
+                self.tag_map.getTagPose(15).Y()
                 - innerOpeningWidth / 2
                 - inchesToMeters(0.75)
             )
