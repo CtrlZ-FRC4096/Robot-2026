@@ -95,6 +95,61 @@ class Drivetrain(Subsystem):
 
         # SIM STUFF
 
+        blue_hub_pts = [
+            (inchesToMeters(158.406), inchesToMeters(135.344)),
+            (inchesToMeters(158.406), inchesToMeters(182.344)),
+            (inchesToMeters(205.406), inchesToMeters(182.344)),
+            (inchesToMeters(205.406), inchesToMeters(135.344))
+        ]
+        
+        blue_trench_right_pts = [
+            (inchesToMeters(158.406), inchesToMeters(50.344)),
+            (inchesToMeters(158.406), inchesToMeters(62.344)),
+            (inchesToMeters(205.406), inchesToMeters(62.344)),
+            (inchesToMeters(205.406), inchesToMeters(50.344))
+        ]
+
+        blue_trench_left_pts = [
+            (inchesToMeters(158.406), inchesToMeters(255.344)),
+            (inchesToMeters(158.406), inchesToMeters(267.344)),
+            (inchesToMeters(205.406), inchesToMeters(267.344)),
+            (inchesToMeters(205.406), inchesToMeters(255.344))
+        ]
+
+        blue_tower_pts = [
+            (inchesToMeters(38.358), inchesToMeters(129.759)),
+            (inchesToMeters(44.858), inchesToMeters(129.759)),
+            (inchesToMeters(44.858), inchesToMeters(165.178)),
+            (inchesToMeters(38.358), inchesToMeters(165.178)),            
+        ]
+
+        red_hub_pts = [
+            (inchesToMeters(445.406), inchesToMeters(135.344)),
+            (inchesToMeters(445.406), inchesToMeters(182.344)),
+            (inchesToMeters(492.406), inchesToMeters(182.344)),
+            (inchesToMeters(492.406), inchesToMeters(135.344))
+        ]
+
+        red_trench_right_pts = [
+            (inchesToMeters(445.406), inchesToMeters(50.344)),
+            (inchesToMeters(445.406), inchesToMeters(62.344)),
+            (inchesToMeters(492.406), inchesToMeters(62.344)),
+            (inchesToMeters(492.406), inchesToMeters(50.344))
+        ]
+
+        red_trench_left_pts = [
+            (inchesToMeters(445.406), inchesToMeters(255.344)),
+            (inchesToMeters(445.406), inchesToMeters(267.344)),
+            (inchesToMeters(492.406), inchesToMeters(267.344)),
+            (inchesToMeters(492.406), inchesToMeters(255.344))
+        ]
+
+        red_tower_pts = [
+            (inchesToMeters(605.955), inchesToMeters(129.759)),
+            (inchesToMeters(612.455), inchesToMeters(129.759)),
+            (inchesToMeters(612.455), inchesToMeters(165.178)),
+            (inchesToMeters(605.955), inchesToMeters(165.178))
+        ]
 
         field_boundary_points = [
             (0,0),
@@ -104,9 +159,26 @@ class Drivetrain(Subsystem):
         ]
         field_boundary = Polygon(field_boundary_points)
 
+        blue_hub = Polygon(blue_hub_pts)
+        blue_tower = Polygon(blue_tower_pts)
+        blue_trench_left = Polygon(blue_trench_left_pts)
+        blue_trench_right = Polygon(blue_trench_right_pts)
+
+        red_hub = Polygon(red_hub_pts)
+        red_tower = Polygon(red_tower_pts)
+        red_trench_left = Polygon(red_trench_left_pts)
+        red_trench_right = Polygon(red_trench_right_pts)
+
         self.sim_obstacles = [
             (field_boundary, "within"),
-
+            (blue_hub, "overlaps"),
+            (blue_tower, "overlaps"),
+            (blue_trench_left, "overlaps"),
+            (blue_trench_right, "overlaps"),
+            (red_hub, "overlaps"),
+            (red_tower, "overlaps"),
+            (red_trench_left, "overlaps"),
+            (red_trench_right, "overlaps")
         ]
 
     def drive(self, translation: Translation2d, rotation, field_relative, is_open_loop):
@@ -170,8 +242,8 @@ class Drivetrain(Subsystem):
                 self.damping_accel = False
             self.final_velo = final_vel.translation()
 
-            self.robot.poseEstimator.curEstPose = Pose2d(curPose.X() + final_vel.X() / 30, curPose.Y() + final_vel.Y() / 30, Rotation2d.fromDegrees(curPose.rotation().degrees() + final_vel.rotation().degrees() / 27))
-            if self.robot.poseEstimator.poseIsOffField(self.robot.poseEstimator.curEstPose):
+            self.robot.poseEstimator.curEstPose = Pose2d(curPose.X() + final_vel.X() / 30, curPose.Y() + final_vel.Y() / 30, Rotation2d.fromDegrees(curPose.rotation().degrees() + final_vel.rotation().degrees() /700.0))
+            if self.robot.poseEstimator.poseIsOffField(self.robot.poseEstimator.curEstPose) or self.in_obstacle(self.robot.poseEstimator.curEstPose.translation()):
                 self.robot.poseEstimator.curEstPose = curPose
             self.robot.poseEstimator.set_yaw(self.robot.poseEstimator.curEstPose.rotation().degrees() + self.log_chassis.omega_dps / 20)
             
