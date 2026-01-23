@@ -177,7 +177,7 @@ class FieldConstants:
             openingDistanceFromFloor = inchesToMeters(28.1)
             height = inchesToMeters(7.0)
             # Reference points 
-            center = Translation2d(self.tag_map.getTagPose(29).X())
+            center = Translation2d(self.tag_map.getTagPose(29).Y())
 
         return _Outpost
     
@@ -188,7 +188,6 @@ class FieldConstants:
             width = inchesToMeters(73.0)
             height = inchesToMeters(6.513)
             depth = inchesToMeters(44.4)
-            nearLeftCorner = Translation2d(self.LinesVertical)
             # Reference points - alliance
             nearLeftCorner = Translation2d(self.LinesVertical.hubCenter - width / 2, inchesToMeters(255))
             nearRightCorner = nearLeftCorner
