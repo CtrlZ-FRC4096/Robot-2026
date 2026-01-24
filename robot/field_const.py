@@ -177,7 +177,7 @@ class FieldConstants:
             openingDistanceFromFloor = inchesToMeters(28.1)
             height = inchesToMeters(7.0)
             # Reference points 
-            center = Translation2d(self.tag_map.getTagPose(29).Y())
+            center = Translation2d(0, self.tag_map.getTagPose(29).Y())
 
         return _Outpost
     
@@ -288,6 +288,3 @@ class FieldConstants:
         return _LinesHorizontal
     
 
-
-fieldConstants = FieldConstants()
-# print(fieldConstants.LinesVertical.center)  
