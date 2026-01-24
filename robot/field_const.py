@@ -182,6 +182,25 @@ class FieldConstants:
         return _Outpost
     
     @property
+    def RightBump(self):
+        class _RightBump:
+            width = inchesToMeters(73.0)
+            height = inchesToMeters(6.513)
+            depth = inchesToMeters(44.4)
+
+            nearLeftCorner = Translation2d(self.LinesVertical.hubCenter + width / 2, inchesToMeters(255))
+            nearRightCorner = self.Hub.nearLeftCorner
+            farLeftCorner = Translation2d(self.LinesVertical.hubCenter - width / 2, inchesToMeters(255))
+            farRightCorner = self.Hub.farLeftCorner
+
+            oppNearLeftCorner = Translation2d(self.LinesVertical.hubCenter + width /2, inchesToMeters(255))
+            oppNearRightCorner = self.Hub.oppNearLeftCorner
+            oppFarLeftCorner = Translation2d(self.LinesVertical.hubCenter - width / 2, inchesToMeters(255))
+            oppFarRightCorner = self.Hub.oppFarLeftCorner
+
+        return _RightBump
+    
+    @property
     def LeftBump(self):
         class _LeftBump:
             # Dimensions
@@ -190,15 +209,15 @@ class FieldConstants:
             depth = inchesToMeters(44.4)
             # Reference points - alliance
             nearLeftCorner = Translation2d(self.LinesVertical.hubCenter - width / 2, inchesToMeters(255))
-            nearRightCorner = nearLeftCorner
+            nearRightCorner = self.Hub.nearLeftCorner
             farLeftCorner = Translation2d(self.LinesVertical.hubCenter + width / 2, inchesToMeters(255))
             farRightCorner = self.Hub.farLeftCorner
             # Reference points - opponent
             oppNearLeftCorner = Translation2d(self.LinesVertical.hubCenter - width / 2, inchesToMeters(255))
-            oppNearRightCorner = oppNearLeftCorner
+            oppNearRightCorner = self.Hub.oppNearLeftCorner
             oppFarLeftCorner = Translation2d(self.LinesVertical.hubCenter + width / 2, inchesToMeters(255))
             oppFarRightCorner = self.Hub.oppFarLeftCorner
-        return _LeftBump
+        return _LeftBump 
 
     @property
     def RightTrench(self):
@@ -239,25 +258,6 @@ class FieldConstants:
             oppOpeningTopRight = Translation3d(self.LinesVertical.oppHubCenter, self.fieldWidth - openingWidth, openingHeight)
 
         return _LeftTrench
-
-    @property
-    def RightBump(self):
-        class _RightBump:
-            width = inchesToMeters(73.0)
-            height = inchesToMeters(6.513)
-            depth = inchesToMeters(44.4)
-
-            nearLeftCorner = Translation2d(self.LinesVertical.hubCenter + width / 2, inchesToMeters(255))
-            nearRightCorner = self.Hub.nearLeftCorner
-            farLeftCorner = Translation2d(self.LinesVertical.hubCenter - width / 2, inchesToMeters(255))
-            farRightCorner = self.Hub.farLeftCorner
-
-            oppNearLeftCorner = Translation2d(self.LinesVertical.hubCenter + width /2, inchesToMeters(255))
-            oppNearRightCorner = self.Hub.oppNearLeftCorner
-            oppFarLeftCorner = Translation2d(self.LinesVertical.hubCenter - width / 2, inchesToMeters(255))
-            oppFarRightCorner = self.Hub.oppFarLeftCorner
-
-        return _RightBump
 
     @property
     def LinesVertical(self):
