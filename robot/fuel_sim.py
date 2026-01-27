@@ -30,6 +30,7 @@ import wpimath.geometry
 import const
 import oi
 import math
+import random
 import ntcore
 import subsystems.drivetrain
 from wpimath.units import inchesToMeters
@@ -72,7 +73,7 @@ import time
 from wpilibextra.coroutine import CoroutineCommand
 from wpilib import SmartDashboard
 
-class FuelSim():
+class FuelSim:
     period = 0.02
     subticks = 5
     gravity = Translation3d(0, 0, -9.81) # m/s^2
@@ -115,7 +116,7 @@ class FuelSim():
     ]
 
     class Fuel():
-        def __init__(self, sim : FuelSim, pos : Translation3d, vel : Translation3d):
+        def __init__(self, sim : "FuelSim", pos : Translation3d, vel : Translation3d):
             self.sim = sim
             self.pos = pos
             self.vel = vel if vel is not None else Translation3d()
@@ -140,7 +141,7 @@ class FuelSim():
 
             projected = start2d + (lineVec * (pos2d - start2d).dot(lineVec) / lineVec.squaredNorm())
 
-            if projected.distance(start2d) + projected.distance(end2d) > lineVec.getNorm():
+            if projected.distance(start2d) + projected.distance(end2d) > lineVec.norm():
                 return #projected point not on line 
             dist = pos2d.distance(projected)
             if dist > self.sim.fuel_radius:
@@ -174,5 +175,62 @@ class FuelSim():
                 self.vel += Translation3d(0, -(1 + self.sim.field_cor) * self.vel.Y(), 0)
 
             # hubs
-            handleHubCollisions
+           #2 handleHubCollisions
+    
+    class Hub():
+        def __init__(self, sim : "FuelSim", center : Translation2d, exit : Translation3d, exitVelXMult : int):
+            # constants
+            self.sim = sim
+            
+            self.entry_height = 1.83
+            self.entry_radius = 0.56
+
+            self.side = 1.2
+
+            self.net_height_max = 3.057
+            self.net_height_min = 1.5
+            self.net_offset = self.side / 2 + 0.261
+            self.net_width = 1.484
+
+            self.center = center
+            self.exit = exit
+            self.exitVelXMult = exitVelXMult
+            self.score = 0
+        
+        def handleHubInteraction(self, fuel : "FuelSim.Fuel"):
+            if self.didFuelScore(fuel):
+                fuel.pos = self.exit
+                fuel.vel = self.getDispersalVelocity()
+                self.score += 1
+
+        def didFuelScore(self, fuel : "FuelSim.Fuel"):
+            return (fuel.pos.toTranslation2d().distance(self.center) <= self.entry_radius 
+                and fuel.pos.Z() <= self.entry_height
+                and (fuel.pos - (fuel.vel * (self.sim.period / self.sim.subticks))).Z() > self.entry_height
+            )
+        
+        def getDispersalVelocity(self):
+            return Translation3d(self.exitVelXMult * (random.random() + 0.1) *1.5,
+                                 random.random() * 2 - 1,
+                                 0)
+        
+        def resetScore(self):
+            self.score = 0
+        
+        def getScore(self):
+            return self.score
+        
+        def fuelCollideSide(self, fuel : "FuelSim.Fuel"):
+            if fuel.pos.Z() > self.entry_height - 0.1:
+                return Translation2d()
+            
+            distance_to_left = self.center.X() - self.side / 2 - self.sim.fuel_radius - fuel.pos.X()
+            distance_to_right = fuel.pos.X() - self.center.X() - self.side / 2 - self.sim.fuel_radius
+            distance_to_top = self.center.Y() - self.side / 2 - self.sim.fuel_radius - fuel.pos.Y()
+            distance_to_bottom = fuel.pos.Y() - self.center.Y() - self.side / 2 - self.sim.fuel_radius
+
+            if distance_to_left > 0 or distance_to_right > 0 or distance_to_top > 0 or distance_to_bottom > 0:
+                return Translation2d() # not inside hub
+            
+            
             
