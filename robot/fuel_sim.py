@@ -60,6 +60,7 @@ from pathplannerlib.controller import PPHolonomicDriveController
 
 from wpimath.geometry import Rotation2d, Pose2d, Translation2d, Pose3d, Rotation3d, Transform3d, Translation3d
 from wpimath.units import degreesToRadians
+from wpimath.kinematics import ChassisSpeeds
 
 from field_const import FieldConstants
 
@@ -115,6 +116,16 @@ class FuelSim:
             Translation3d(self.field_length - 3.96, self.field_width / 2 - 0.60, 0),
             Translation3d(self.field_length - 3.96, self.field_width - 1.57, 0)
         ]
+
+        self.fuels : list[FuelSim.Fuel] = []
+        self.running = False
+        self.robot_supplier = None
+        self.robot_speedsSupplier = None
+        self.robot_width = 0.0
+        self.robot_length = 0.0
+        self.bumper_height = 0.0
+        self.intakes : list[FuelSim.SimIntake] = [] #?????
+        self.subticks = -1
 
         self.blue_hub = self.Hub(self, Translation2d(4.61, self.field_width / 2), Translation3d(5.3, self.field_width / 2, 0.89), 1)
         self.red_hub = self.Hub(self, Translation2d(self.field_length - 4.61, self.field_width / 2), Translation3d(self.field_length - 5.3, self.field_width / 2, 0.89), -1)
@@ -218,10 +229,85 @@ class FuelSim:
     def handleFuelCollisions(self, fuels : list[Fuel]):
         for i in range(len(fuels) - 1):
             for j in range(i + 1, len(fuels)):
-                if fuels[i].pos.distance(fuels[j].pos) < self.fuel_radius * 2
+                if fuels[i].pos.distance(fuels[j].pos) < self.fuel_radius * 2:
+                    self.handleFuelCollision(fuels[i], fuels[j])
 
+    
 
+    def getInstance(self):
+        if self.instance == None:
+            self.instance = FuelSim()
+        return self.instance
+    
+    def clearFuel(self):
+        self.fuels.clear()
+        
+    def spawnStartingFuel(self):
+        # center fuel
+        center = Translation3d(self.field_length / 2, self.field_width / 2, self.fuel_radius)
+        for i in range(15):
+            for j in range(6):
+                self.fuels.append(FuelSim.Fuel(self, center + Translation3d(0.076 + 0.152 * j, 0.0254 + 0.076 + 0.152 * i, 0), Translation3d()))
+                self.fuels.append(FuelSim.Fuel(self, center + Translation3d(-0.076 - 0.152 * j, 0.0254 + 0.076 + 0.152 * i, 0), Translation3d()))
+                self.fuels.append(FuelSim.Fuel(self, center + Translation3d(0.076 + 0.152 * j, -0.0254 - 0.076 - 0.152 * i, 0), Translation3d()))
+                self.fuels.append(FuelSim.Fuel(self, center + Translation3d(-0.076 - 0.152 * j, -0.0254 - 0.076 - 0.152 * i, 0), Translation3d()))
 
+        # depots
+        for i in range(3):
+            for j in range(4):
+                self.fuels.append(FuelSim.Fuel(self, Translation3d(0.076 + 0.152 * j, 5.95 + 0.076 + 0.152 * i, self.fuel_radius), Translation3d()))
+                self.fuels.append(FuelSim.Fuel(self, Translation3d(0.076 + 0.152 * j, 5.95 - 0.076 - 0.152 * i, self.fuel_radius), Translation3d()))
+                self.fuels.append(FuelSim.Fuel(self, \
+                        Translation3d(self.field_length - 0.076 - 0.152 * j, 2.09 + 0.076 + 0.152 * i, self.fuel_radius), Translation3d()))
+                self.fuels.append(FuelSim.Fuel(self, \
+                        Translation3d(self.field_length - 0.076 - 0.152 * j, 2.09 - 0.076 - 0.152 * i, self.fuel_radius), Translation3d()))
+    
+    def logFuels(self):
+        Logger.recordOutput()
+        
+    def start(self):
+        running = True
+    
+
+    def stop(self):
+        running = False
+    
+    def setSubticks(self, subticks : int):
+        self.subticks = subticks
+
+    def registerRobot(self, width : float, length : float, bumper_height : float, \
+                      pose_supplier : Pose2d, field_speeds_supplier : ChassisSpeeds):
+        self.robot_supplier = pose_supplier
+        self.robot_speeds_supplier = field_speeds_supplier
+        self.robot_width = width
+        self.robot_length = length
+        self.bumper_height = bumper_height
+    
+    
+
+    def updateSim(self):
+        if not self.running:
+            return
+        self.stepSim()
+
+    def stepSim(self):
+        for i in range(self.subticks):
+            for fuel in self.fuels:
+                fuel.update()
+            
+            self.handleFuelCollisions(self.fuels)
+            if self.robot_supplier != None:
+                self.handleRobotCollisions(self.fuels)
+                self.handleIntakes(self.fuels)
+            
+        self.logFuels()
+    
+
+    def spawnFuel(self, pos : Translation3d, vel : Translation3d):
+        self.fuels.append(FuelSim.Fuel(self, pos, vel))
+    
+    def handleRobotCollision(self, fuel : Fuel, robot: Pose2d, robot_vel : Translation2d):
+        relative_pos = Pose2d(fuel.pos.toTranslation2d(), Rotation2d.kZero).relativeTo(robot).getTranslation()
 
     class Hub():
         def __init__(self, sim : "FuelSim", center : Translation2d, exit : Translation3d, exitVelXMult : int):
