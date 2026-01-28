@@ -91,8 +91,6 @@ class FuelSim:
         self.field_width = 8.04
         self.friction = 0.1
 
-        self.instance = None
-
         self.field_xz_line_starts = [
             Translation3d(0,0,0),
             Translation3d(3.96, 1.57, 0),
@@ -231,13 +229,6 @@ class FuelSim:
             for j in range(i + 1, len(fuels)):
                 if fuels[i].pos.distance(fuels[j].pos) < self.fuel_radius * 2:
                     self.handleFuelCollision(fuels[i], fuels[j])
-
-    
-
-    def getInstance(self):
-        if self.instance == None:
-            self.instance = FuelSim()
-        return self.instance
     
     def clearFuel(self):
         self.fuels.clear()
@@ -266,11 +257,10 @@ class FuelSim:
         Logger.recordOutput()
         
     def start(self):
-        running = True
+        self.running = True
     
-
     def stop(self):
-        running = False
+        self.running = False
     
     def setSubticks(self, subticks : int):
         self.subticks = subticks
