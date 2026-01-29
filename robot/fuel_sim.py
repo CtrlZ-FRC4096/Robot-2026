@@ -74,6 +74,12 @@ import time
 from wpilibextra.coroutine import CoroutineCommand
 from wpilib import SmartDashboard
 
+def dot_trans_2d(a: Translation2d, b : Translation2d):
+    return a.X() * b.X() + a.Y() * b.Y()
+
+def dot_trans_3d(a: Translation3d, b: Translation3d):
+    return a.X() * b.X() + a.Y() * b.Y()+ a.Z() * b.Z()
+
 class FuelSim:
     def __init__(self, robot : "Robot"):
         self.robot = robot
@@ -120,15 +126,15 @@ class FuelSim:
         self.fuels : list[FuelSim.Fuel] = []
         self.running = False
         self.robot_supplier = self.robot.drivetrain.get_pose
-        self.robot_speedsSupplier = None
+        self.robot_speeds_supplier = self.robot.drivetrain.get_field_relative_speeds
         self.robot_width = inchesToMeters(35.87)
         self.robot_length = inchesToMeters(33.37)
         self.bumper_height = inchesToMeters(7.0)
-        self.intakes : list[FuelSim.SimIntake] = [] #?????
+        self.intake = FuelSim.SimIntake(self, inchesToMeters(16.69), inchesToMeters(26.18), inchesToMeters(-18.98), inchesToMeters(13.01))
 
         self.blue_hub = self.Hub(self, Translation2d(4.61, self.field_width / 2), Translation3d(5.3, self.field_width / 2, 0.89), 1)
         self.red_hub = self.Hub(self, Translation2d(self.field_length - 4.61, self.field_width / 2), Translation3d(self.field_length - 5.3, self.field_width / 2, 0.89), -1)
-
+        
     class Fuel():
         def __init__(self, sim : "FuelSim", pos : Translation3d, vel : Translation3d):
             self.sim = sim
@@ -153,7 +159,7 @@ class FuelSim:
             pos2d = Translation2d(self.pos.X(), self.pos.Z())
             lineVec = end2d - start2d
 
-            projected = start2d + (lineVec * (pos2d - start2d).dot(lineVec) / lineVec.squaredNorm())
+            projected = start2d + lineVec * (dot_trans_2d(pos2d - start2d, lineVec) / (lineVec.norm() ** 2))
 
             if projected.distance(start2d) + projected.distance(end2d) > lineVec.norm():
                 return #projected point not on line 
@@ -164,9 +170,9 @@ class FuelSim:
             normal = Translation3d(-lineVec.Y(), 0, lineVec.X()) / (lineVec.norm())
 
             self.pos += normal * (self.sim.fuel_radius - dist)
-            if self.vel.dot(normal) > 0:
+            if dot_trans_3d(self.vel, normal) > 0:
                 return #already moving away from line
-            self.vel -= normal * ((1 + self.sim.field_cor) * self.vel.dot(normal))
+            self.vel -= normal * ((1 + self.sim.field_cor) * dot_trans_3d(self.vel, normal))
 
         def handleFieldCollisions(self):
             # floor and bumps
@@ -217,7 +223,7 @@ class FuelSim:
             normal = Translation3d(1, 0, 0)
             distance = 1
         normal = normal / distance
-        impulse = 0.5 * (1 + self.fuel_cor) * (b.vel - a.vel).dot(normal)
+        impulse = 0.5 * (1 + self.fuel_cor) * dot_trans_3d(b.vel - a.vel, normal)
         intersection = self.fuel_radius * 2 - distance
         a.pos += normal * (intersection / 2)
         b.pos -= normal * (intersection / 2)
@@ -286,7 +292,53 @@ class FuelSim:
 
         if fuel.pos.Z() > self.bumper_height:
             return
-        distance_to_bottom = -self.fuel_radius - self.robot_length / 2 
+        distance_to_bottom = -self.fuel_radius - self.robot_length / 2 - relative_pos.X()
+        distance_to_top = -self.fuel_radius - self.robot_length / 2 + relative_pos.X()
+        distance_to_right = -self.fuel_radius - self.robot_length / 2 - relative_pos.Y()
+        distance_to_left = -self.fuel_radius - self.robot_length / 2 + relative_pos.Y()
+
+        if distance_to_bottom > 0 or distance_to_top > 0 or distance_to_right > 0 or distance_to_left > 0:
+            return
+
+        if distance_to_bottom >= distance_to_top \
+                        and distance_to_bottom >= distance_to_right \
+                        and distance_to_bottom >= distance_to_left: 
+            posOffset = Translation2d(distance_to_bottom, 0)
+        elif distance_to_top >= distance_to_bottom \
+                        and distance_to_top >= distance_to_right \
+                        and distance_to_top >= distance_to_left:
+            posOffset = Translation2d(-distance_to_top, 0)
+        elif distance_to_right >= distance_to_bottom \
+                        and distance_to_right >= distance_to_top \
+                        and distance_to_right >= distance_to_left:
+            posOffset = Translation2d(0, distance_to_right)
+        else:
+            posOffset = Translation2d(0, -distance_to_left)
+
+        posOffset = posOffset.rotateBy(robot.rotation())
+        fuel.pos += Translation3d(posOffset)
+        normal = posOffset / posOffset.norm()
+        if dot_trans_2d(fuel.vel.toTranslation2d(), normal) < 0:
+            fuel.addImpulse(
+                    Translation3d(normal * -1 * dot_trans_2d(fuel.vel.toTranslation2d(), normal) * (1 + self.robot_cor)))
+        if  dot_trans_2d(robot_vel, normal) > 0:
+            fuel.addImpulse(Translation3d(normal * (dot_trans_2d(robot_vel, normal))))
+
+    def handleRobotCollisions(self, fuels : list[Fuel]):
+        robot = self.robot_supplier()
+        speeds = self.robot_speeds_supplier()
+        robot_vel = Translation2d(speeds.vx, speeds.vy)
+
+        for fuel in fuels:
+            self.handleRobotCollision(fuel, robot, robot_vel)
+
+    def handleIntakes(self, fuels : list[Fuel]):
+        robot = self.robot_supplier()
+        for i in range(len(fuels)):
+            if self.intake.shouldIntake(fuels[i], robot):
+                fuels.pop(i)
+                i -= 1
+
 
     class Hub():
         def __init__(self, sim : "FuelSim", center : Translation2d, exit : Translation3d, exitVelXMult : int):
@@ -376,5 +428,21 @@ class FuelSim:
             else:
                 return min(0, self.center.X() + self.net_offset * self.exitVelXMult - (fuel.pos.X() + self.sim.fuel_radius))
             
+    class SimIntake():
+        def __init__(self, sim : "FuelSim", x_min, x_max, y_min, y_max, able_to_intake, intake_callback):
+            self.sim = sim
             
+            self.x_min = x_min
+            self.x_max = x_max
+            self.y_min = y_min
+            self.y_max = y_max
+
+            self.able_to_intake = able_to_intake
+            self.callback = intake_callback
             
+        def shouldIntake(self, fuel : "FuelSim.Fuel", robot_pose : Pose2d):
+            if (not self.able_to_intake) or (fuel.pos.Z() > self.sim.bumper_height):
+                return False
+            
+            fuel_relative_pos = Pose2d(fuel.pos.toTranslation2d(), Rotation2d()).relativeTo(robot_pose).translation()
+            result = 
