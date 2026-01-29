@@ -48,7 +48,7 @@ FRONT_RIGHT = "front_right"
 BACK_LEFT = "back_left"
 BACK_RIGHT = "back_right"
 
-# Robot drivebase dimensions, in inches and meters
+# Robot drivebase dimensions, in inches and meters (intake side is front 2026)
 DRIVE_BASE_WIDTH = 28.5
 DRIVE_BASE_LENGTH = 26.0
 # DRIVE_BASE_RADIUS_METERS = 0.381660882

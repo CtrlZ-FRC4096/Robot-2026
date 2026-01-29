@@ -9,7 +9,6 @@ Some code adapted from:
 https://github.com/SwerveDriveSpecialties
 """
 
-DEBUG = True
 
 import logging
 
@@ -70,12 +69,15 @@ from commands2 import (
     ParallelRaceGroup,
     SequentialCommandGroup,
 )
+from robot import Robot
 import time
 from wpilibextra.coroutine import CoroutineCommand
 from wpilib import SmartDashboard
 
 class FuelSim:
-    def __init__(self):
+    def __init__(self, robot : "Robot"):
+        self.robot = robot
+
         self.period = 0.02
         self.subticks = 5
         self.gravity = Translation3d(0, 0, -9.81) # m/s^2
@@ -117,13 +119,12 @@ class FuelSim:
 
         self.fuels : list[FuelSim.Fuel] = []
         self.running = False
-        self.robot_supplier = None
+        self.robot_supplier = self.robot.drivetrain.get_pose
         self.robot_speedsSupplier = None
-        self.robot_width = 0.0
-        self.robot_length = 0.0
-        self.bumper_height = 0.0
+        self.robot_width = inchesToMeters(35.87)
+        self.robot_length = inchesToMeters(33.37)
+        self.bumper_height = inchesToMeters(7.0)
         self.intakes : list[FuelSim.SimIntake] = [] #?????
-        self.subticks = -1
 
         self.blue_hub = self.Hub(self, Translation2d(4.61, self.field_width / 2), Translation3d(5.3, self.field_width / 2, 0.89), 1)
         self.red_hub = self.Hub(self, Translation2d(self.field_length - 4.61, self.field_width / 2), Translation3d(self.field_length - 5.3, self.field_width / 2, 0.89), -1)
@@ -252,9 +253,6 @@ class FuelSim:
                         Translation3d(self.field_length - 0.076 - 0.152 * j, 2.09 + 0.076 + 0.152 * i, self.fuel_radius), Translation3d()))
                 self.fuels.append(FuelSim.Fuel(self, \
                         Translation3d(self.field_length - 0.076 - 0.152 * j, 2.09 - 0.076 - 0.152 * i, self.fuel_radius), Translation3d()))
-    
-    def logFuels(self):
-        Logger.recordOutput()
         
     def start(self):
         self.running = True
@@ -262,19 +260,6 @@ class FuelSim:
     def stop(self):
         self.running = False
     
-    def setSubticks(self, subticks : int):
-        self.subticks = subticks
-
-    def registerRobot(self, width : float, length : float, bumper_height : float, \
-                      pose_supplier : Pose2d, field_speeds_supplier : ChassisSpeeds):
-        self.robot_supplier = pose_supplier
-        self.robot_speeds_supplier = field_speeds_supplier
-        self.robot_width = width
-        self.robot_length = length
-        self.bumper_height = bumper_height
-    
-    
-
     def updateSim(self):
         if not self.running:
             return
@@ -297,7 +282,11 @@ class FuelSim:
         self.fuels.append(FuelSim.Fuel(self, pos, vel))
     
     def handleRobotCollision(self, fuel : Fuel, robot: Pose2d, robot_vel : Translation2d):
-        relative_pos = Pose2d(fuel.pos.toTranslation2d(), Rotation2d.kZero).relativeTo(robot).getTranslation()
+        relative_pos = Pose2d(fuel.pos.toTranslation2d(), Rotation2d()).relativeTo(robot).translation()
+
+        if fuel.pos.Z() > self.bumper_height:
+            return
+        distance_to_bottom = -self.fuel_radius - self.robot_length / 2 
 
     class Hub():
         def __init__(self, sim : "FuelSim", center : Translation2d, exit : Translation3d, exitVelXMult : int):

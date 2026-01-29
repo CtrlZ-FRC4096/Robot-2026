@@ -355,6 +355,12 @@ class Drivetrain(Subsystem):
 
     def get_pose(self):
         return self.robot.poseEstimator.curEstPose
+    
+    def get_field_relative_speeds(self):
+        return ChassisSpeeds.fromRobotRelativeSpeeds(
+            self.get_robot_relative_speeds(),
+            self.robot.poseEstimator.curEstPose.rotation()
+        )
 
     def reset_odometry(self, pose):
         self.robot.poseEstimator.odometry.resetPosition(self.robot.poseEstimator.getYaw(), [*self.robot.poseEstimator.get_module_positions()], pose)  # type: ignore
