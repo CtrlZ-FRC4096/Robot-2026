@@ -85,7 +85,7 @@ class FuelSim:
         self.robot = robot
 
         self.period = 0.02
-        self.subticks = 5
+        self.subticks = 1
         self.gravity = Translation3d(0, 0, -9.81) # m/s^2
         
         #coefficients of restitution
@@ -259,6 +259,8 @@ class FuelSim:
         
     def start(self):
         self.running = True
+        self.clearFuel()
+        self.spawnStartingFuel()
     
     def stop(self):
         self.running = False
@@ -273,10 +275,14 @@ class FuelSim:
             for fuel in self.fuels:
                 fuel.update()
             
-            self.handleFuelCollisions(self.fuels)
+            self.handleFuelCollisions()
             self.handleRobotCollisions()
-            self.handleIntakes(self.fuels)
-    
+            self.handleIntakes()
+            self.logFuels()
+
+    def logFuels(self):
+        for index in range(len(self.fuels)):
+            SmartDashboard.putNumberArray(f"Fuels/Fuel {index + 1}", [self.fuels[index].pos.X(), self.fuels[index].pos.Y(), self.fuels[index].pos.Z(), 0.0, 0.0, 0.0, 0.0])
 
     def spawnFuel(self, pos : Translation3d, vel : Translation3d):
         self.fuels.append(FuelSim.Fuel(self, pos, vel))
@@ -324,21 +330,12 @@ class FuelSim:
             if  dot_trans_2d(robot_vel, normal) > 0:
                 fuel.addImpulse(Translation3d(normal * (dot_trans_2d(robot_vel, normal))))
 
-    def handleRobotCollisions(self):
-        robot = self.robot_supplier()
-        speeds = self.robot_speeds_supplier()
-        robot_vel = Translation2d(speeds.vx, speeds.vy)
-
-        for fuel in self.fuels:
-            self.handleRobotCollisions(fuel, robot, robot_vel)
-
     def handleIntakes(self):
         robot = self.robot_supplier()
-        for i in range(len(self.fuels)):
-            if self.intake.shouldIntake(self.fuels[i], robot):
-                self.robot.fuel_in_hopper.append(self.fuels[i])
-                self.fuels.pop(i)
-                i -= 1
+        for fuel in self.fuels[:]:
+            if self.intake.shouldIntake(fuel, robot):
+                self.robot.fuel_in_hopper.append(fuel)
+                self.fuels.remove(fuel)
 
     class Hub():
         def __init__(self, sim : "FuelSim", center : Translation2d, exit : Translation3d, exitVelXMult : int):
