@@ -130,7 +130,7 @@ class FuelSim:
         self.robot_width = inchesToMeters(35.87)
         self.robot_length = inchesToMeters(33.37)
         self.bumper_height = inchesToMeters(7.0)
-        self.intake = FuelSim.SimIntake(self, inchesToMeters(16.69), inchesToMeters(26.18), inchesToMeters(-18.98), inchesToMeters(13.01))
+        self.intake = FuelSim.SimIntake(self, inchesToMeters(16.69), inchesToMeters(26.18), inchesToMeters(-18.98), inchesToMeters(13.01), self.robot.intake.can_intake_sim, self.robot.intake.intake_sim_callback)
 
         self.blue_hub = self.Hub(self, Translation2d(4.61, self.field_width / 2), Translation3d(5.3, self.field_width / 2, 0.89), 1)
         self.red_hub = self.Hub(self, Translation2d(self.field_length - 4.61, self.field_width / 2), Translation3d(self.field_length - 5.3, self.field_width / 2, 0.89), -1)
@@ -216,26 +216,23 @@ class FuelSim:
         def addImpulse(self, impulse : Translation3d):
             self.vel += impulse
 
-    def handleFuelCollision(self, a : Fuel, b : Fuel):
-        normal = a.pos - b.pos
-        distance = normal.norm()
-        if distance == 0:
-            normal = Translation3d(1, 0, 0)
-            distance = 1
-        normal = normal / distance
-        impulse = 0.5 * (1 + self.fuel_cor) * dot_trans_3d(b.vel - a.vel, normal)
-        intersection = self.fuel_radius * 2 - distance
-        a.pos += normal * (intersection / 2)
-        b.pos -= normal * (intersection / 2)
+    def handleFuelCollisions(self):
+        for i in range(len(self.fuels) - 1):
+            for j in range(i + 1, len(self.fuels)):
+                if self.fuels[i].pos.distance(self.fuels[j].pos) < self.fuel_radius * 2:
+                    normal = self.fuels[i].pos - self.fuels[j].pos
+                    distance = normal.norm()
+                    if distance == 0:
+                        normal = Translation3d(1, 0, 0)
+                        distance = 1
+                    normal = normal / distance
+                    impulse = 0.5 * (1 + self.fuel_cor) * dot_trans_3d(self.fuels[j].vel - self.fuels[i].vel, normal)
+                    intersection = self.fuel_radius * 2 - distance
+                    self.fuels[i].pos += normal * (intersection / 2)
+                    self.fuels[j].pos -= normal * (intersection / 2)
 
-        a.addImpulse(normal * impulse)
-        b.addImpulse(normal * -impulse)
-
-    def handleFuelCollisions(self, fuels : list[Fuel]):
-        for i in range(len(fuels) - 1):
-            for j in range(i + 1, len(fuels)):
-                if fuels[i].pos.distance(fuels[j].pos) < self.fuel_radius * 2:
-                    self.handleFuelCollision(fuels[i], fuels[j])
+                    self.fuels[i].addImpulse(normal * impulse)
+                    self.fuels[j].addImpulse(normal * -impulse)
     
     def clearFuel(self):
         self.fuels.clear()
@@ -277,66 +274,70 @@ class FuelSim:
                 fuel.update()
             
             self.handleFuelCollisions(self.fuels)
-            if self.robot_supplier != None:
-                self.handleRobotCollisions(self.fuels)
-                self.handleIntakes(self.fuels)
-            
-        self.logFuels()
+            self.handleRobotCollisions()
+            self.handleIntakes(self.fuels)
     
 
     def spawnFuel(self, pos : Translation3d, vel : Translation3d):
         self.fuels.append(FuelSim.Fuel(self, pos, vel))
     
-    def handleRobotCollision(self, fuel : Fuel, robot: Pose2d, robot_vel : Translation2d):
-        relative_pos = Pose2d(fuel.pos.toTranslation2d(), Rotation2d()).relativeTo(robot).translation()
+    def handleRobotCollisions(self):
+        robot = self.robot_supplier()
+        speeds = self.robot_speeds_supplier()
+        robot_vel = Translation2d(speeds.vx, speeds.vy)
+        
+        for fuel in self.fuels:
+            
+            relative_pos = Pose2d(fuel.pos.toTranslation2d(), Rotation2d()).relativeTo(robot).translation()
 
-        if fuel.pos.Z() > self.bumper_height:
-            return
-        distance_to_bottom = -self.fuel_radius - self.robot_length / 2 - relative_pos.X()
-        distance_to_top = -self.fuel_radius - self.robot_length / 2 + relative_pos.X()
-        distance_to_right = -self.fuel_radius - self.robot_length / 2 - relative_pos.Y()
-        distance_to_left = -self.fuel_radius - self.robot_length / 2 + relative_pos.Y()
+            if fuel.pos.Z() > self.bumper_height:
+                return
+            distance_to_bottom = -self.fuel_radius - self.robot_length / 2 - relative_pos.X()
+            distance_to_top = -self.fuel_radius - self.robot_length / 2 + relative_pos.X()
+            distance_to_right = -self.fuel_radius - self.robot_length / 2 - relative_pos.Y()
+            distance_to_left = -self.fuel_radius - self.robot_length / 2 + relative_pos.Y()
 
-        if distance_to_bottom > 0 or distance_to_top > 0 or distance_to_right > 0 or distance_to_left > 0:
-            return
+            if distance_to_bottom > 0 or distance_to_top > 0 or distance_to_right > 0 or distance_to_left > 0:
+                return
 
-        if distance_to_bottom >= distance_to_top \
-                        and distance_to_bottom >= distance_to_right \
-                        and distance_to_bottom >= distance_to_left: 
-            posOffset = Translation2d(distance_to_bottom, 0)
-        elif distance_to_top >= distance_to_bottom \
-                        and distance_to_top >= distance_to_right \
-                        and distance_to_top >= distance_to_left:
-            posOffset = Translation2d(-distance_to_top, 0)
-        elif distance_to_right >= distance_to_bottom \
-                        and distance_to_right >= distance_to_top \
-                        and distance_to_right >= distance_to_left:
-            posOffset = Translation2d(0, distance_to_right)
-        else:
-            posOffset = Translation2d(0, -distance_to_left)
+            if distance_to_bottom >= distance_to_top \
+                            and distance_to_bottom >= distance_to_right \
+                            and distance_to_bottom >= distance_to_left: 
+                posOffset = Translation2d(distance_to_bottom, 0)
+            elif distance_to_top >= distance_to_bottom \
+                            and distance_to_top >= distance_to_right \
+                            and distance_to_top >= distance_to_left:
+                posOffset = Translation2d(-distance_to_top, 0)
+            elif distance_to_right >= distance_to_bottom \
+                            and distance_to_right >= distance_to_top \
+                            and distance_to_right >= distance_to_left:
+                posOffset = Translation2d(0, distance_to_right)
+            else:
+                posOffset = Translation2d(0, -distance_to_left)
 
-        posOffset = posOffset.rotateBy(robot.rotation())
-        fuel.pos += Translation3d(posOffset)
-        normal = posOffset / posOffset.norm()
-        if dot_trans_2d(fuel.vel.toTranslation2d(), normal) < 0:
-            fuel.addImpulse(
-                    Translation3d(normal * -1 * dot_trans_2d(fuel.vel.toTranslation2d(), normal) * (1 + self.robot_cor)))
-        if  dot_trans_2d(robot_vel, normal) > 0:
-            fuel.addImpulse(Translation3d(normal * (dot_trans_2d(robot_vel, normal))))
+            posOffset = posOffset.rotateBy(robot.rotation())
+            fuel.pos += Translation3d(posOffset)
+            normal = posOffset / posOffset.norm()
+            if dot_trans_2d(fuel.vel.toTranslation2d(), normal) < 0:
+                fuel.addImpulse(
+                        Translation3d(normal * -1 * dot_trans_2d(fuel.vel.toTranslation2d(), normal) * (1 + self.robot_cor)))
+            if  dot_trans_2d(robot_vel, normal) > 0:
+                fuel.addImpulse(Translation3d(normal * (dot_trans_2d(robot_vel, normal))))
 
-    def handleRobotCollisions(self, fuels : list[Fuel]):
+    def handleRobotCollisions(self):
         robot = self.robot_supplier()
         speeds = self.robot_speeds_supplier()
         robot_vel = Translation2d(speeds.vx, speeds.vy)
 
-        for fuel in fuels:
-            self.handleRobotCollision(fuel, robot, robot_vel)
+        for fuel in self.fuels:
+            self.handleRobotCollisions(fuel, robot, robot_vel)
 
-    def handleIntakes(self, fuels : list[Fuel]):
+    def handleIntakes(self):
         robot = self.robot_supplier()
-        for i in range(len(fuels)):
-            if self.intake.shouldIntake(fuels[i], robot):
-                fuels.pop(i)
+        for i in range(len(self.fuels)):
+            if self.intake.shouldIntake(self.fuels[i], robot):
+                self.robot.fuel_in_hopper.append(self.fuels[i])
+                self.fuels.pop(i)
                 i -= 1
 
     class Hub():

@@ -44,6 +44,7 @@ import subsystems.leds
 
 import subsystems.limelight
 import subsystems.poseEstimator
+import subsystems.intake
 
 from wpilibextra.coroutine.coroutine_robot import CoroutineRobot
 from wpilibextra.remote_shell import RemoteShell
@@ -71,7 +72,7 @@ from commands2 import (
 import time
 from wpilibextra.coroutine import CoroutineCommand
 from wpilib import SmartDashboard
-from fuel_sim import FuelSim
+
 
 
 log = logging.getLogger("robot")
@@ -119,10 +120,6 @@ class Robot(CoroutineRobot):
         # Match Stuff
         self.match_time = -1
 
-        ## SIMMING STUFF ##
-        # const.IS_SIMULATION = self.isSimulation()
-        self.fuel_sim = FuelSim()
-
         # Command scheduler
         self.scheduler = CommandScheduler.getInstance()
 
@@ -133,11 +130,13 @@ class Robot(CoroutineRobot):
         self.leds = subsystems.leds.LEDs(self)
         self.poseEstimator = subsystems.poseEstimator.PoseEstimator(self)
         self.drivetrain = subsystems.drivetrain.Drivetrain(self)
+        self.intake = subsystems.intake.Intake(self)
 
         self.subsystems = [
             self.drivetrain,
             self.leds,
             self.poseEstimator,
+            self.intake
         ]
 
         # If everything in self.subsystems is a Subsystem object, then
@@ -191,12 +190,15 @@ class Robot(CoroutineRobot):
             pass
 
         self.in_autonomous_mode = False
+        self.in_teleop_mode = False
+
+        ## SIMMING STUFF ##
+        # const.IS_SIMULATION = self.isSimulation()
+        
 
         while True:
             yield
             self.scheduler.run()
-
-
 
     ### DISABLED ###
 
@@ -222,6 +224,9 @@ class Robot(CoroutineRobot):
         self.scheduler.cancelAll()
         self.in_autonomous_mode = True
 
+        # if self.isSimulation():
+        #     self.fuel_sim.start()
+
         if self.fieldConstants.shouldFlip:
             self.poseEstimator.set_yaw(90)
         else:
@@ -235,7 +240,12 @@ class Robot(CoroutineRobot):
         self.running_pid_lineup = False
         self.in_autonomous_mode = False
         self.oi.robot_oriented_angle = self.poseEstimator.getYaw().degrees()
-
+        self.in_teleop_mode = True
+        if self.isSimulation():
+            from fuel_sim import FuelSim
+            self.fuel_sim = FuelSim(self)
+            self.fuel_in_hopper : list[FuelSim.Fuel] = []
+            self.fuel_sim.start()
         self.timer.start()
 
         while True:
@@ -258,7 +268,8 @@ class Robot(CoroutineRobot):
 
         if self.isSimulation():
             wpilib.SmartDashboard.putNumberArray("RobotPose", [self.poseEstimator.curEstPose.X(), self.poseEstimator.curEstPose.Y(), self.poseEstimator.curEstPose.rotation().degrees()])
-            self.fuel_sim.update
+            if self.in_teleop_mode:
+                self.fuel_sim.updateSim()
 
         for s in self.subsystems:
             s.log()
