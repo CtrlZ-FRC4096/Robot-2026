@@ -339,7 +339,6 @@ class FuelSim:
                 fuels.pop(i)
                 i -= 1
 
-
     class Hub():
         def __init__(self, sim : "FuelSim", center : Translation2d, exit : Translation3d, exitVelXMult : int):
             # constants
@@ -445,4 +444,11 @@ class FuelSim:
                 return False
             
             fuel_relative_pos = Pose2d(fuel.pos.toTranslation2d(), Rotation2d()).relativeTo(robot_pose).translation()
-            result = 
+            result = fuel_relative_pos.X() >= self.x_min \
+                    and fuel_relative_pos.X() <= self.x_max \
+                    and fuel_relative_pos.Y() >= self.y_min \
+                    and fuel_relative_pos.Y() <= self.y_max
+            if result:
+                self.callback()
+
+            return result
