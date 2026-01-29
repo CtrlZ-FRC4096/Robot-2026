@@ -183,6 +183,10 @@ THETA_KD = 0.001  # 0.01
 COLLISION_JERK_MAX = 50
 SKIDDING_RATIO_MAX = 10
 
+INTAKE_DEPLOY_MOTOR_ID = 14
+INTAKE_MOTOR_ID = 15
+
+
 CAM_DICT = {
     "camera_1": (
         np.array([0.042, -0.016, -0.001, 0.0, -0.092, -0.001, 0.002, 0.004], dtype=np.float64),
