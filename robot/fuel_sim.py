@@ -124,6 +124,7 @@ class FuelSim:
         ]
 
         self.fuels : list[FuelSim.Fuel] = []
+        self.fuels_to_update = set()
         self.running = False
         self.robot_supplier = self.robot.drivetrain.get_pose
         self.robot_speeds_supplier = self.robot.drivetrain.get_field_relative_speeds
@@ -233,6 +234,9 @@ class FuelSim:
 
                     self.fuels[i].addImpulse(normal * impulse)
                     self.fuels[j].addImpulse(normal * -impulse)
+
+                    self.fuels_to_update.add(self.fuels[i])
+                    self.fuels_to_update.add(self.fuels[j])
     
     def clearFuel(self):
         self.fuels.clear()
@@ -256,6 +260,9 @@ class FuelSim:
                         Translation3d(self.field_length - 0.076 - 0.152 * j, 2.09 + 0.076 + 0.152 * i, self.fuel_radius), Translation3d()))
                 self.fuels.append(FuelSim.Fuel(self, \
                         Translation3d(self.field_length - 0.076 - 0.152 * j, 2.09 - 0.076 - 0.152 * i, self.fuel_radius), Translation3d()))
+
+        for index in range(len(self.fuels)):
+            SmartDashboard.putNumberArray(f"Fuels/Fuel {index + 1}", [self.fuels[index].pos.X(), self.fuels[index].pos.Y(), self.fuels[index].pos.Z(), 0.0, 0.0, 0.0, 0.0])
         
     def start(self):
         self.running = True
@@ -272,8 +279,8 @@ class FuelSim:
 
     def stepSim(self):
         for i in range(self.subticks):
-            for fuel in self.fuels:
-                fuel.update()
+            for i in range(len(self.fuels)):
+                self.fuels[i].update()
             
             self.handleFuelCollisions()
             self.handleRobotCollisions()
@@ -281,9 +288,13 @@ class FuelSim:
             self.logFuels()
 
     def logFuels(self):
+        num_loops = 0
         for index in range(len(self.fuels)):
-            SmartDashboard.putNumberArray(f"Fuels/Fuel {index + 1}", [self.fuels[index].pos.X(), self.fuels[index].pos.Y(), self.fuels[index].pos.Z(), 0.0, 0.0, 0.0, 0.0])
-
+            if self.fuels[index] in self.fuels_to_update:
+                num_loops += 1
+                SmartDashboard.putNumberArray(f"Fuels/Fuel {index + 1}", [self.fuels[index].pos.X(), self.fuels[index].pos.Y(), self.fuels[index].pos.Z(), 0.0, 0.0, 0.0, 0.0])
+        print(num_loops)
+        self.fuels_to_update = set()
     def spawnFuel(self, pos : Translation3d, vel : Translation3d):
         self.fuels.append(FuelSim.Fuel(self, pos, vel))
     
@@ -292,11 +303,11 @@ class FuelSim:
         speeds = self.robot_speeds_supplier()
         robot_vel = Translation2d(speeds.vx, speeds.vy)
         
-        for fuel in self.fuels:
+        for i in range(len(self.fuels)):
             
-            relative_pos = Pose2d(fuel.pos.toTranslation2d(), Rotation2d()).relativeTo(robot).translation()
+            relative_pos = Pose2d(self.fuels[i].pos.toTranslation2d(), Rotation2d()).relativeTo(robot).translation()
 
-            if fuel.pos.Z() > self.bumper_height:
+            if self.fuels[i].pos.Z() > self.bumper_height:
                 return
             distance_to_bottom = -self.fuel_radius - self.robot_length / 2 - relative_pos.X()
             distance_to_top = -self.fuel_radius - self.robot_length / 2 + relative_pos.X()
@@ -322,19 +333,22 @@ class FuelSim:
                 posOffset = Translation2d(0, -distance_to_left)
 
             posOffset = posOffset.rotateBy(robot.rotation())
-            fuel.pos += Translation3d(posOffset)
+            self.fuels[i].pos += Translation3d(posOffset)
             normal = posOffset / posOffset.norm()
-            if dot_trans_2d(fuel.vel.toTranslation2d(), normal) < 0:
-                fuel.addImpulse(
-                        Translation3d(normal * -1 * dot_trans_2d(fuel.vel.toTranslation2d(), normal) * (1 + self.robot_cor)))
+            if dot_trans_2d(self.fuels[i].vel.toTranslation2d(), normal) < 0:
+                self.fuels[i].addImpulse(
+                        Translation3d(normal * -1 * dot_trans_2d(self.fuels[i].vel.toTranslation2d(), normal) * (1 + self.robot_cor)))
             if  dot_trans_2d(robot_vel, normal) > 0:
-                fuel.addImpulse(Translation3d(normal * (dot_trans_2d(robot_vel, normal))))
+                self.fuels[i].addImpulse(Translation3d(normal * (dot_trans_2d(robot_vel, normal))))
+
+            self.fuels_to_update.add(self.fuels[i])
 
     def handleIntakes(self):
         robot = self.robot_supplier()
         for fuel in self.fuels[:]:
             if self.intake.shouldIntake(fuel, robot):
                 self.robot.fuel_in_hopper.append(fuel)
+                self.fuels_to_update.add(fuel)
                 self.fuels.remove(fuel)
 
     class Hub():
