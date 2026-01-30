@@ -33,13 +33,13 @@ class Shooter(Subsystem):
 
     def get_speed(self):
         if self.robot.isSimulation():
-            return self.commanded_speed
+            return self.command_speed
         else:
-            return self.top_right_motor.get_velocity().value, \
+            return (self.top_right_motor.get_velocity().value, \
                     self.top_left_motor.get_velocity().value, \
                     self.bottom_right_motor.get_velocity().value, \
-                    self.bottom_left_motor.get_velocity().value
-    
+                    self.bottom_left_motor.get_velocity().value)
+                    
     def set_speed(self, speed):
         self.command_speed = speed
 
@@ -48,12 +48,12 @@ class Shooter(Subsystem):
 
     def stop(self):
         self.command_speed = 0.0
-        for motor in self.top_motors + self.bottom_motors:
+        for motor in self.motors:
             motor.set_control(controls.VelocityTorqueCurrentFOC(0.0))
     
     def periodic(self):
         pass
-    
+
     def log(self):
         tr, tl, br, bl = self.get_speed()
         SmartDashboard.putNumber("Shooter/Top Right Speed", tr)
