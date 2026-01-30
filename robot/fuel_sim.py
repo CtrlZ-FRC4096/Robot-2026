@@ -261,8 +261,8 @@ class FuelSim:
                 self.fuels.append(FuelSim.Fuel(self, \
                         Translation3d(self.field_length - 0.076 - 0.152 * j, 2.09 - 0.076 - 0.152 * i, self.fuel_radius), Translation3d()))
 
-        for index in range(len(self.fuels)):
-            SmartDashboard.putNumberArray(f"Fuels/Fuel {index + 1}", [self.fuels[index].pos.X(), self.fuels[index].pos.Y(), self.fuels[index].pos.Z(), 0.0, 0.0, 0.0, 0.0])
+        # for index in range(len(self.fuels)):
+        #     SmartDashboard.putNumberArray(f"Fuels/Fuel {index + 1}", [self.fuels[index].pos.X(), self.fuels[index].pos.Y(), self.fuels[index].pos.Z(), 0.0, 0.0, 0.0, 0.0])
         
     def start(self):
         self.running = True
@@ -288,12 +288,15 @@ class FuelSim:
             self.logFuels()
 
     def logFuels(self):
-        num_loops = 0
-        for index in range(len(self.fuels)):
-            if self.fuels[index] in self.fuels_to_update:
-                num_loops += 1
-                SmartDashboard.putNumberArray(f"Fuels/Fuel {index + 1}", [self.fuels[index].pos.X(), self.fuels[index].pos.Y(), self.fuels[index].pos.Z(), 0.0, 0.0, 0.0, 0.0])
-        print(num_loops)
+        data = []
+        for fuel in self.fuels:
+            data.extend([fuel.pos.X(), fuel.pos.Y(), fuel.pos.Z(), 1.0, 0.0, 0.0, 0.0])
+        SmartDashboard.putNumberArray("Fuels/All", data)
+            
+            # if self.fuels[index] in self.fuels_to_update:
+            #     num_loops += 1
+            #     SmartDashboard.putNumberArray(f"Fuels/Fuel {index + 1}", [self.fuels[index].pos.X(), self.fuels[index].pos.Y(), self.fuels[index].pos.Z(), 0.0, 0.0, 0.0, 0.0])
+        # print(num_loops)
         self.fuels_to_update = set()
     def spawnFuel(self, pos : Translation3d, vel : Translation3d):
         self.fuels.append(FuelSim.Fuel(self, pos, vel))
@@ -452,7 +455,7 @@ class FuelSim:
             self.callback = intake_callback
             
         def shouldIntake(self, fuel : "FuelSim.Fuel", robot_pose : Pose2d):
-            if (not self.able_to_intake) or (fuel.pos.Z() > self.sim.bumper_height):
+            if (not self.able_to_intake()) or (fuel.pos.Z() > self.sim.bumper_height):
                 return False
             
             fuel_relative_pos = Pose2d(fuel.pos.toTranslation2d(), Rotation2d()).relativeTo(robot_pose).translation()

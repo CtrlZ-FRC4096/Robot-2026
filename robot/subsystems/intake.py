@@ -55,7 +55,7 @@ class Intake(Subsystem):
             return position
         
     def can_intake_sim(self):
-        return self.commanded_intake_speed > 0.05
+        return False #self.commanded_intake_speed > 0.05
     
     def intake_sim_callback(self):
         pass
