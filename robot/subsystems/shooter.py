@@ -50,7 +50,10 @@ class Shooter(Subsystem):
         self.command_speed = 0.0
         for motor in self.top_motors + self.bottom_motors:
             motor.set_control(controls.VelocityTorqueCurrentFOC(0.0))
-
+    
+    def periodic(self):
+        pass
+    
     def log(self):
         tr, tl, br, bl = self.get_speed()
         SmartDashboard.putNumber("Shooter/Top Right Speed", tr)
