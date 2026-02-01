@@ -85,6 +85,7 @@ class FuelSim:
         self.robot = robot
 
         self.period = 0.02
+        self.log_counter = 0
         self.subticks = 1
         self.gravity = Translation3d(0, 0, -9.81) # m/s^2
         
@@ -97,7 +98,7 @@ class FuelSim:
         self.fuel_radius = 0.075
         self.field_length = 16.51
         self.field_width = 8.04
-        self.friction = 0.1
+        self.friction = 0.05
 
         self.field_xz_line_starts = [
             Translation3d(0,0,0),
@@ -124,7 +125,7 @@ class FuelSim:
         ]
 
         self.fuels : list[FuelSim.Fuel] = []
-        self.fuels_to_update = set()
+        # self.fuels_to_update = set()
         self.running = False
         self.robot_supplier = self.robot.drivetrain.get_pose
         self.robot_speeds_supplier = self.robot.drivetrain.get_field_relative_speeds
@@ -219,14 +220,20 @@ class FuelSim:
 
     def handleFuelCollisions(self):
         for i in range(len(self.fuels) - 1):
+            
             for j in range(i + 1, len(self.fuels)):
-                if self.fuels[i].pos.distance(self.fuels[j].pos) < self.fuel_radius * 2:
+                if i == j:
+                    continue
+                distance = (self.fuels[i].pos - self.fuels[j].pos).norm()
+                if (self.fuels[i].vel.norm() < 0.03 and self.fuels[j].vel.norm() < 0.03) and not distance < self.fuel_radius * 2:
+                    continue
+
+                if distance < self.fuel_radius * 2:
                     normal = self.fuels[i].pos - self.fuels[j].pos
-                    distance = normal.norm()
                     if distance == 0:
                         normal = Translation3d(1, 0, 0)
-                        distance = 1
-                    normal = normal / distance
+                        distance = 0.001
+                    normal /= distance
                     impulse = 0.5 * (1 + self.fuel_cor) * dot_trans_3d(self.fuels[j].vel - self.fuels[i].vel, normal)
                     intersection = self.fuel_radius * 2 - distance
                     self.fuels[i].pos += normal * (intersection / 2)
@@ -234,9 +241,6 @@ class FuelSim:
 
                     self.fuels[i].addImpulse(normal * impulse)
                     self.fuels[j].addImpulse(normal * -impulse)
-
-                    self.fuels_to_update.add(self.fuels[i])
-                    self.fuels_to_update.add(self.fuels[j])
     
     def clearFuel(self):
         self.fuels.clear()
@@ -285,7 +289,10 @@ class FuelSim:
             self.handleFuelCollisions()
             self.handleRobotCollisions()
             self.handleIntakes()
+
+        if self.log_counter % 2 == 0:    
             self.logFuels()
+        self.log_counter += 1
 
     def logFuels(self):
         data = []
@@ -297,7 +304,7 @@ class FuelSim:
             #     num_loops += 1
             #     SmartDashboard.putNumberArray(f"Fuels/Fuel {index + 1}", [self.fuels[index].pos.X(), self.fuels[index].pos.Y(), self.fuels[index].pos.Z(), 0.0, 0.0, 0.0, 0.0])
         # print(num_loops)
-        self.fuels_to_update = set()
+        # self.fuels_to_update = set()
     def spawnFuel(self, pos : Translation3d, vel : Translation3d):
         self.fuels.append(FuelSim.Fuel(self, pos, vel))
     
@@ -306,19 +313,18 @@ class FuelSim:
         speeds = self.robot_speeds_supplier()
         robot_vel = Translation2d(speeds.vx, speeds.vy)
         
-        for i in range(len(self.fuels)):
-            
+        for i in range(len(self.fuels)): 
             relative_pos = Pose2d(self.fuels[i].pos.toTranslation2d(), Rotation2d()).relativeTo(robot).translation()
 
             if self.fuels[i].pos.Z() > self.bumper_height:
-                return
+                continue
             distance_to_bottom = -self.fuel_radius - self.robot_length / 2 - relative_pos.X()
             distance_to_top = -self.fuel_radius - self.robot_length / 2 + relative_pos.X()
             distance_to_right = -self.fuel_radius - self.robot_length / 2 - relative_pos.Y()
             distance_to_left = -self.fuel_radius - self.robot_length / 2 + relative_pos.Y()
 
             if distance_to_bottom > 0 or distance_to_top > 0 or distance_to_right > 0 or distance_to_left > 0:
-                return
+                continue
 
             if distance_to_bottom >= distance_to_top \
                             and distance_to_bottom >= distance_to_right \
@@ -344,14 +350,14 @@ class FuelSim:
             if  dot_trans_2d(robot_vel, normal) > 0:
                 self.fuels[i].addImpulse(Translation3d(normal * (dot_trans_2d(robot_vel, normal))))
 
-            self.fuels_to_update.add(self.fuels[i])
+            # self.fuels_to_update.add(self.fuels[i])
 
     def handleIntakes(self):
         robot = self.robot_supplier()
         for fuel in self.fuels[:]:
             if self.intake.shouldIntake(fuel, robot):
                 self.robot.fuel_in_hopper.append(fuel)
-                self.fuels_to_update.add(fuel)
+                # self.fuels_to_update.add(fuel)
                 self.fuels.remove(fuel)
 
     class Hub():
