@@ -86,19 +86,19 @@ class FuelSim:
 
         self.period = 0.02
         self.log_counter = 0
-        self.subticks = 1
+        self.subticks = 2
         self.gravity = Translation3d(0, 0, -9.81) # m/s^2
         
         #coefficients of restitution
         self.field_cor = math.sqrt(22 / 51.5)
         self.fuel_cor = 0.5
         self.net_cor = 0.2
-        self.robot_cor = 0.1
+        self.robot_cor = 0.5
 
         self.fuel_radius = 0.075
         self.field_length = 16.51
         self.field_width = 8.04
-        self.friction = 0.05
+        self.friction = 0.1
 
         self.field_xz_line_starts = [
             Translation3d(0,0,0),
@@ -156,7 +156,8 @@ class FuelSim:
             
             if abs(self.vel.Z()) < 0.05 and self.pos.Z() <= self.sim.fuel_radius + 0.03:
                 self.vel = Translation3d(self.vel.X(), self.vel.Y(), 0)
-                self.vel *= 1 - (self.sim.friction * self.sim.period / self.sim.subticks)
+                deceleration = self.sim.friction * 9.81 * 0.01
+                self.vel *= (max(0, self.vel.norm() - deceleration) / self.vel.norm()+0.01)
             self.handleFieldCollisions()
         
         def handleXZLineCollisions(self, lineStart : Translation3d, lineEnd : Translation3d):
@@ -229,8 +230,8 @@ class FuelSim:
         distance = normal.norm()
 
         if distance == 0:
-            normal = Translation3d(1, 0, 0)
-            distance = 0.1
+            normal = Translation3d(0.01, 0, 0)
+            distance = 0.01
         
         normal /= distance
         impulse = 0.5 * (1+ self.fuel_cor) * (dot_trans_3d(b.vel - a.vel, normal))
@@ -244,20 +245,26 @@ class FuelSim:
         for col in self.grid:
             for cell in col:
                 cell.clear()
-        
+
         for fuel in self.fuels:
             col = int(fuel.pos.X() / self.cell_size)
             row = int(fuel.pos.Y() / self.cell_size)
 
             if 0 <= col < self.grid_cols and 0 <= row < self.grid_rows:
                 self.grid[col][row].append(fuel)
+        for fuel in self.fuels:
+            col = int(fuel.pos.X() / self.cell_size)
+            row = int(fuel.pos.Y() / self.cell_size)
+
+            if not (0 <= col < self.grid_cols and 0 <= row < self.grid_rows):
+                continue
 
             for i in range(max(0, col - 1), min(self.grid_cols, col + 2)):
                 for j in range(max(0, row - 1), min(self.grid_rows, row + 2)):
                     for other in self.grid[i][j]:
-                        # Avoid self-collision and use ID/hash to prevent double-handling
-                        if fuel != other and fuel.pos.distance(other.pos) < self.fuel_radius * 2:
-                            if id(fuel) < id(other):
+                        if fuel is not other and id(fuel) < id(other):
+                            dist = fuel.pos.distance(other.pos)
+                            if dist < self.fuel_radius * 2:
                                 self.handleFuelCollision(fuel, other)
     
     def clearFuel(self):
