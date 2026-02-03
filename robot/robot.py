@@ -48,6 +48,11 @@ import subsystems.intake
 
 from wpilibextra.coroutine.coroutine_robot import CoroutineRobot
 from wpilibextra.remote_shell import RemoteShell
+
+from pykit.logger import Logger
+from pykit.networktables.nt4Publisher import NT4Publisher
+from pykit.wpilog.wpilogwriter import WPILOGWriter
+
 from coroutines import Coroutines
 
 import inspect
@@ -94,6 +99,15 @@ class Robot(CoroutineRobot):
     """
 
     def robot_start(self):
+        # Initialize PyKit Logger
+        Logger.recordMetadata("Project", "Robot-2026")
+        if self.isSimulation():
+            Logger.addDataReciever(NT4Publisher(True))
+        else:
+            Logger.addDataReciever(NT4Publisher(False))
+            Logger.addDataReciever(WPILOGWriter())
+        Logger.start()
+        
         # Networktables
         nt_inst = ntcore.NetworkTableInstance.getDefault()
         nt_inst.startServer()
@@ -244,7 +258,7 @@ class Robot(CoroutineRobot):
         if self.isSimulation():
             from fuel_sim import FuelSim
             self.fuel_sim = FuelSim(self)
-            self.fuel_in_hopper : list[FuelSim.Fuel] = []
+            # self.fuel_in_hopper : list[FuelSim.Fuel] = []
             self.fuel_sim.start()
         self.timer.start()
 
