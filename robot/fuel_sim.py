@@ -224,23 +224,41 @@ class FuelSim:
         def addImpulse(self, impulse : Translation3d):
             self.vel += impulse
 
+    def handleFuelCollision(self, a : Fuel, b : Fuel):
+        normal = a.pos - b.pos
+        distance = normal.norm()
+
+        if distance == 0:
+            normal = Translation3d(1, 0, 0)
+            distance = 0.1
+        
+        normal /= distance
+        impulse = 0.5 * (1+ self.fuel_cor) * (dot_trans_3d(b.vel - a.vel, normal))
+        intersection = self.fuel_radius * 2 -distance
+        a.pos += normal * intersection / 2
+        b.pos -= normal * intersection / 2
+        a.addImpulse(normal * impulse)
+        b.addImpulse(normal * -impulse)
+
     def handleFuelCollisions(self):
         for col in self.grid:
             for cell in col:
                 cell.clear()
         
         for fuel in self.fuels:
-            col = fuel.pos.X() / self.cell_size
-            row = fuel.pos.Y() / self.cell_size
+            col = int(fuel.pos.X() / self.cell_size)
+            row = int(fuel.pos.Y() / self.cell_size)
 
             if 0 <= col < self.grid_cols and 0 <= row < self.grid_rows:
                 self.grid[col][row].append(fuel)
-        
-        for fuel in self.fuels:
-            col = fuel.pos.X() / self.cell_size 
-            row = fuel.pos.Y() / self.cell_size 
 
-            for i in range(max(0, col - 1), min(self.grid_cols, ))
+            for i in range(max(0, col - 1), min(self.grid_cols, col + 2)):
+                for j in range(max(0, row - 1), min(self.grid_rows, row + 2)):
+                    for other in self.grid[i][j]:
+                        # Avoid self-collision and use ID/hash to prevent double-handling
+                        if fuel != other and fuel.pos.distance(other.pos) < self.fuel_radius * 2:
+                            if id(fuel) < id(other):
+                                self.handleFuelCollision(fuel, other)
     
     def clearFuel(self):
         self.fuels.clear()
