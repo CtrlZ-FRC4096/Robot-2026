@@ -137,6 +137,12 @@ class FuelSim:
         self.blue_hub = self.Hub(self, Translation2d(4.61, self.field_width / 2), Translation3d(5.3, self.field_width / 2, 0.89), 1)
         self.red_hub = self.Hub(self, Translation2d(self.field_length - 4.61, self.field_width / 2), Translation3d(self.field_length - 5.3, self.field_width / 2, 0.89), -1)
         
+        self.cell_size = 0.25
+        self.grid_cols = math.ceil(self.field_length / self.cell_size)
+        self.grid_rows = math.ceil(self.field_width / self.cell_size)
+
+        self.grid = [[[] for _ in range(self.grid_rows)] for _ in range(self.grid_cols)]
+
     class Fuel():
         def __init__(self, sim : "FuelSim", pos : Translation3d, vel : Translation3d):
             self.sim = sim
@@ -219,28 +225,22 @@ class FuelSim:
             self.vel += impulse
 
     def handleFuelCollisions(self):
-        for i in range(len(self.fuels) - 1):
-            
-            for j in range(i + 1, len(self.fuels)):
-                if i == j:
-                    continue
-                distance = (self.fuels[i].pos - self.fuels[j].pos).norm()
-                if (self.fuels[i].vel.norm() < 0.03 and self.fuels[j].vel.norm() < 0.03) and not distance < self.fuel_radius * 2:
-                    continue
+        for col in self.grid:
+            for cell in col:
+                cell.clear()
+        
+        for fuel in self.fuels:
+            col = fuel.pos.X() / self.cell_size
+            row = fuel.pos.Y() / self.cell_size
 
-                if distance < self.fuel_radius * 2:
-                    normal = self.fuels[i].pos - self.fuels[j].pos
-                    if distance == 0:
-                        normal = Translation3d(1, 0, 0)
-                        distance = 0.001
-                    normal /= distance
-                    impulse = 0.5 * (1 + self.fuel_cor) * dot_trans_3d(self.fuels[j].vel - self.fuels[i].vel, normal)
-                    intersection = self.fuel_radius * 2 - distance
-                    self.fuels[i].pos += normal * (intersection / 2)
-                    self.fuels[j].pos -= normal * (intersection / 2)
+            if 0 <= col < self.grid_cols and 0 <= row < self.grid_rows:
+                self.grid[col][row].append(fuel)
+        
+        for fuel in self.fuels:
+            col = fuel.pos.X() / self.cell_size 
+            row = fuel.pos.Y() / self.cell_size 
 
-                    self.fuels[i].addImpulse(normal * impulse)
-                    self.fuels[j].addImpulse(normal * -impulse)
+            for i in range(max(0, col - 1), min(self.grid_cols, ))
     
     def clearFuel(self):
         self.fuels.clear()
