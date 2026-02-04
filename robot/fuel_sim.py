@@ -15,9 +15,9 @@ class FuelSim:
 
     # Coefficients
     FIELD_COR = math.sqrt(22 / 51.5)
-    FUEL_COR = 0.7  # Increased for more bouncy fuel-fuel collisions
+    FUEL_COR = 0.5
     NET_COR = 0.2
-    ROBOT_COR = 0.5  # Increased for more bounce off robot
+    ROBOT_COR = 0.1
 
     # Dimensions
     FUEL_RADIUS = 0.075
@@ -29,7 +29,7 @@ class FuelSim:
     TRENCH_BAR_HEIGHT = 0.102
     TRENCH_BAR_WIDTH = 0.152
 
-    FRICTION = 1e-50  # Further lowered friction for longer rolling
+    FRICTION = 0.005 # Kinetic friction coefficient (reduced from 0.01)
     FUEL_MASS = 0.448 * 0.45392 # kgs
     
     FUEL_CROSS_AREA = math.pi * FUEL_RADIUS * FUEL_RADIUS
@@ -299,22 +299,16 @@ class FuelSim:
             ground_mask = (active_pos[:, 2] <= self.FUEL_RADIUS + 0.03) & (np.abs(active_vel[:, 2]) < 0.05)
             
             if np.any(ground_mask):
-                # Only clamp Z position, do not reset z velocity
-                # Logarithmic-like friction: nonlinear decay, slows dramatically near zero
-                friction_coeff = 0.0008  # Tune as needed
-                vel_xy = active_vel[ground_mask, :2]
-                speed_xy = np.linalg.norm(vel_xy, axis=1)
-                moving_mask = speed_xy > 1e-4
-                moving_indices = np.where(ground_mask)[0][moving_mask]
-                epsilon = 1e-4
-                for idx, speed in zip(moving_indices, speed_xy[moving_mask]):
-                    if speed > epsilon:
-                        # Nonlinear decay: decay factor slows as speed approaches zero
-                        decay = math.exp(-friction_coeff * dt / (speed + epsilon))
-                        active_vel[idx, :2] *= decay
-                        # Clamp very small speeds to zero
-                        if np.linalg.norm(active_vel[idx, :2]) < epsilon:
-                            active_vel[idx, :2] = 0
+                active_vel[ground_mask, 2] = 0
+                
+                # Proportional Friction Decay (Matches Java logic: vel *= 1 - F * dt)
+                # If FRICTION is small (0.005), decay is close to 1.0 (very slippery)
+                decay = 1.0 - self.FRICTION * dt
+                active_vel[ground_mask, :2] *= decay
+
+                # Angular velocity transfer to linear (rolling) - simple hack to keep them moving?
+                # For now just pure slip friction reduction.
+                
                 # Clamp Z to radius
                 active_pos[ground_mask, 2] = np.maximum(active_pos[ground_mask, 2], self.FUEL_RADIUS)
 
@@ -558,7 +552,7 @@ class FuelSim:
             vel[idx[vm], 1] *= -1.2
 
     def _handle_intakes(self, pos):
-        # Intake logic enabled (removed early return)
+        return
         if not self.intakes: return
 
         robot_pose = self.robotPoseSupplier()
