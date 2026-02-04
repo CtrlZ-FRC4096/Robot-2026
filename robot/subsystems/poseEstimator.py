@@ -85,6 +85,8 @@ class PoseEstimator(Subsystem):
         self.robot = robot
 
         self.gyro = Pigeon2(const.SWERVE_PIGEON_ID, "carnivore")
+        self.gyro.configurator.apply(configs.Pigeon2Configuration().with_mount_pose(configs.MountPoseConfigs().with_mount_pose_roll(180)))
+        
 
         if self.robot.fieldConstants.shouldFlip:
             self.gyro_offset = 90
