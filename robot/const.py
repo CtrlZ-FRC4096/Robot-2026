@@ -48,16 +48,16 @@ FRONT_RIGHT = "front_right"
 BACK_LEFT = "back_left"
 BACK_RIGHT = "back_right"
 
-# Robot drivebase dimensions, in inches and meters
+# Robot drivebase dimensions, in inches and meters (intake side is front 2026)
 DRIVE_BASE_WIDTH = 28.5
 DRIVE_BASE_LENGTH = 26.0
 # DRIVE_BASE_RADIUS_METERS = 0.381660882
-DRIVETRAIN_TRACKWIDTH_METERS = 0.616
-DRIVETRAIN_WHEELBASE_METERS = 0.616
+DRIVETRAIN_TRACKWIDTH_METERS = inchesToMeters(21.0)
+DRIVETRAIN_WHEELBASE_METERS = inchesToMeters(23.5)
 
-SWERVE_WHEEL_CIRCUMFERENCE = math.pi * (4 * 2.54 / 100)  # C = pi*d
-SWERVE_DRIVE_GEAR_RATIO = 6.72  # From belt kit we ordered
-SWERVE_ANGLE_GEAR_RATIO = 13.3714  # From Swerve X user guide, for flipped, belt models
+SWERVE_WHEEL_CIRCUMFERENCE = math.pi * inchesToMeters(4)  # C = pi*d
+SWERVE_DRIVE_GEAR_RATIO = 5.68  # From belt kit we ordered
+SWERVE_ANGLE_GEAR_RATIO = 12.1  # From Swerve X user guide, for flipped, belt models
 
 
 SWERVE_MAX_SPEED = 4.75  # 4.75  # meters per second
@@ -180,12 +180,12 @@ THETA_KP = 0.2  # 1.9 #0.232  # * 2.866 * 5.0
 THETA_KI = 0.0  # 0.07  # 0.0625  # * 2.866 * 5.0
 THETA_KD = 0.001  # 0.01
 
+INTAKE_MOTOR_ID = 14
+INTAKE_DEPLOY_MOTOR_ID = 15
+
+
 COLLISION_JERK_MAX = 50
 SKIDDING_RATIO_MAX = 10
-
-INTAKE_DEPLOY_MOTOR_ID = 14
-INTAKE_MOTOR_ID = 15
-
 
 CAM_DICT = {
     "camera_1": (
