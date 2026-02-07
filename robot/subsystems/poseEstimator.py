@@ -181,7 +181,10 @@ class PoseEstimator(Subsystem):
         self.thetastd_single_tag = 1000.0
 
         # test position of camera 1 on front right module
-        
+        ROBOT_TO_CAM1 = Transform3d(
+            Translation3d(-0.317, -0.292, 0.193),
+            Rotation3d.fromDegrees(0.0, -10.0, 0.0)
+        )
 
         self.cams = [
             WrapperedPhotonCamera("camera_1", ROBOT_TO_CAM1),

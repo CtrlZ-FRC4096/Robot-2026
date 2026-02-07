@@ -105,154 +105,61 @@ class WrapperedPhotonCamera:
 
             # Transform both poses to on-field poses
             tgtID = target.getFiducialId()
-            if True or tgtID in self.reef_tags_to_use:  # Only use reef IDs, everything else is not great
 
-                tagFieldPose = self.tag_map.getTagPose(tgtID)
+            tagFieldPose = self.tag_map.getTagPose(tgtID)
 
-                # corners = np.ndarray(
-                #     [[[corner.x, corner.y] for corner in target.getDetectedCorners()]]
-                # )
-                corners = np.array(
-                    [
-                        WrapperedPhotonCamera.tgt_corner_to_list(corner)
-                        for corner in target.getDetectedCorners()
-                    ]
-                ).astype(np.float32)
+            target_x_angle = -1 * math.radians(target.getYaw())
+            target_y_angle = -1 * math.radians(target.getPitch())
 
-                # SmartDashboard.putNumber(f"corners for tag x: {self.camName}", corners[0][0])
-                # SmartDashboard.putNumber(f"corners for tag y: {self.camName}", corners[0][1])
+            distance_3d = target.getBestCameraToTarget().translation().norm()
+ 
+            distance_2d_to_tag = distance_3d * math.cos(
+                (-1 * self.robotToCam.rotation().Y()) - target_y_angle
+            )  # cosine is even so we don't need to negate both
 
-                # Return list of n corners, for fiducials this is counter clockwise starting from the top left corner of the tag.
-                corners_undistorted = corners
-                # corners_undistorted = cv2.undistortPoints(  # Unsure if these corners have already been undistorted
-                #     corners,
-                #     # self.cam.getCameraMatrix(),
-                #     # self.cam.getDistortionCoefficients(),
-                #     self.cameraIntrinsMatrix,
-                #     self.cameraDistortVector,
-                #     None,
-                #     self.cameraIntrinsMatrix,
-                # )  # Return list of n corners, for fiducials this is counter clockwise starting from the top left corner of the tag.
-                corners = np.zeros((4, 2))
-                for index, corner in enumerate(
-                    corners_undistorted
-                ):  # calculate the angle of each corner relative to the camera center in the x and y directions (radians)
-                    vec = np.linalg.inv(self.cameraIntrinsMatrix).dot(
-                        np.array([corner[0][0], corner[0][1], 1]).T
+            # Calculate the rotation of the camera to the tag. The rotation of the robot + rotation of the camera - the angle of the target
+            cam_to_tag_rotation = Rotation2d(
+                prevEstPoseSingleTag.rotation().radians()
+                + self.robotToCam.rotation().Z()
+                - target_x_angle
+            )
+            # Calculate the translation of the camera to the tag. We take the position of the tag, transform by the distance to the tag, in the direction of the camera
+            field_to_camera_translation = (
+                Pose2d(
+                    tagFieldPose.toPose2d().translation(),
+                    Rotation2d(cam_to_tag_rotation.radians() + math.pi),
+                )
+                .transformBy(
+                    Transform2d(
+                        Translation2d(distance_2d_to_tag, 0.0), Rotation2d()
                     )
-                    corners[index][0] = math.atan(vec[0])
-                    corners[index][1] = math.atan(vec[1])
+                )
+                .translation()
+            )
 
-                # Calculate the center of the target in x and y angles (radians)
-                target_x_angle = np.mean(corners[:, 0])
-                target_y_angle = np.mean(corners[:, 1])
-
-                # SmartDashboard.putNumber(f"tgt x {self.camName}", target_x_angle)
-                # SmartDashboard.putNumber(f"tgt y {self.camName}", target_y_angle)
-
-                # print("targ x: ", target_x_angle)
-                # print("target y: ", target_y_angle)
-
-                # z_dist = tag_map.getTagPose(tgtID).Z() - inchesToMeters(4.87)
-
-                distance_3d = target.getBestCameraToTarget().translation().norm()
-                # SmartDashboard.putNumber(f"3d distance for {self.camName}", distance_3d)
-
-                distance_2d_to_tag = distance_3d * math.cos(
-                    (-1 * self.robotToCam.rotation().Y()) - target_y_angle
-                )  # cosine is even so we don't need to negate both
-                # SmartDashboard.putNumber(f"2d distance for {self.camName}", distance_2d_to_tag)
-
-                # print(distance_2d_to_tag)
-
-                # Calculate the rotation of the camera to the tag. The rotation of the robot + rotation of the camera - the angle of the target
-                cam_to_tag_rotation = Rotation2d(
+            # Calculate the pose of the robot. We take the position of the camera to the tag and transform it by the robot to camera transform
+            robot_pose = Pose2d(
+                field_to_camera_translation,
+                Rotation2d(
                     prevEstPoseSingleTag.rotation().radians()
                     + self.robotToCam.rotation().Z()
-                    - target_x_angle
-                )
-                # SmartDashboard.putNumber(f"cam to tag rotation for {self.camName}", cam_to_tag_rotation.degrees())
-
-                # Calculate the translation of the camera to the tag. We take the position of the tag, transform by the distance to the tag, in the direction of the camera
-                field_to_camera_translation = (
+                ),
+            ).transformBy(
+                Transform2d(
                     Pose2d(
-                        tagFieldPose.toPose2d().translation(),
-                        Rotation2d(cam_to_tag_rotation.radians() + math.pi),
-                    )
-                    .transformBy(
-                        Transform2d(
-                            Translation2d(distance_2d_to_tag, 0.0), Rotation2d()
-                        )
-                    )
-                    .translation()
-                )
-                # SmartDashboard.putNumber(f"field to camera translation x for {self.camName}", field_to_camera_translation.X())
-                # SmartDashboard.putNumber(f"field to camera translation y for {self.camName}", field_to_camera_translation.Y())
-
-                # Calculate the pose of the robot. We take the position of the camera to the tag and transform it by the robot to camera transform
-                robot_pose = Pose2d(
-                    field_to_camera_translation,
-                    Rotation2d(
-                        prevEstPoseSingleTag.rotation().radians()
-                        + self.robotToCam.rotation().Z()
+                        self.robotToCam.X(),
+                        self.robotToCam.Y(),
+                        self.robotToCam.rotation().Z(),
                     ),
-                ).transformBy(
-                    Transform2d(
-                        Pose2d(
-                            self.robotToCam.X(),
-                            self.robotToCam.Y(),
-                            self.robotToCam.rotation().Z(),
-                        ),
-                        Pose2d(),
-                    )
+                    Pose2d(),
                 )
-                #     Transform2d(-self.robotToCam.X(), self.robotToCam.Y(), Rotation2d()) ##Throwing a negative on the cam y seemed to work, I hate this
-                # )
-                # Use previous angle (gyro) at the time for robot rotation
-                robot_pose = Pose2d(
-                    robot_pose.translation(), prevEstPoseSingleTag.rotation()
-                )
-                # SmartDashboard.putNumber(f"robot pose for {self.camName} x", robot_pose.X())
-                # SmartDashboard.putNumber(f"robot pose for {self.camName} y", robot_pose.Y())
-                # SmartDashboard.putNumber(f"robot pose for {self.camName} theta", robot_pose.rotation().degrees())
-                # print(robot_pose)
-                # z_dist / (math.tan(self.robotToCam.rotation().Y() + target_y_angle))
-                # absolute_angle = yaw.radians() + target_x_angle
+            )
+            robot_pose = Pose2d(
+                robot_pose.translation(), prevEstPoseSingleTag.rotation()
+            )
 
-                # x_dist = distance_2d * math.cos(absolute_angle)
-                # y_dist = distance_2d * math.sin(absolute_angle)
-
-                # distance = (
-                #     target.getBestCameraToTarget().translation().norm()
-                # )  # distance from camera to target in meters
-                # print("distance: ", distance)
-                # # Calculate the position of the target to the camera  in the camera coordinate system (meters)
-                # # Use spherical coordinates to calculate the x, y, and z distances
-                # z_dist = -1 * distance * math.cos((math.pi / 2) - target_y_angle)
-                # y_dist = -1 * (
-                #     distance
-                #     * math.sin(target_x_angle)
-                #     * math.sin((math.pi / 2) - target_y_angle)
-                # )
-                # x_dist = (
-                #     distance
-                #     * math.cos(target_x_angle)
-                #     * math.sin((math.pi / 2) - target_y_angle)
-                # )
-                # print("x dist: ", x_dist)
-                # print("y dist: ", y_dist)
-                # print("z dist: ", z_dist)
-
-                # camToTarget = Transform3d(
-                #     Translation3d(x_dist, y_dist, z_dist), Rotation3d()
-                # )  # Create a Pose3d object with the calculated x, y, and z distances, and no rotation
-
-                # # Calculate the position of the robot on the field in the field coordinate system (meters) from the tag pose and the camera to target transform
-                # fieldPose = self._toFieldPose(tagFieldPose, camToTarget)
-                # # print(fieldPose)
-
-                self.poseSingleTag.append(robot_pose)
-                self.singleTagIDs.append(tgtID)
+            self.poseSingleTag.append(robot_pose)
+            self.singleTagIDs.append(tgtID)
 
 
 
