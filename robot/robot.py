@@ -126,6 +126,7 @@ class Robot(CoroutineRobot):
 
         self.previously_scored = True
         self.has_coral = True
+        self.one_driver_ctrl = True
         
         # subsystems
         self.leds = subsystems.leds.LEDs(self)

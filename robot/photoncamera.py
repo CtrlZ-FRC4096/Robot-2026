@@ -24,8 +24,7 @@ from field_const import FieldConstants
 
 import numpy as np
 import math
-import cv2
-
+# import cv2
 
 ## Code from 1736
 # Describes one on-field pose estimate from the a camera at a specific time.
@@ -124,15 +123,16 @@ class WrapperedPhotonCamera:
                 # SmartDashboard.putNumber(f"corners for tag y: {self.camName}", corners[0][1])
 
                 # Return list of n corners, for fiducials this is counter clockwise starting from the top left corner of the tag.
-                corners_undistorted = cv2.undistortPoints(  # Unsure if these corners have already been undistorted
-                    corners,
-                    # self.cam.getCameraMatrix(),
-                    # self.cam.getDistortionCoefficients(),
-                    self.cameraIntrinsMatrix,
-                    self.cameraDistortVector,
-                    None,
-                    self.cameraIntrinsMatrix,
-                )  # Return list of n corners, for fiducials this is counter clockwise starting from the top left corner of the tag.
+                corners_undistorted = corners
+                # corners_undistorted = cv2.undistortPoints(  # Unsure if these corners have already been undistorted
+                #     corners,
+                #     # self.cam.getCameraMatrix(),
+                #     # self.cam.getDistortionCoefficients(),
+                #     self.cameraIntrinsMatrix,
+                #     self.cameraDistortVector,
+                #     None,
+                #     self.cameraIntrinsMatrix,
+                # )  # Return list of n corners, for fiducials this is counter clockwise starting from the top left corner of the tag.
                 corners = np.zeros((4, 2))
                 for index, corner in enumerate(
                     corners_undistorted

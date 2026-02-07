@@ -88,12 +88,13 @@ class PoseEstimator(Subsystem):
         self.gyro.configurator.apply(configs.Pigeon2Configuration().with_mount_pose(configs.MountPoseConfigs().with_mount_pose_roll(180)))
         
 
-        if self.robot.fieldConstants.shouldFlip:
-            self.gyro_offset = 90
-        else:
-            self.gyro_offset = 270
+        # if self.robot.fieldConstants.shouldFlip:
+        #     self.gyro_offset = 90
+        # else:
+        #     self.gyro_offset = 270
 
-        self.gyro.set_yaw(self.gyro_offset)
+        # self.gyro.set_yaw(self.gyro_offset)
+        self.gyro.set_yaw(0)
 
         self.field = Field2d()
         self.field_for_single_tag = Field2d()
@@ -180,45 +181,10 @@ class PoseEstimator(Subsystem):
         self.thetastd_single_tag = 1000.0
 
         # test position of camera 1 on front right module
-        ROBOT_TO_CAM1 = Transform3d(
-            Translation3d(-0.287, -0.3004, 0.214),  # X  # Y  # Z
-            Rotation3d(
-                0.0, np.deg2rad(-10.0), np.deg2rad(20.0 - 90.0)
-            ),  # Roll  # Pitch  # Yaw
-        )
-
-        # Update with positionon robot
-        ROBOT_TO_CAM2 = Transform3d(
-            Translation3d(0.327, -0.195, 0.215),  # X  # Y  # Z
-            Rotation3d(
-                0.0, np.deg2rad(-15.0), np.deg2rad(-25.0 - 90)
-            ),  # Roll  # Pitch  # Yaw
-        )
-
-        # # Update with positionon robot
-        # # Update with positionon robot
-        ROBOT_TO_CAM3 = Transform3d(
-            Translation3d(0.334, 0.193, 0.732),  # X  # Y (0.282 need to change on robot)  # Z
-            Rotation3d(
-                np.deg2rad(-3.3), np.deg2rad(24.9), np.deg2rad(-104.8)
-            ),  # Roll  # Pitch  # Yaw
-        )
-
-        # # Update with positionon robot
-        ROBOT_TO_CAM4 = Transform3d(
-            Translation3d(-0.302, 0.214, 0.773),  # X  # Y  # Z
-            Rotation3d(
-                np.deg2rad(5.0),
-                np.deg2rad(-37.8),
-                np.deg2rad(75.6),
-            ),  # Roll  # Pitch  # Yaw
-        )
+        
 
         self.cams = [
             WrapperedPhotonCamera("camera_1", ROBOT_TO_CAM1),
-            WrapperedPhotonCamera("camera_2", ROBOT_TO_CAM2),
-            WrapperedPhotonCamera("camera_3", ROBOT_TO_CAM3),
-            # WrapperedPhotonCamera("camera_4", ROBOT_TO_CAM4),
         ]
 
         self.poseConverge = True
