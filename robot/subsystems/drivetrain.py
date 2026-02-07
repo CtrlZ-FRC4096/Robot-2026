@@ -104,7 +104,7 @@ class Drivetrain(Subsystem):
                 ChassisSpeeds.fromFieldRelativeSpeeds(
                     translation.x,
                     translation.y,
-                    -rotation,
+                    rotation,
                     self.robot.poseEstimator.getYaw(),
                 )
             )

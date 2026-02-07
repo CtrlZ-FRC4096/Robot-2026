@@ -61,7 +61,6 @@ class WrapperedPhotonCamera:
 
     def update(
         self,
-        prevEstPose: Pose2d,
         prevEstPoseSingleTag: Pose2d,
         allianceColor: str,
         yaw: Rotation2d,
@@ -108,7 +107,7 @@ class WrapperedPhotonCamera:
 
             tagFieldPose = self.tag_map.getTagPose(tgtID)
 
-            target_x_angle = -1 * math.radians(target.getYaw())
+            target_x_angle = math.radians(target.getYaw())
             target_y_angle = -1 * math.radians(target.getPitch())
 
             distance_3d = target.getBestCameraToTarget().translation().norm()

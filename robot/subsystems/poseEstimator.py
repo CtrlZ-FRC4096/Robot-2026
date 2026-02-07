@@ -97,7 +97,6 @@ class PoseEstimator(Subsystem):
         self.gyro.set_yaw(0)
 
         self.field = Field2d()
-        self.field_for_single_tag = Field2d()
 
         # bl, fl, br, fr
 
@@ -157,25 +156,10 @@ class PoseEstimator(Subsystem):
 
 
         self.curEstPose = Pose2d(self.robot.fieldConstants.flip_Translation2d(Translation2d(7.170, 3.944)), self.getYaw())
-        self.curEstPoseSingleTag = self.curEstPose
-        self.curEstPoseGlobal = self.curEstPose
-
-        # self.lastPeriodicEstPose = self.curEstPose
 
         self.poseEst = SwerveDrive4PoseEstimator(
-            const.SWERVE_KINEMATICS, self.getYaw(), self.get_module_positions(), self.curEstPoseGlobal  # type: ignore
+            const.SWERVE_KINEMATICS, self.getYaw(), self.get_module_positions(), self.curEstPose # type: ignore
         )
-
-        self.poseEstSingleTag = SwerveDrive4PoseEstimator(
-            const.SWERVE_KINEMATICS,
-            self.getYaw(),
-            self.get_module_positions(),
-            self.curEstPoseSingleTag,
-        )
-
-        # self.poseEst.setVisionMeasurementStdDevs((0.0001, 0.0001, 0.5))
-        self.xystd = 0.3
-        self.thetastd = 10.0  # .15
 
         self.xystd_single_tag = 0.01
         self.thetastd_single_tag = 1000.0
@@ -187,7 +171,7 @@ class PoseEstimator(Subsystem):
         )
 
         self.cams = [
-            WrapperedPhotonCamera("camera_1", ROBOT_TO_CAM1),
+            WrapperedPhotonCamera("camera2", ROBOT_TO_CAM1),
         ]
 
         self.poseConverge = True
@@ -198,8 +182,6 @@ class PoseEstimator(Subsystem):
         self.temp_rotation_check = Rotation2d()
 
         self.tag_layout = AprilTagFieldLayout.loadField(AprilTagField.k2026RebuiltWelded)
-        self.single_tag = False
-        self.possible_pose_gbl = Pose2d()
         
     def stop(self):
         print("sike this aint stoppin")
@@ -223,7 +205,7 @@ class PoseEstimator(Subsystem):
 
     def set_yaw(self, yaw):
         if self.robot.isSimulation():
-            self.poseEstSingleTag.resetPose(Pose2d(self.curEstPose.X(), self.curEstPose.Y(), Rotation2d.fromDegrees(yaw)))
+            self.poseEst.resetPose(Pose2d(self.curEstPose.X(), self.curEstPose.Y(), Rotation2d.fromDegrees(yaw)))
         self.gyro.set_yaw(yaw)
         SmartDashboard.putNumber("Gyro/Set Yaw", yaw)
 
@@ -317,113 +299,36 @@ class PoseEstimator(Subsystem):
 
         for cam in self.cams:
             cam.update(
-                self.curEstPoseGlobal,
-                self.curEstPoseSingleTag,
+                self.curEstPose,
                 allianceColor=allianceColor,
                 yaw=self.getYaw(),
             )
-
-            # observations = cam.getPoseEstimates()
-            tags = cam.getTagPositions()
             single_tag_poses = cam.getPoseSingleTag()
             self.single_tag_IDs.update(cam.getSingleTagIDs())
-            observations = cam.getPoseEstimates()
-            tag_distances = cam.getTagDistances()
-            # filter by closest based on global pose
-
-            self.tag_dist = 0.0
-            self.theta_modifier = 1.0
-            self.xy_modifier = 1.0
-
-            self.theta_modifier_single_tag = 1.0
-            self.xy_modifier_single_tag = 1.0
-
-            if len(tags) > 0:
-                self.tag_dist = sum(tag_distances) / len(tag_distances)
-
-            if len(tags) == 1:
-                self.theta_modifier = 1000.0
-            # if (
-            #     self.tag_dist > 3.5
-            # ):  # if the robot is more than 4 meters away from the target
-            #     self.xy_modifier = 100.0
-            #     self.theta_modifier = 100.0
-
-            for observation in observations:
-                self.poseEst.addVisionMeasurement(
-                    observation.estFieldPose,
-                    observation.time,
-                    (
-                        self.xystd
-                        * (self.tag_dist**2)
-                        * self.xy_modifier,  # * (min_ambiguity / 0.4),
-                        self.xystd
-                        * (self.tag_dist**2)
-                        * self.xy_modifier,  # * (min_ambiguity / 0.4),
-                        self.thetastd
-                        * (self.tag_dist**2)
-                        * self.theta_modifier,  # * (min_ambiguity / 0.4),
-                    ),
-                )
-                if not (
-                    (observation.estFieldPose - self.poseEst.getEstimatedPosition())
-                    .translation()
-                    .norm()
-                    <= 0.5
-                ):
-                    self.robot.leds.mode = self.robot.leds.MODE_ODOMETRY
-                    self.poseConverge = False
-                else:
-                    self.robot.leds.mode = self.robot.leds.MODE_LOST_ODOMETRY
-                self.camTargetsVisible = True
-            # self.telemetry.addVisionObservations(observations) #Might need later https://github.com/RobotCasserole1736/RobotCasserole2024/blob/fa033322e6f4efe87e8b1af938d8a3f69599f29b/drivetrain/poseEstimation/drivetrainPoseTelemetry.py#L15
 
             for pose in single_tag_poses:
                 self.camera_X[cam.camName] = pose.X()
                 self.camera_Y[cam.camName] = pose.Y()
                 self.camera_theta[cam.camName] = pose.rotation().degrees()
                 # if abs(pose.rotation().degrees() - self.getYaw().degrees()) > 
-                self.poseEstSingleTag.addVisionMeasurement(
+                self.poseEst.addVisionMeasurement(
                     pose,
                     cam.getObsTime(),
                     (
-                        self.xystd_single_tag
-                        * self.xy_modifier_single_tag,  # * (min_ambiguity / 0.4),
-                        self.xystd_single_tag
-                        * self.xy_modifier_single_tag,  # * (min_ambiguity / 0.4),
-                        self.thetastd_single_tag
-                        * self.theta_modifier_single_tag,  # * (min_ambiguity / 0.4),
+                        self.xystd_single_tag,  # * (min_ambiguity / 0.4),
+                        self.xystd_single_tag,  # * (min_ambiguity / 0.4),
+                        self.thetastd_single_tag,  # * (min_ambiguity / 0.4),
                     ),
                 )
 
         # Update poses with drivetrain information
         self.poseEst.update(self.getYaw(), self.get_module_positions())
-        self.poseEstSingleTag.update(self.getYaw(), self.get_module_positions())
 
-        possible_pose_global = self.poseEst.getEstimatedPosition()
-        self.possible_pose_gbl = possible_pose_global
+        possible_pose = self.poseEst.getEstimatedPosition()
 
-        possible_pose_single_tag = self.poseEstSingleTag.getEstimatedPosition()
+        if not self.robot.isSimulation() and self.candidate_pose_OK(possible_pose):
+            self.curEstPose = possible_pose
 
-        self.single_tag = False
-        if self.candidate_pose_OK(possible_pose_global):
-            self.curEstPoseGlobal = possible_pose_global
-        if self.candidate_pose_OK(possible_pose_single_tag):
-            self.curEstPoseSingleTag = possible_pose_single_tag
-
-
-        # ALWAYS USING SINGLE
-        if not self.robot.isSimulation():
-            self.curEstPose = self.curEstPoseSingleTag
-            self.single_tag = True
-
-        # if (self.robot.leds.mode == self.robot.leds.MODE_LOST_ODOMETRY) or (
-        #     self.robot.leds.mode == self.robot.leds.MODE_ODOMETRY
-        # ):
-        #     if not self.poseConverge:
-        #         self.robot.leds.set_mode(self.robot.leds.MODE_LOST_ODOMETRY)
-        #     elif self.poseConverge:
-        #         self.robot.leds.set_mode(self.robot.leds.MODE_ODOMETRY)
         self.poseConverge = True
 
         self.odometry.update(self.getYaw(), self.get_module_positions())
@@ -438,18 +343,7 @@ class PoseEstimator(Subsystem):
             except:
                 continue
 
-        SmartDashboard.putBoolean("single tag :3", self.single_tag)
-        SmartDashboard.putBoolean(
-            "pose 4 u :3", self.candidate_pose_OK(self.possible_pose_gbl)
-        )
-
         SmartDashboard.putNumber("gyro voltage", self.gyro.get_supply_voltage().value)
-
-        SmartDashboard.putNumber(
-            "Single/Global Pose Diff",
-            self.curEstPose.translation().norm()
-            - self.curEstPoseSingleTag.translation().norm(),
-        )
 
         SmartDashboard.putNumber("Camera/Odometry X", self.curEstPose.x)
         SmartDashboard.putNumber("Camera/Odometry Y", self.curEstPose.y)
@@ -470,29 +364,19 @@ class PoseEstimator(Subsystem):
         SmartDashboard.putNumber("Gyro/Roll", self.gyro.get_roll().value)
 
         SmartDashboard.putData("Field", self.field)
-        self.field.setRobotPose(self.curEstPose)
+        self.field.setRobotPose(self.poseEst.getEstimatedPosition())
         final_lineup = self.field.getObject("target pose")
         final_lineup.setPose(self.robot.final_lineup_pose)
-
-        SmartDashboard.putData("Field w/ Single Tag", self.field_for_single_tag)
-        self.field_for_single_tag.setRobotPose(
-            self.poseEstSingleTag.getEstimatedPosition()
-        )
 
         SmartDashboard.putNumber(
             "rotation of target pose: ", self.temp_rotation_check.degrees()
         )
 
         SmartDashboard.putNumber("skidding ratio", self.get_skidding_ratio())
-        SmartDashboard.putNumber("jerk val", self.get_jerk_val())
-
-        SmartDashboard.putNumber("pose x", self.curEstPoseSingleTag.translation().X())
-        SmartDashboard.putNumber("pose y", self.curEstPoseSingleTag.translation().Y())
-        SmartDashboard.putNumber("pose theta", self.curEstPoseSingleTag.rotation().degrees())
-
         for module in self.modules:
             SmartDashboard.putNumber(f"Swerve/{module.module_name}/Cancoder Angle", module.get_angle_CANcoder().degrees())  # type: ignore
             SmartDashboard.putNumber(f"Swerve/{module.module_name}/Motor Angle", module.get_position().angle.degrees())  # type: ignore
             SmartDashboard.putNumber(
                 f"Swerve/{module.module_name}/Velcoity", module.get_state().speed
             )
+            SmartDashboard.putNumber(f"Swerve/{module.module_name}/Motor Position", module.get_position().distance)
