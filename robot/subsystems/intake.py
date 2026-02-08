@@ -28,6 +28,10 @@ class Intake(Subsystem):
         self.commanded_intake_speed = 0.0
         self.commanded_position = 0.0
 
+    def stop(self):
+        self.stop_deploy()
+        self.stop_intake()
+
     def stop_intake(self):
         self.intake_motor.set_control(controls.VelocityTorqueCurrentFOC(0.0))
         self.intake_motor.set_control(controls.StaticBrake())
@@ -49,6 +53,12 @@ class Intake(Subsystem):
             rotations = self.deploy_motor.get_position().value 
             position = rotations# ADD GEAR RATIOS STUFF
             return position
+        
+    def can_intake_sim(self):
+        return False #self.commanded_intake_speed > 0.05
+    
+    def intake_sim_callback(self):
+        pass
         
     def set_intake_speed(self, speed):
         self.commanded_intake_speed = speed
