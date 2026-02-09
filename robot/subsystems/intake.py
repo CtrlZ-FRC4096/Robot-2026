@@ -22,8 +22,13 @@ class Intake(Subsystem):
         super().__init__()
         self.robot = robot
         
-        self.intake_motor = MotorWrapper(const.INTAKE_MOTOR_ID, "canivore")
-        self.deploy_motor = MotorWrapper(const.INTAKE_DEPLOY_MOTOR_ID, "canivore")
+        self.left_intake_motor = MotorWrapper(const.LEFT_INTAKE_MOTOR_ID, "carnivore")
+        self.right_intake_motor = MotorWrapper(const.RIGHT_INTAKE_MOTOR_ID, "carnivore")
+        self.inside_track_motor = MotorWrapper(const.INSIDE_TRACK_MOTOR_ID, "carnivore")
+        self.deploy_motor = MotorWrapper(const.INTAKE_DEPLOY_MOTOR_ID, "carnivore")
+
+        self.right_intake_motor.set_control(controls.Follower(const.LEFT_INTAKE_MOTOR_ID, False))
+        self.inside_track_motor.set_control(controls.Follower(const.LEFT_INTAKE_MOTOR_ID, False))
 
         self.commanded_intake_speed = 0.0
         self.commanded_position = 0.0
@@ -33,8 +38,8 @@ class Intake(Subsystem):
         self.stop_intake()
 
     def stop_intake(self):
-        self.intake_motor.set_control(controls.VelocityTorqueCurrentFOC(0.0))
-        self.intake_motor.set_control(controls.StaticBrake())
+        self.commanded_intake_speed = 0.0
+        self.left_intake_motor.set_control(controls.VelocityTorqueCurrentFOC(0.0))
     
     def stop_deploy(self):
         self.deploy_motor.set_control(controls.VelocityTorqueCurrentFOC(0.0))
@@ -55,27 +60,39 @@ class Intake(Subsystem):
             return position
         
     def can_intake_sim(self):
-        return False #self.commanded_intake_speed > 0.05
+        return self.robot.is_intaking
     
     def intake_sim_callback(self):
         pass
         
     def set_intake_speed(self, speed):
         self.commanded_intake_speed = speed
-        self.intake_motor.set_control(controls.VelocityTorqueCurrentFOC(speed))
+        self.left_intake_motor.set_control(controls.VelocityTorqueCurrentFOC(speed))
 
     def get_intake_speed(self):
         if self.robot.isSimulation():
             return self.commanded_intake_speed
         else:
-            return self.intake_motor.get_velocity().value
+            return self.left_intake_motor.get_velocity().value
     
     def periodic(self):
-        pass
+        if self.robot.is_intaking:
+            if self.robot.fieldConstants.LinesVertical.starting < self.robot.poseEstimator.curEstPose.X() < self.robot.fieldConstants.fieldLength - self.robot.fieldConstants.LinesVertical.starting: # neutral zone
+                self.set_intake_speed(0) # TUNE
+                self.set_position(45) # TUNE
+        elif self.robot.is_climbing:
+            self.stop_intake()
+            self.set_position(0.0)
+        elif self.robot.mechanisms_at_default:
+            self.stop_intake()
+            self.set_position(0.0)
+        
 
     def log(self):
-        SmartDashboard.putNumber("Commanded Intake Speed", self.commanded_intake_speed)
-        SmartDashboard.putNumber("Commanded Intake Position", self.commanded_position)
-        SmartDashboard.putNumber("Actual Intake Position", self.get_position())
-        SmartDashboard.putNumber("Actual Intake Speed", self.get_intake_speed())
+        SmartDashboard.putBoolean("States/Is Intaking", self.robot.is_intaking)
+        SmartDashboard.putNumber("Intake/Commanded Intake Speed", self.commanded_intake_speed)
+        SmartDashboard.putNumber("Intake/Commanded Intake Position", self.commanded_position)
+        SmartDashboard.putNumber("Intake/Actual Intake Position", self.get_position())
+        SmartDashboard.putNumber("Intake/Actual Left Intake Speed", self.get_intake_speed())
+        SmartDashboard.putNumber("Intake/Actual Right Intake Speed", self.right_intake_motor.get_velocity().value)
         

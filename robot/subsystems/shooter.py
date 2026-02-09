@@ -21,44 +21,84 @@ class Shooter(Subsystem):
     def __init__(self, robot: "Robot"):
         super().__init__()
         self.robot = robot
-        self.command_speed = 0.0
+        self.commanded_fly_speed = 0.0
+        self.commanded_hood_position = 0.0
+        self.commanded_accelerator_speed = 0.0
 
         # Flywheel motors
-        self.top_right_motor = MotorWrapper(const.TOP_RIGHT_MOTOR_ID, "canivore")  # ID?
-        self.top_left_motor = MotorWrapper(const.TOP_LEFT_MOTOR_ID, "canivore")
-        self.bottom_right_motor = MotorWrapper(const.BOTTOM_RIGHT_MOTOR_ID, "canivore")
-        self.bottom_left_motor = MotorWrapper(const.LEFT_RIGHT_MOTOR_ID, "canivore")
+        self.left_fly_motor = MotorWrapper(const.LEFT_FLY_ID, "carnivore")
+        self.right_up_fly_motor = MotorWrapper(const.RIGHT_UP_FLY_ID, "carnivore")
+        self.right_down_fly_motor = MotorWrapper(const.RIGHT_DOWN_FLY_ID, "carnivore")
 
-        self.motors = [self.top_right_motor, self.top_left_motor, self.bottom_right_motor, self.bottom_left_motor]
+        self.accelerator_motor = MotorWrapper(const.SHOOTER_ACCELERATOR_MOTOR_ID, "carnivore")
 
-    def get_speed(self):
+        self.hood_motor = MotorWrapper(const.SHOOTER_HOOD_MOTOR_ID, "carnivore")
+
+        self.right_up_fly_motor.set_control(controls.Follower(const.LEFT_FLY_ID, False))
+        self.right_down_fly_motor.set_control(controls.Follower(const.LEFT_FLY_ID, False))
+
+    def get_fly_speed(self):
         if self.robot.isSimulation():
-            return self.command_speed
+            return self.commanded_fly_speed
         else:
-            return (self.top_right_motor.get_velocity().value, \
-                    self.top_left_motor.get_velocity().value, \
-                    self.bottom_right_motor.get_velocity().value, \
-                    self.bottom_left_motor.get_velocity().value)
+            return self.left_fly_motor.get_velocity().value
                     
-    def set_speed(self, speed):
-        self.command_speed = speed
+    def set_fly_speed(self, speed):
+        self.commanded_fly_speed = speed
+        self.left_fly_motor.set_control(controls.VelocityTorqueCurrentFOC(speed))
 
-        for motor in self.motors:
-            motor.set_control(controls.VelocityTorqueCurrentFOC(speed))
+    def get_accelerator_speed(self):
+        if self.robot.isSimulation():
+            return self.commanded_accelerator_speed
+        else:
+            self.accelerator_motor.get_velocity().value
+
+    def set_accelerator_speed(self, speed):
+        self.commanded_accelerator_speed = speed
+        self.accelerator_motor.set_control(controls.VelocityTorqueCurrentFOC(speed))
+    
+    def set_hood_position(self, position):
+        if abs(self.get_hood_position() - position) <= 0.02:
+            return
+        self.commanded_position = position
+        rotations = position # ADD GEAR RATIOS STUFF
+        self.hood_motor.set_control(controls.VelocityTorqueCurrentFOC(rotations)) # USE MOTION MAGIC
+    
+    def get_hood_position(self):
+        if self.robot.isSimulation():
+            return self.commanded_position
+        else:
+            rotations = self.hood_motor.get_position().value 
+            position = rotations# ADD GEAR RATIOS STUFF
+            return position
+
+    def stop_hood(self):
+        self.hood_motor.set_control(controls.VelocityTorqueCurrentFOC(0.0))
+    
+    def stop_fly(self):
+        self.commanded_fly_speed = 0.0
+        self.left_fly_motor.set_control(controls.VelocityTorqueCurrentFOC(0.0))
+
+    def stop_accelerator(self):
+        self.commanded_accelerator_speed = 0.0
+        self.accelerator_motor.set_control(controls.VelocityTorqueCurrentFOC(0.0))
 
     def stop(self):
-        self.command_speed = 0.0
-        for motor in self.motors:
-            motor.set_control(controls.VelocityTorqueCurrentFOC(0.0))
+        self.stop_hood()
+        self.stop_fly()
+        self.stop_accelerator()
     
     def periodic(self):
         pass
 
     def log(self):
-        tr, tl, br, bl = self.get_speed()
-        SmartDashboard.putNumber("Shooter/Top Right Speed", tr)
-        SmartDashboard.putNumber("Shooter/Top Left Speed", tl)
-        SmartDashboard.putNumber("Shooter/Bottom Right Speed", br)
-        SmartDashboard.putNumber("Shooter/Bottom Left Speed", bl)
-        SmartDashboard.putNumber("Shooter/Average Speed", sum([tr, tl, br, bl]) / 4)
-        SmartDashboard.putNumber("Shooter/Commanded Speed", self.command_speed)
+        SmartDashboard.putNumber("Shooter/Left Fly Speed", self.left_fly_motor.get_velocity().value)
+        SmartDashboard.putNumber("Shooter/Right Up Fly Speed", self.right_up_fly_motor.get_velocity().value)
+        SmartDashboard.putNumber("Shooter/Right Down Fly Speed", self.right_down_fly_motor.get_velocity().value)
+        SmartDashboard.putNumber("Shooter/Commanded Fly Speed", self.commanded_fly_speed)
+
+        SmartDashboard.putNumber("Shooter/Accelerator Speed", self.get_accelerator_speed())
+        SmartDashboard.putNumber("Shooter/Commanded Accelerator Speed", self.commanded_accelerator_speed)
+        
+        SmartDashboard.putNumber("Shooter/Hood Position", self.get_hood_position())
+        SmartDashboard.putNumber("Shooter/Commanded Hood Position", self.commanded_hood_position)

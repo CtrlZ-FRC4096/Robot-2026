@@ -24,7 +24,7 @@ from commands2 import (
     CommandScheduler,
 )
 import wpilib
-from wpilib import Timer, DataLogManager, DriverStation, Field2d
+from wpilib import Timer, DataLogManager, DriverStation, Field2d, SmartDashboard
 import wpilib.sysid
 import wpimath.geometry
 import const
@@ -63,8 +63,8 @@ from pathplannerlib.auto import AutoBuilder, PathPlannerAuto, NamedCommands, Fol
 from pathplannerlib.config import PIDConstants, RobotConfig
 from pathplannerlib.controller import PPHolonomicDriveController
 
-from wpimath.geometry import Rotation2d, Pose2d, Translation2d, Pose3d, Rotation3d, Transform3d
-from wpimath.units import degreesToRadians
+from wpimath.geometry import Rotation2d, Pose2d, Translation2d, Pose3d, Rotation3d, Transform3d, Translation3d, Twist2d
+from wpimath.units import degreesToRadians, radiansToDegrees
 
 from field_const import FieldConstants
 
@@ -139,7 +139,6 @@ class Robot(CoroutineRobot):
 
         self.previously_scored = True
         self.has_coral = True
-        self.one_driver_ctrl = True
         
         # subsystems
         self.leds = subsystems.leds.LEDs(self)
@@ -167,7 +166,7 @@ class Robot(CoroutineRobot):
         
         self.oi = oi.OI(self)
 
-		### STATE MACHINE ###
+		
 
         # self.pathplanner_config = RobotConfig.fromGUISettings()
 
@@ -187,9 +186,17 @@ class Robot(CoroutineRobot):
         DataLogManager.start()
         DriverStation.startDataLog(DataLogManager.getLog())
 
-		### STATE MACHINE VARIABLES ###
+        ### STATE MACHINE VARIABLES ###
         self.running_pid_lineup = False
         self.final_lineup_pose = Pose2d()
+        self.mechanisms_at_default = True 
+        self.trench = True
+
+        self.shoot_fuel = False
+        self.shoot_intent = False
+        self.spin_up = False
+        self.is_climbing = False
+        self.is_intaking = False
 
         self.timer = Timer()
 
@@ -208,7 +215,6 @@ class Robot(CoroutineRobot):
         self.in_teleop_mode = False
 
         ## SIMMING STUFF ##
-        # const.IS_SIMULATION = self.isSimulation()
         
 
         while True:
@@ -278,11 +284,37 @@ class Robot(CoroutineRobot):
         Logs some info to shuffleboard, and standard output
         """
         wpilib.SmartDashboard.putBoolean("Has Coral", self.has_coral)
-        wpilib.SmartDashboard.putNumberArray("empty pose", [0, 0, 0])
         wpilib.SmartDashboard.putBoolean("Connected to FMS", self.driverstation.isFMSAttached())
+        SmartDashboard.putBoolean("States/Running Pid Lineup", self.running_pid_lineup)
 
         if self.isSimulation():
             wpilib.SmartDashboard.putNumberArray("RobotPose", [self.poseEstimator.curEstPose.X(), self.poseEstimator.curEstPose.Y(), self.poseEstimator.curEstPose.rotation().degrees()])
+            SmartDashboard.putNumberArray("ZeroedComponentPoses/Pose0", [0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0])
+            SmartDashboard.putNumberArray("ZeroedComponentPoses/Pose1", [0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0])
+            SmartDashboard.putNumberArray("ZeroedComponentPoses/Pose2", [0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0])
+            
+            default_shooter_hood = Translation3d(-0.23, 0.15, 0.5)
+            final_shooter_hood_quat = Rotation3d(0, 0, 0).getQuaternion()
+            final_shooter_hood_trans = default_shooter_hood
+            SmartDashboard.putNumberArray("FinalComponentPoses/Pose0", [final_shooter_hood_trans.X(), final_shooter_hood_trans.Y(), final_shooter_hood_trans.Z(), final_shooter_hood_quat.W(), final_shooter_hood_quat.X(), final_shooter_hood_quat.Y(), final_shooter_hood_quat.Z()])
+            
+
+            default_inner = Translation3d(0.3, 0.355, 0.2)
+
+            cur_inner_pos = self.intake.get_position()
+            final_inner_quat = Rotation3d(0, degreesToRadians(cur_inner_pos), 0).getQuaternion()
+            final_inner_trans = default_inner
+            SmartDashboard.putNumberArray("FinalComponentPoses/Pose1", [final_inner_trans.X(), final_inner_trans.Y(), final_inner_trans.Z(), final_inner_quat.W(), final_inner_quat.X(), final_inner_quat.Y(), final_inner_quat.Z()])
+            
+            default_outer = Translation3d(0.2825, 0.32, 0.505)
+
+            arc_vec = Translation2d(0.307975, 0).rotateBy(Rotation2d.fromDegrees(cur_inner_pos))
+            inner_outer_transform = Translation3d(arc_vec.Y(),
+                                                  0,
+                                                  arc_vec.X()) - Translation3d(0, 0, 0.307975) 
+            final_outer_quat = Rotation3d(0, degreesToRadians(-cur_inner_pos / 6.43), 0).getQuaternion()
+            final_outer_trans = default_outer + inner_outer_transform
+            SmartDashboard.putNumberArray("FinalComponentPoses/Pose2", [final_outer_trans.X(), final_outer_trans.Y(), final_outer_trans.Z(), final_outer_quat.W(), final_outer_quat.X(), final_outer_quat.Y(), final_outer_quat.Z()])
             if self.in_teleop_mode:
                 self.fuel_sim.updateSim()
 

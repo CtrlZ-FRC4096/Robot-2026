@@ -245,7 +245,7 @@ class Drivetrain(Subsystem):
             self.robot.poseEstimator.curEstPose = Pose2d(curPose.X() + final_vel.X() / 30, curPose.Y() + final_vel.Y() / 30, Rotation2d.fromDegrees(curPose.rotation().degrees() + final_vel.rotation().degrees() /700.0))
             if self.robot.poseEstimator.poseIsOffField(self.robot.poseEstimator.curEstPose) or self.in_obstacle(self.robot.poseEstimator.curEstPose.translation()):
                 self.robot.poseEstimator.curEstPose = curPose
-            self.robot.poseEstimator.set_yaw(self.robot.poseEstimator.curEstPose.rotation().degrees() + self.log_chassis.omega_dps / 20)
+            self.robot.poseEstimator.set_yaw(self.robot.poseEstimator.curEstPose.rotation().degrees())
             
             self.two_previous_sim_speeds = self.previous_sim_speeds
             self.previous_sim_speeds = ChassisSpeeds(final_vel.X(), final_vel.Y())
