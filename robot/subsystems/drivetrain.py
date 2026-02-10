@@ -387,8 +387,14 @@ class Drivetrain(Subsystem):
         return DriverStation.getAlliance() == DriverStation.Alliance.kRed
 
     def periodic(self):
+        self.chassis_accel = (
+            self.get_robot_relative_speeds() - self.previous_chassisspeeds
+        ) / 0.05
+
+        self.previous_chassisspeeds = self.get_robot_relative_speeds()
+
         if self.robot.in_autonomous_mode and self.robot.running_pid_lineup:
-                self.go_to_pose_profiled_pid(self.robot.final_lineup_pose)
+            self.go_to_pose_profiled_pid(self.robot.final_lineup_pose)
 
     def log(self):
         SmartDashboard.putData("PID Controller Reef XY", self.xy_controller)
