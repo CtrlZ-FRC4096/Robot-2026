@@ -34,8 +34,8 @@ class Shooter(Subsystem):
 
         self.hood_motor = MotorWrapper(const.SHOOTER_HOOD_MOTOR_ID, "carnivore")
 
-        self.right_up_fly_motor.set_control(controls.Follower(const.LEFT_FLY_ID, False))
-        self.right_down_fly_motor.set_control(controls.Follower(const.LEFT_FLY_ID, False))
+        self.right_up_fly_motor.set_control(controls.Follower(const.LEFT_FLY_ID, signals.MotorAlignmentValue(0)))
+        self.right_down_fly_motor.set_control(controls.Follower(const.LEFT_FLY_ID, signals.MotorAlignmentValue(0)))
 
     def get_fly_speed(self):
         if self.robot.isSimulation():

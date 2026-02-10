@@ -242,7 +242,7 @@ class Drivetrain(Subsystem):
                 self.damping_accel = False
             self.final_velo = final_vel.translation()
 
-            self.robot.poseEstimator.curEstPose = Pose2d(curPose.X() + final_vel.X() / 30, curPose.Y() + final_vel.Y() / 30, Rotation2d.fromDegrees(curPose.rotation().degrees() + final_vel.rotation().degrees() /700.0))
+            self.robot.poseEstimator.curEstPose = Pose2d(curPose.X() + final_vel.X() / 30, curPose.Y() + final_vel.Y() / 30, Rotation2d.fromDegrees(curPose.rotation().degrees() + final_vel.rotation().degrees() / 8.0))
             if self.robot.poseEstimator.poseIsOffField(self.robot.poseEstimator.curEstPose) or self.in_obstacle(self.robot.poseEstimator.curEstPose.translation()):
                 self.robot.poseEstimator.curEstPose = curPose
             self.robot.poseEstimator.set_yaw(self.robot.poseEstimator.curEstPose.rotation().degrees())

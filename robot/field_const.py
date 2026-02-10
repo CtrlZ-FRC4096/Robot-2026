@@ -29,8 +29,7 @@ class FieldConstants:
     def __init__(self):
         # AprilTag related constants
         self.tag_map = AprilTagFieldLayout.loadField(AprilTagField.k2026RebuiltWelded)
-
-        
+    
         self.fieldLength = self.tag_map.getFieldLength()
         self.fieldWidth = self.tag_map.getFieldWidth()
         self.fuelDiameter = 0.15 # meters

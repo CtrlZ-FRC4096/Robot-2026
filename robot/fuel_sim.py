@@ -584,7 +584,9 @@ class FuelSim:
             if np.any(in_mask):
                 remove_mask |= in_mask
                 if intake.callback:
-                    intake.callback() 
+                    count = np.sum(in_mask)
+                    for _ in range(count):
+                        intake.callback() 
         
         if np.any(remove_mask):
             # Indices relative to active_idx
