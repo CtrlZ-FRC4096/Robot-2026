@@ -34,8 +34,8 @@ class Shooter(Subsystem):
 
         self.hood_motor = MotorWrapper(const.SHOOTER_HOOD_MOTOR_ID, "carnivore")
 
-        self.right_up_fly_motor.set_control(controls.Follower(const.LEFT_FLY_ID, signals.MotorAlignmentValue(0)))
-        self.right_down_fly_motor.set_control(controls.Follower(const.LEFT_FLY_ID, signals.MotorAlignmentValue(0)))
+        self.right_up_fly_motor.set_control(controls.Follower(const.LEFT_FLY_ID, False))
+        self.right_down_fly_motor.set_control(controls.Follower(const.LEFT_FLY_ID, False))
 
     def get_fly_speed(self):
         if self.robot.isSimulation():
@@ -88,11 +88,14 @@ class Shooter(Subsystem):
         self.stop_fly()
         self.stop_accelerator()
     
+    def fly_speed_to_launch_vel(self, fly_speed):
+        return fly_speed / 5
+
     def periodic(self):
         if self.robot.shoot_fuel:
             self.set_fly_speed(30.0)
             self.set_accelerator_speed(30.0)
-            self.set_hood_position(30.0)
+            self.set_hood_position(40)
         elif self.robot.shoot_intent:
             self.set_fly_speed(30.0)
             self.stop_accelerator()

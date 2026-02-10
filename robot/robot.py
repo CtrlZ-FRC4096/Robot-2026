@@ -220,11 +220,13 @@ class Robot(CoroutineRobot):
         self.in_teleop_mode = False
 
         ## SIMMING STUFF ##
-        self.max_fuel_in_hopper = 24
-        self.x_hopper_max = inchesToMeters(25)
-        self.y_hopper_max = inchesToMeters(18)
-        self.z_hopper_max = inchesToMeters(15)
-        self.fuel_in_hopper = 0
+        if self.isSimulation():
+            self.max_fuel_in_hopper = 24
+            self.x_hopper_max = inchesToMeters(25)
+            self.y_hopper_max = inchesToMeters(18)
+            self.z_hopper_max = inchesToMeters(15)
+            self.fuel_in_hopper = 0
+            self.tick_count = 0
 
         while True:
             yield
@@ -333,15 +335,27 @@ class Robot(CoroutineRobot):
                     idx = fuel_num - 1
                     x_coord = (idx % per_x) * fuel_diam
                     y_coord = ((idx // per_x) % per_y) * fuel_diam
-                    z_coord = (idx // (per_x * per_y)) * fuel_diam
+                    z_coord = (idx // (per_x * per_y)) * fuel_diam + 0.5
                     SmartDashboard.putNumberArray(f"Hopper/Sim Fuels/Fuel {fuel_num}", [default_fuel_pose.X() + x_coord, default_fuel_pose.Y() + y_coord, default_fuel_pose.Z() + z_coord, 1.0, 0.0, 0.0, 0.0])
                 else:
-                    SmartDashboard.putNumberArray(f"Hopper/Sim Fuels/Fuel {fuel_num}", [])
+                    SmartDashboard.putNumberArray(f"Hopper/Sim Fuels/Fuel {fuel_num}", [0, 0, 0, 1.0, 0.0, 0.0, 0.0])
 
+            fly_speed = self.shooter.get_fly_speed()
+            accel_speed = self.shooter.get_accelerator_speed()
+            if fly_speed >= 5 and accel_speed >= 5 and self.fuel_in_hopper > 0:
+                #we are shooting every 0.06 seconds
+                if self.tick_count % 3 == 0:
+                    launch_vel = self.shooter.fly_speed_to_launch_vel(fly_speed)
+
+                    trans = Translation3d(0, 0.27, 0.52) + Translation3d(0, -0.11, 0) + Translation3d(0, 0.11* math.cos(degreesToRadians(cur_hood_pos)), 0.11*math.sin(degreesToRadians(cur_hood_pos)))
+                    launch_pos = Translation3d(self.poseEstimator.curEstPose.translation()) + trans
+                    self.fuel_sim.launchFuel(launch_vel, cur_hood_pos, 0, launch_pos)
+                    self.fuel_in_hopper -= 1
 
             if self.in_teleop_mode:
                 self.fuel_sim.updateSim()
             SmartDashboard.putNumber("Sim/Fuel in Hopper", self.fuel_in_hopper)
+            self.tick_count += 1
         for s in self.subsystems:
             s.log()
 
