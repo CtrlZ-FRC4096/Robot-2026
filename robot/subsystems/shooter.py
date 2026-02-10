@@ -60,13 +60,13 @@ class Shooter(Subsystem):
     def set_hood_position(self, position):
         if abs(self.get_hood_position() - position) <= 0.02:
             return
-        self.commanded_position = position
+        self.commanded_hood_position = position
         rotations = position # ADD GEAR RATIOS STUFF
         self.hood_motor.set_control(controls.VelocityTorqueCurrentFOC(rotations)) # USE MOTION MAGIC
     
     def get_hood_position(self):
         if self.robot.isSimulation():
-            return self.commanded_position
+            return self.commanded_hood_position
         else:
             rotations = self.hood_motor.get_position().value 
             position = rotations# ADD GEAR RATIOS STUFF
@@ -89,8 +89,23 @@ class Shooter(Subsystem):
         self.stop_accelerator()
     
     def periodic(self):
-        pass
-
+        if self.robot.shoot_fuel:
+            self.set_fly_speed(30.0)
+            self.set_accelerator_speed(30.0)
+            self.set_hood_position(30.0)
+        elif self.robot.shoot_intent:
+            self.set_fly_speed(30.0)
+            self.stop_accelerator()
+            if True:
+                self.set_hood_position(60.0) #add pose checking
+        elif self.robot.is_climbing:
+            self.set_hood_position(0.0)
+            self.stop_fly()
+            self.stop_accelerator()
+        elif self.robot.mechanisms_at_default:
+            self.set_hood_position(0.0)
+            self.stop_fly()
+            self.stop_accelerator()
     def log(self):
         SmartDashboard.putNumber("Shooter/Left Fly Speed", self.left_fly_motor.get_velocity().value)
         SmartDashboard.putNumber("Shooter/Right Up Fly Speed", self.right_up_fly_motor.get_velocity().value)
@@ -102,3 +117,6 @@ class Shooter(Subsystem):
         
         SmartDashboard.putNumber("Shooter/Hood Position", self.get_hood_position())
         SmartDashboard.putNumber("Shooter/Commanded Hood Position", self.commanded_hood_position)
+
+        SmartDashboard.putBoolean("States/Shoot Fuel", self.robot.shoot_fuel)
+        SmartDashboard.putBoolean("States/Shoot Intent", self.robot.shoot_intent)

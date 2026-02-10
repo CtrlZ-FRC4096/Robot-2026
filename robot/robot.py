@@ -45,6 +45,7 @@ import subsystems.leds
 import subsystems.limelight
 import subsystems.poseEstimator
 import subsystems.intake
+from subsystems import shooter, hopper
 
 from wpilibextra.coroutine.coroutine_robot import CoroutineRobot
 from wpilibextra.remote_shell import RemoteShell
@@ -145,12 +146,16 @@ class Robot(CoroutineRobot):
         self.poseEstimator = subsystems.poseEstimator.PoseEstimator(self)
         self.drivetrain = subsystems.drivetrain.Drivetrain(self)
         self.intake = subsystems.intake.Intake(self)
+        self.shooter = shooter.Shooter(self)
+        self.hopper = hopper.Hopper(self)
 
         self.subsystems = [
             self.drivetrain,
             self.leds,
             self.poseEstimator,
-            self.intake
+            self.intake,
+            self.shooter,
+            self.hopper,
         ]
 
         # If everything in self.subsystems is a Subsystem object, then
@@ -215,7 +220,11 @@ class Robot(CoroutineRobot):
         self.in_teleop_mode = False
 
         ## SIMMING STUFF ##
-        
+        self.max_fuel_in_hopper = 30
+        self.x_hopper_max = inchesToMeters(20)
+        self.y_hopper_max = inchesToMeters(25)
+        self.z_hopper_max = inchesToMeters(15)
+        self.fuel_in_hopper = 1
 
         while True:
             yield
@@ -264,8 +273,7 @@ class Robot(CoroutineRobot):
         self.in_teleop_mode = True
         if self.isSimulation():
             from fuel_sim import FuelSim
-            self.fuel_sim = FuelSim(self)
-            # self.fuel_in_hopper : list[FuelSim.Fuel] = []
+            self.fuel_sim = FuelSim(self, self.intake.can_intake_sim, self.intake.intake_sim_callback)
             self.fuel_sim.start()
         self.timer.start()
 
@@ -284,30 +292,31 @@ class Robot(CoroutineRobot):
         Logs some info to shuffleboard, and standard output
         """
         wpilib.SmartDashboard.putBoolean("Has Coral", self.has_coral)
+        SmartDashboard.putNumberArray("Empty Pose", [0,0,0,1,0,0,0])
         wpilib.SmartDashboard.putBoolean("Connected to FMS", self.driverstation.isFMSAttached())
         SmartDashboard.putBoolean("States/Running Pid Lineup", self.running_pid_lineup)
 
         if self.isSimulation():
             wpilib.SmartDashboard.putNumberArray("RobotPose", [self.poseEstimator.curEstPose.X(), self.poseEstimator.curEstPose.Y(), self.poseEstimator.curEstPose.rotation().degrees()])
-            SmartDashboard.putNumberArray("ZeroedComponentPoses/Pose0", [0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0])
-            SmartDashboard.putNumberArray("ZeroedComponentPoses/Pose1", [0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0])
-            SmartDashboard.putNumberArray("ZeroedComponentPoses/Pose2", [0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0])
+            # SmartDashboard.putNumberArray("ZeroedComponentPoses/Pose0", [0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0])
+            # SmartDashboard.putNumberArray("ZeroedComponentPoses/Pose1", [0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0])
+            # SmartDashboard.putNumberArray("ZeroedComponentPoses/Pose2", [0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0])
             
+
             default_shooter_hood = Translation3d(-0.23, 0.15, 0.5)
-            final_shooter_hood_quat = Rotation3d(0, 0, 0).getQuaternion()
+            cur_hood_pos = self.shooter.get_hood_position()
+            final_shooter_hood_quat = Rotation3d(degreesToRadians(cur_hood_pos), 0, 0).getQuaternion()
             final_shooter_hood_trans = default_shooter_hood
             SmartDashboard.putNumberArray("FinalComponentPoses/Pose0", [final_shooter_hood_trans.X(), final_shooter_hood_trans.Y(), final_shooter_hood_trans.Z(), final_shooter_hood_quat.W(), final_shooter_hood_quat.X(), final_shooter_hood_quat.Y(), final_shooter_hood_quat.Z()])
             
 
             default_inner = Translation3d(0.3, 0.355, 0.2)
-
             cur_inner_pos = self.intake.get_position()
             final_inner_quat = Rotation3d(0, degreesToRadians(cur_inner_pos), 0).getQuaternion()
             final_inner_trans = default_inner
             SmartDashboard.putNumberArray("FinalComponentPoses/Pose1", [final_inner_trans.X(), final_inner_trans.Y(), final_inner_trans.Z(), final_inner_quat.W(), final_inner_quat.X(), final_inner_quat.Y(), final_inner_quat.Z()])
             
             default_outer = Translation3d(0.2825, 0.32, 0.505)
-
             arc_vec = Translation2d(0.307975, 0).rotateBy(Rotation2d.fromDegrees(cur_inner_pos))
             inner_outer_transform = Translation3d(arc_vec.Y(),
                                                   0,
@@ -315,9 +324,22 @@ class Robot(CoroutineRobot):
             final_outer_quat = Rotation3d(0, degreesToRadians(-cur_inner_pos / 6.43), 0).getQuaternion()
             final_outer_trans = default_outer + inner_outer_transform
             SmartDashboard.putNumberArray("FinalComponentPoses/Pose2", [final_outer_trans.X(), final_outer_trans.Y(), final_outer_trans.Z(), final_outer_quat.W(), final_outer_quat.X(), final_outer_quat.Y(), final_outer_quat.Z()])
+            
+            default_fuel_pose = Translation3d(-0.35, -0.43, 0.1)
+            for fuel_num in range(1,self.max_fuel_in_hopper + 1):
+                if fuel_num <= self.fuel_in_hopper:
+                    #put the fuel in
+                    x_coord = (fuel_num % (self.x_hopper_max // self.fieldConstants.fuelDiameter)) * self.fieldConstants.fuelDiameter
+                    y_coord = (fuel_num % (self.y_hopper_max // self.fieldConstants.fuelDiameter)) * self.fieldConstants.fuelDiameter
+                    z_coord = (fuel_num % (self.z_hopper_max // self.fieldConstants.fuelDiameter)) * self.fieldConstants.fuelDiameter
+                    SmartDashboard.putNumberArray(f"Hopper/Sim Fuels/Fuel {fuel_num}", [default_fuel_pose.X() + x_coord, default_fuel_pose.Y() + y_coord, default_fuel_pose.Z() + z_coord, 1.0, 0.0, 0.0, 0.0])
+                else:
+                    SmartDashboard.putNumberArray(f"Hopper/Sim Fuels/Fuel {fuel_num}", [])
+
+
             if self.in_teleop_mode:
                 self.fuel_sim.updateSim()
-
+            SmartDashboard.putNumber("Sim/Fuel in Hopper", self.fuel_in_hopper)
         for s in self.subsystems:
             s.log()
 

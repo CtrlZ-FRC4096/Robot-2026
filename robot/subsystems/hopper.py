@@ -17,7 +17,7 @@ from motor_wrapper import MotorWrapper
 import const
 from wpilib import SmartDashboard
 
-class Shooter(Subsystem):
+class Hopper(Subsystem):
     def __init__(self, robot: "Robot"):
         super().__init__()
         self.robot = robot
@@ -43,7 +43,7 @@ class Shooter(Subsystem):
     
     def periodic(self):
         if self.robot.shoot_fuel:
-            self.set_speed(0.0) # TUNE
+            self.set_speed(30.0) # TUNE
         elif self.robot.is_climbing:
             self.stop()
         elif self.robot.mechanisms_at_default:

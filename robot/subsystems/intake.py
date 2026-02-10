@@ -63,7 +63,7 @@ class Intake(Subsystem):
         return self.robot.is_intaking
     
     def intake_sim_callback(self):
-        pass
+        self.robot.fuel_in_hopper += 1
         
     def set_intake_speed(self, speed):
         self.commanded_intake_speed = speed

@@ -6,6 +6,7 @@ from typing import List, Callable, Optional
 
 from wpimath.geometry import Pose2d, Pose3d, Rotation2d, Rotation3d, Transform3d, Translation2d, Translation3d
 from wpimath.kinematics import ChassisSpeeds
+from wpimath.units import inchesToMeters
 
 class FuelSim:
     PERIOD = 0.02 # sec
@@ -123,7 +124,7 @@ class FuelSim:
             cls.instance = FuelSim()
         return cls.instance
 
-    def __init__(self, robot=None):
+    def __init__(self, robot, can_intake, intake_callback):
         # We use a fixed-size buffer to avoid allocation during simulation
         self.positions = np.zeros((self.MAX_FUELS, 3))
         self.velocities = np.zeros((self.MAX_FUELS, 3))
@@ -135,7 +136,8 @@ class FuelSim:
         self.robotWidth = 0.0
         self.robotLength = 0.0
         self.bumperHeight = 0.0
-        self.intakes = []
+        self.intake = FuelSim.SimIntake(self, inchesToMeters(16.69), inchesToMeters(26.18), inchesToMeters(-18.98), inchesToMeters(13.01), can_intake, intake_callback)
+        self.intakes = [self.intake]
         
         # Hubs are handled specially
         self.blueHub = FuelSim.Hub(self, np.array([4.61, self.FIELD_WIDTH / 2]), np.array([5.3, self.FIELD_WIDTH / 2, 0.89]), 1)
@@ -552,7 +554,6 @@ class FuelSim:
             vel[idx[vm], 1] *= -1.2
 
     def _handle_intakes(self, pos):
-        return
         if not self.intakes: return
 
         robot_pose = self.robotPoseSupplier()

@@ -216,4 +216,8 @@ class OI:
         @self.driver1.A.whenPressed
         def _():
             self.robot.is_intaking = not self.robot.is_intaking
+        
+        @self.driver1.X.whenPressed
+        def _():
+            self.robot.shoot_fuel = not self.robot.shoot_fuel
             
