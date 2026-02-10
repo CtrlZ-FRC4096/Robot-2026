@@ -392,13 +392,13 @@ class PoseEstimator(Subsystem):
 
         # # "fixed shot time" = lookup table interpolation
         # time_from_speaker = self.get_time_from_speaker()
-        time_from_speaker = 0.3
+        time_from_hub = 0.3
 
         # # create virtual goal X and Y based on XXXX
-        virtual_goal_x = target_goal.x + time_from_speaker * (
+        virtual_goal_x = target_goal.x + time_from_hub * (
             field_relative_speeds.vx + field_relative_accel.vx * 0.1
         )
-        virtual_goal_y = target_goal.y + time_from_speaker * (
+        virtual_goal_y = target_goal.y + time_from_hub * (
             field_relative_speeds.vy + field_relative_accel.vy * 0.1
         )
 
@@ -414,9 +414,9 @@ class PoseEstimator(Subsystem):
 
     def get_robot_distance_to_hub_meters(self):
         if DriverStation.getAlliance() == DriverStation.Alliance.kRed:
-            target_goal = const.RED_ALLIANCE_SPEAKER_POSITION
+            target_goal = self.robot.fieldConstants.Hub.oppTopCenterPoint
         else:
-            target_goal = const.BLUE_ALLIANCE_SPEAKER_POSITION
+            target_goal = self.robot.fieldConstants.Hub.topCenterPoint
 
         ## Moving target aiming
         # get field relative speeds
