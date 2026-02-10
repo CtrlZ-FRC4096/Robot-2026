@@ -210,12 +210,14 @@ class OI:
         
         @self.driver1.POV.DOWN.whenPressed
         def _():
-            if self.robot.one_driver_ctrl:
-                if self.robot.isSimulation():
-                    self.robot.sim_coral_scored.clear()
-                else:
-                    robot.poseEstimator.set_yaw(0.0)
-                    self.robot_oriented_angle = 0.0
-            else:
-                self.robot.poseEstimator.set_yaw(0.0)
-                self.robot_oriented_angle = 0.0
+            robot.poseEstimator.set_yaw(0.0)
+            self.robot_oriented_angle = 0.0
+        
+        @self.driver1.A.whenPressed
+        def _():
+            self.robot.is_intaking = not self.robot.is_intaking
+        
+        @self.driver1.X.whenPressed
+        def _():
+            self.robot.shoot_fuel = not self.robot.shoot_fuel
+            

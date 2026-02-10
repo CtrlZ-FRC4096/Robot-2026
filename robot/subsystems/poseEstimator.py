@@ -155,7 +155,7 @@ class PoseEstimator(Subsystem):
         )
 
 
-        self.curEstPose = Pose2d(self.robot.fieldConstants.flip_Translation2d(Translation2d(7.170, 3.944)), self.getYaw())
+        self.curEstPose = Pose2d(0, 0, 0)
 
         self.poseEst = SwerveDrive4PoseEstimator(
             const.SWERVE_KINEMATICS, self.getYaw(), self.get_module_positions(), self.curEstPose # type: ignore
@@ -343,7 +343,7 @@ class PoseEstimator(Subsystem):
             except:
                 continue
 
-        SmartDashboard.putNumber("gyro voltage", self.gyro.get_supply_voltage().value)
+        SmartDashboard.putNumber("Gyro/gyro voltage", self.gyro.get_supply_voltage().value)
 
         SmartDashboard.putNumber("Camera/Odometry X", self.curEstPose.x)
         SmartDashboard.putNumber("Camera/Odometry Y", self.curEstPose.y)
@@ -368,11 +368,7 @@ class PoseEstimator(Subsystem):
         final_lineup = self.field.getObject("target pose")
         final_lineup.setPose(self.robot.final_lineup_pose)
 
-        SmartDashboard.putNumber(
-            "rotation of target pose: ", self.temp_rotation_check.degrees()
-        )
-
-        SmartDashboard.putNumber("skidding ratio", self.get_skidding_ratio())
+        SmartDashboard.putNumber("Skidding Ratio", self.get_skidding_ratio())
         for module in self.modules:
             SmartDashboard.putNumber(f"Swerve/{module.module_name}/Cancoder Angle", module.get_angle_CANcoder().degrees())  # type: ignore
             SmartDashboard.putNumber(f"Swerve/{module.module_name}/Motor Angle", module.get_position().angle.degrees())  # type: ignore

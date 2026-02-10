@@ -24,7 +24,7 @@ from commands2 import (
     CommandScheduler,
 )
 import wpilib
-from wpilib import Timer, DataLogManager, DriverStation, Field2d
+from wpilib import Timer, DataLogManager, DriverStation, Field2d, SmartDashboard
 import wpilib.sysid
 import wpimath.geometry
 import const
@@ -44,9 +44,16 @@ import subsystems.leds
 
 import subsystems.limelight
 import subsystems.poseEstimator
+import subsystems.intake
+from subsystems import shooter, hopper
 
 from wpilibextra.coroutine.coroutine_robot import CoroutineRobot
 from wpilibextra.remote_shell import RemoteShell
+
+from pykit.logger import Logger
+from pykit.networktables.nt4Publisher import NT4Publisher
+from pykit.wpilog.wpilogwriter import WPILOGWriter
+
 from coroutines import Coroutines
 
 import inspect
@@ -57,8 +64,8 @@ from pathplannerlib.auto import AutoBuilder, PathPlannerAuto, NamedCommands, Fol
 from pathplannerlib.config import PIDConstants, RobotConfig
 from pathplannerlib.controller import PPHolonomicDriveController
 
-from wpimath.geometry import Rotation2d, Pose2d, Translation2d, Pose3d, Rotation3d, Transform3d
-from wpimath.units import degreesToRadians
+from wpimath.geometry import Rotation2d, Pose2d, Translation2d, Pose3d, Rotation3d, Transform3d, Translation3d, Twist2d
+from wpimath.units import degreesToRadians, radiansToDegrees
 
 from field_const import FieldConstants
 
@@ -71,6 +78,7 @@ from commands2 import (
 import time
 from wpilibextra.coroutine import CoroutineCommand
 from wpilib import SmartDashboard
+
 
 
 log = logging.getLogger("robot")
@@ -92,6 +100,15 @@ class Robot(CoroutineRobot):
     """
 
     def robot_start(self):
+        # Initialize PyKit Logger
+        Logger.recordMetadata("Project", "Robot-2026")
+        if self.isSimulation():
+            Logger.addDataReciever(NT4Publisher(True))
+        else:
+            Logger.addDataReciever(NT4Publisher(False))
+            Logger.addDataReciever(WPILOGWriter())
+        Logger.start()
+        
         # Networktables
         nt_inst = ntcore.NetworkTableInstance.getDefault()
         nt_inst.startServer()
@@ -118,25 +135,27 @@ class Robot(CoroutineRobot):
         # Match Stuff
         self.match_time = -1
 
-        ## SIMMING STUFF ##
-        # const.IS_SIMULATION = self.isSimulation()
-
         # Command scheduler
         self.scheduler = CommandScheduler.getInstance()
 
         self.previously_scored = True
         self.has_coral = True
-        self.one_driver_ctrl = True
         
         # subsystems
         self.leds = subsystems.leds.LEDs(self)
         self.poseEstimator = subsystems.poseEstimator.PoseEstimator(self)
         self.drivetrain = subsystems.drivetrain.Drivetrain(self)
+        self.intake = subsystems.intake.Intake(self)
+        self.shooter = shooter.Shooter(self)
+        self.hopper = hopper.Hopper(self)
 
         self.subsystems = [
             self.drivetrain,
             self.leds,
             self.poseEstimator,
+            self.intake,
+            self.shooter,
+            self.hopper,
         ]
 
         # If everything in self.subsystems is a Subsystem object, then
@@ -152,7 +171,7 @@ class Robot(CoroutineRobot):
         
         self.oi = oi.OI(self)
 
-		### STATE MACHINE ###
+		
 
         # self.pathplanner_config = RobotConfig.fromGUISettings()
 
@@ -172,9 +191,17 @@ class Robot(CoroutineRobot):
         DataLogManager.start()
         DriverStation.startDataLog(DataLogManager.getLog())
 
-		### STATE MACHINE VARIABLES ###
+        ### STATE MACHINE VARIABLES ###
         self.running_pid_lineup = False
         self.final_lineup_pose = Pose2d()
+        self.mechanisms_at_default = True 
+        self.trench = True
+
+        self.shoot_fuel = False
+        self.shoot_intent = False
+        self.spin_up = False
+        self.is_climbing = False
+        self.is_intaking = False
 
         self.timer = Timer()
 
@@ -190,12 +217,18 @@ class Robot(CoroutineRobot):
             pass
 
         self.in_autonomous_mode = False
+        self.in_teleop_mode = False
+
+        ## SIMMING STUFF ##
+        self.max_fuel_in_hopper = 30
+        self.x_hopper_max = inchesToMeters(20)
+        self.y_hopper_max = inchesToMeters(25)
+        self.z_hopper_max = inchesToMeters(15)
+        self.fuel_in_hopper = 1
 
         while True:
             yield
             self.scheduler.run()
-
-
 
     ### DISABLED ###
 
@@ -221,6 +254,9 @@ class Robot(CoroutineRobot):
         self.scheduler.cancelAll()
         self.in_autonomous_mode = True
 
+        # if self.isSimulation():
+        #     self.fuel_sim.start()
+
         if self.fieldConstants.shouldFlip:
             self.poseEstimator.set_yaw(90)
         else:
@@ -234,7 +270,11 @@ class Robot(CoroutineRobot):
         self.running_pid_lineup = False
         self.in_autonomous_mode = False
         self.oi.robot_oriented_angle = self.poseEstimator.getYaw().degrees()
-
+        self.in_teleop_mode = True
+        if self.isSimulation():
+            from fuel_sim import FuelSim
+            self.fuel_sim = FuelSim(self, self.intake.can_intake_sim, self.intake.intake_sim_callback)
+            self.fuel_sim.start()
         self.timer.start()
 
         while True:
@@ -252,65 +292,54 @@ class Robot(CoroutineRobot):
         Logs some info to shuffleboard, and standard output
         """
         wpilib.SmartDashboard.putBoolean("Has Coral", self.has_coral)
-        wpilib.SmartDashboard.putNumberArray("empty pose", [0, 0, 0])
+        SmartDashboard.putNumberArray("Empty Pose", [0,0,0,1,0,0,0])
         wpilib.SmartDashboard.putBoolean("Connected to FMS", self.driverstation.isFMSAttached())
+        SmartDashboard.putBoolean("States/Running Pid Lineup", self.running_pid_lineup)
 
         if self.isSimulation():
             wpilib.SmartDashboard.putNumberArray("RobotPose", [self.poseEstimator.curEstPose.X(), self.poseEstimator.curEstPose.Y(), self.poseEstimator.curEstPose.rotation().degrees()])
-            #elevator stage 3
-            # wpilib.SmartDashboard.putNumberArray("ZeroedComponentPoses/Pose0", [0.0, 0.0, inchesToMeters(self.elevator.command_height) * 0.87, 0.0, 0.0, 0.0, 0.0])
-            # #elevator stage 2
-            # wpilib.SmartDashboard.putNumberArray("ZeroedComponentPoses/Pose1", [0.0, 0.0, inchesToMeters(self.elevator.command_height) * 0.87 / 2, 0.0, 0.0, 0.0, 0.0])
-            # #end effector
-            # wpilib.SmartDashboard.putNumberArray("ZeroedComponentPoses/Pose2", [0.0, -1 * inchesToMeters(self.end_effector.command_position) / math.sqrt(2), inchesToMeters(self.elevator.command_height) * 0.87 * 4 / 3 + inchesToMeters(self.end_effector.command_position) / math.sqrt(2), 0.0, 0.0, 0.0, 0.0])
-            # if self.has_coral:
-            #     #la coral
-            #     coral_pose = [0.0, -1 * inchesToMeters(self.end_effector.command_position) / math.sqrt(2), inchesToMeters(self.elevator.command_height) * 0.87 * 4 / 3 + inchesToMeters(self.end_effector.command_position) / math.sqrt(2), 0.0, 0.0, 0.0, 0.0]
-            # else:
-            #     coral_pose = []
-            # wpilib.SmartDashboard.putNumberArray("ZeroedComponentPoses/Pose3", coral_pose)
-            # new_pose = Pose3d(old_pose.translation(), old_rotation)
-            # for face in range(6):
-            #     for level in range(4):
-            #         if level == 0:
-            #             amount_in = -0.5
-            #             pitch_rotate = 15
-            #             amount_up = 0.0
-            #         elif level == 1:
-            #             amount_in = -4
-            #             pitch_rotate = 0
-            #             amount_up = 0.0
-            #         elif level == 2:
-            #             amount_in = -4
-            #             pitch_rotate = 0
-            #             amount_up = 0.0
-            #         elif level == 3:
-            #             amount_in = -4
-            #             pitch_rotate = 25
-            #             amount_up = 3.25
-            #         pose_right : Pose3d = self.fieldConstants.Reef.branchPositions[face * 2][level].transformBy(Transform3d(Pose3d(),Pose3d(inchesToMeters(amount_in), 0.0, inchesToMeters(amount_up), Rotation3d(0.0, degreesToRadians(pitch_rotate), 0.0))))
-            #         quat_right = pose_right.rotation().getQuaternion()
-            #         pose_left : Pose3d = self.fieldConstants.Reef.branchPositions[face * 2 + 1][level].transformBy(Transform3d(Pose3d(),Pose3d(inchesToMeters(amount_in), 0.0, inchesToMeters(amount_up), Rotation3d(0.0, degreesToRadians(pitch_rotate), 0.0))))
-            #         quat_left = pose_left.rotation().getQuaternion()
-            #         if [face + 1, 4 - level, True] not in self.sim_coral_scored:
-            #             appending_pose_right = []
-            #         else:
-            #             appending_pose_right = [pose_right.X(), pose_right.Y(), pose_right.Z(), quat_right.W(), quat_right.X(), quat_right.Y(), quat_right.Z()]
-            #         if [face + 1, 4 - level, False] not in self.sim_coral_scored:
-            #             appending_pose_left = []
-            #         else:
-            #             appending_pose_left = [pose_left.X(), pose_left.Y(), pose_left.Z(), quat_left.W(), quat_left.X(), quat_left.Y(), quat_left.Z()]
-            #         wpilib.SmartDashboard.putNumberArray("coral right " + str(face + 1) + str(4 -level), appending_pose_right)
-            #         wpilib.SmartDashboard.putNumberArray("coral left " + str(face + 1) + str(4 - level), appending_pose_left)
-            # wpilib.SmartDashboard.putNumber("Sim Pieces Scored", len(self.sim_coral_scored))
-            # coral_points_scored = 0
-            # for coral in self.sim_coral_scored:
-            #     coral_points_scored += coral[1] + 1
-            # SmartDashboard.putNumber("Sim Points Scored", coral_points_scored)
-            # wpilib.SmartDashboard.putNumberArray("FinalComponentPoses/Pose3", [0.0,0.0, inchesToMeters(elevator_height) * 1.5, pose3quat.X(), pose3quat.Y(), pose3quat.Z(), pose3quat.W()])
-            # wpilib.SmartDashboard.putNumberArray("FinalComponentPoses/Pose4", [0.0, 0.0, inchesToMeters(elevator_height) / 2, 0.0, 0.0, 0.0, 0.0])
-            # wpilib.SmartDashboard.putNumberArray("FinalComponentPoses/Pose5", [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+            # SmartDashboard.putNumberArray("ZeroedComponentPoses/Pose0", [0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0])
+            # SmartDashboard.putNumberArray("ZeroedComponentPoses/Pose1", [0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0])
+            # SmartDashboard.putNumberArray("ZeroedComponentPoses/Pose2", [0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0])
+            
 
+            default_shooter_hood = Translation3d(-0.23, 0.15, 0.5)
+            cur_hood_pos = self.shooter.get_hood_position()
+            final_shooter_hood_quat = Rotation3d(degreesToRadians(cur_hood_pos), 0, 0).getQuaternion()
+            final_shooter_hood_trans = default_shooter_hood
+            SmartDashboard.putNumberArray("FinalComponentPoses/Pose0", [final_shooter_hood_trans.X(), final_shooter_hood_trans.Y(), final_shooter_hood_trans.Z(), final_shooter_hood_quat.W(), final_shooter_hood_quat.X(), final_shooter_hood_quat.Y(), final_shooter_hood_quat.Z()])
+            
+
+            default_inner = Translation3d(0.3, 0.355, 0.2)
+            cur_inner_pos = self.intake.get_position()
+            final_inner_quat = Rotation3d(0, degreesToRadians(cur_inner_pos), 0).getQuaternion()
+            final_inner_trans = default_inner
+            SmartDashboard.putNumberArray("FinalComponentPoses/Pose1", [final_inner_trans.X(), final_inner_trans.Y(), final_inner_trans.Z(), final_inner_quat.W(), final_inner_quat.X(), final_inner_quat.Y(), final_inner_quat.Z()])
+            
+            default_outer = Translation3d(0.2825, 0.32, 0.505)
+            arc_vec = Translation2d(0.307975, 0).rotateBy(Rotation2d.fromDegrees(cur_inner_pos))
+            inner_outer_transform = Translation3d(arc_vec.Y(),
+                                                  0,
+                                                  arc_vec.X()) - Translation3d(0, 0, 0.307975) 
+            final_outer_quat = Rotation3d(0, degreesToRadians(-cur_inner_pos / 6.43), 0).getQuaternion()
+            final_outer_trans = default_outer + inner_outer_transform
+            SmartDashboard.putNumberArray("FinalComponentPoses/Pose2", [final_outer_trans.X(), final_outer_trans.Y(), final_outer_trans.Z(), final_outer_quat.W(), final_outer_quat.X(), final_outer_quat.Y(), final_outer_quat.Z()])
+            
+            default_fuel_pose = Translation3d(-0.35, -0.43, 0.1)
+            for fuel_num in range(1,self.max_fuel_in_hopper + 1):
+                if fuel_num <= self.fuel_in_hopper:
+                    #put the fuel in
+                    x_coord = (fuel_num % (self.x_hopper_max // self.fieldConstants.fuelDiameter)) * self.fieldConstants.fuelDiameter
+                    y_coord = (fuel_num % (self.y_hopper_max // self.fieldConstants.fuelDiameter)) * self.fieldConstants.fuelDiameter
+                    z_coord = (fuel_num % (self.z_hopper_max // self.fieldConstants.fuelDiameter)) * self.fieldConstants.fuelDiameter
+                    SmartDashboard.putNumberArray(f"Hopper/Sim Fuels/Fuel {fuel_num}", [default_fuel_pose.X() + x_coord, default_fuel_pose.Y() + y_coord, default_fuel_pose.Z() + z_coord, 1.0, 0.0, 0.0, 0.0])
+                else:
+                    SmartDashboard.putNumberArray(f"Hopper/Sim Fuels/Fuel {fuel_num}", [])
+
+
+            if self.in_teleop_mode:
+                self.fuel_sim.updateSim()
+            SmartDashboard.putNumber("Sim/Fuel in Hopper", self.fuel_in_hopper)
         for s in self.subsystems:
             s.log()
 

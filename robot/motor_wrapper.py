@@ -57,7 +57,6 @@ class MotorWrapper(hardware.TalonFX):
         super().__init__(device_id, canbus)
         motor_config = configs.TalonFXConfiguration()
         motor_config.motor_output.inverted = signals.InvertedValue(inverted)
-        motor_config.current_limits.supply_current_limit = 40
         motor_config.current_limits.stator_current_limit = 100
         motor_config.current_limits.supply_current_limit_enable = True
 
