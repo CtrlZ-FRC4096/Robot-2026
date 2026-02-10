@@ -377,11 +377,11 @@ class PoseEstimator(Subsystem):
             )
             SmartDashboard.putNumber(f"Swerve/{module.module_name}/Motor Position", module.get_position().distance)
 
-    def get_speaker_angle(self):
+    def get_hub_angle(self):
         if DriverStation.getAlliance() == DriverStation.Alliance.kRed:
-            target_goal = const.RED_ALLIANCE_SPEAKER_POSITION
+            target_goal = self.robot.fieldConstants.Hub.oppTopCenterPoint
         else:
-            target_goal = const.BLUE_ALLIANCE_SPEAKER_POSITION
+            target_goal = self.robot.fieldConstants.Hub.topCenterPoint
 
         ## Moving target aiming
         # get field relative speeds
@@ -412,7 +412,7 @@ class PoseEstimator(Subsystem):
         )
         return Rotation2d((-1 * robot_to_target.X()), (-1 * robot_to_target.Y()))
 
-    def get_robot_distance_to_speaker_meters(self):
+    def get_robot_distance_to_hub_meters(self):
         if DriverStation.getAlliance() == DriverStation.Alliance.kRed:
             target_goal = const.RED_ALLIANCE_SPEAKER_POSITION
         else:
