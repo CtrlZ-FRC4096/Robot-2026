@@ -392,14 +392,14 @@ class PoseEstimator(Subsystem):
 
         # # "fixed shot time" = lookup table interpolation
         # time_from_speaker = self.get_time_from_speaker()
-        time_from_speaker = 0.3
+        time_from_speaker = 0.3 # TODO: update to longer flight times
 
         # # create virtual goal X and Y based on XXXX
         virtual_goal_x = target_goal.x + time_from_speaker * (
-            field_relative_speeds.vx + field_relative_accel.vx * 0.1
+            field_relative_speeds.vx + field_relative_accel.vx * 0.1 # TODO: update to longer flight times
         )
         virtual_goal_y = target_goal.y + time_from_speaker * (
-            field_relative_speeds.vy + field_relative_accel.vy * 0.1
+            field_relative_speeds.vy + field_relative_accel.vy * 0.1 # TODO: update to longer flight times
         )
 
         # # moving_goal_location = translation2d(virtual goal X, virtual goal Y)
@@ -427,14 +427,14 @@ class PoseEstimator(Subsystem):
 
         # # "fixed shot time" = lookup table interpolation
         # time_from_speaker = self.get_time_from_speaker()
-        time_from_speaker = 0.325
+        time_from_speaker = 0.325 # TODO: update to longer flight times
 
         # # create virtual goal X and Y based on XXXX
         virtual_goal_x = target_goal.x + time_from_speaker * (
-            field_relative_speeds.vx + field_relative_accel.vx * 0.1
+            field_relative_speeds.vx + field_relative_accel.vx * 0.1 # TODO: update to longer flight times
         )
         virtual_goal_y = target_goal.y + time_from_speaker * (
-            field_relative_speeds.vy + field_relative_accel.vy * 0.1
+            field_relative_speeds.vy + field_relative_accel.vy * 0.1 # TODO: update to longer flight times
         )
 
         # # moving_goal_location = translation2d(virtual goal X, virtual goal Y)
