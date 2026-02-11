@@ -105,7 +105,6 @@ class PoseEstimator(Subsystem):
         self.camera_Y = {}
         self.camera_theta = {}
 
-
         self.modules = (
             SwerveModule(
                 "front_left",
@@ -291,7 +290,6 @@ class PoseEstimator(Subsystem):
         else:
             return True
 
-
     def periodic(self):
         allianceColor = DriverStation.getAlliance()
         self.single_tag_IDs = set()
@@ -377,76 +375,4 @@ class PoseEstimator(Subsystem):
             )
             SmartDashboard.putNumber(f"Swerve/{module.module_name}/Motor Position", module.get_position().distance)
 
-    def get_hub_angle(self):
-        if DriverStation.getAlliance() == DriverStation.Alliance.kRed:
-            target_goal = self.robot.fieldConstants.Hub.oppTopCenterPoint
-        else:
-            target_goal = self.robot.fieldConstants.Hub.topCenterPoint
-
-        ## Moving target aiming
-        # get field relative speeds
-        field_relative_speeds = self.robot.drivetrain.get_robot_relative_speeds()
-
-        # # get field relative acceleration
-        field_relative_accel = self.robot.drivetrain.chassis_accel
-
-        # # "fixed shot time" = lookup table interpolation
-        # time_from_hub = self.get_time_from_hub()
-        time_from_hub = 0.3 # TODO: update to longer flight times
-
-        # # create virtual goal X and Y based on XXXX
-        virtual_goal_x = target_goal.x + time_from_hub * (
-            field_relative_speeds.vx + field_relative_accel.vx * 0.1 # TODO: update to longer flight times
-        )
-        virtual_goal_y = target_goal.y + time_from_hub * (
-            field_relative_speeds.vy + field_relative_accel.vy * 0.1 # TODO: update to longer flight times
-        )
-
-        # # moving_goal_location = translation2d(virtual goal X, virtual goal Y)
-        moving_goal_location = Translation2d(virtual_goal_x, virtual_goal_y)
-
-        # # toMovingGoal = moving_goal_location - robot location 2dtranslation calculation
-
-        robot_to_target = (
-            moving_goal_location - self.poseEst.getEstimatedPosition().translation()
-        )
-        return Rotation2d((-1 * robot_to_target.X()), (-1 * robot_to_target.Y()))
-
-    def get_robot_distance_to_hub_meters(self):
-        if DriverStation.getAlliance() == DriverStation.Alliance.kRed:
-            target_goal = self.robot.fieldConstants.Hub.oppTopCenterPoint
-        else:
-            target_goal = self.robot.fieldConstants.Hub.topCenterPoint
-
-        ## Moving target aiming
-        # get field relative speeds
-        field_relative_speeds = self.robot.drivetrain.get_robot_relative_speeds()
-
-        # # get field relative acceleration
-        field_relative_accel = self.robot.drivetrain.chassis_accel
-
-        # # "fixed shot time" = lookup table interpolation
-        # time_from_hub = self.get_time_from_hub()
-        time_from_hub = 0.325 # TODO: update to longer flight times
-
-        # # create virtual goal X and Y based on XXXX
-        virtual_goal_x = target_goal.x + time_from_hub * (
-            field_relative_speeds.vx + field_relative_accel.vx * 0.1 # TODO: update to longer flight times
-        )
-        virtual_goal_y = target_goal.y + time_from_hub * (
-            field_relative_speeds.vy + field_relative_accel.vy * 0.1 # TODO: update to longer flight times
-        )
-
-        # # moving_goal_location = translation2d(virtual goal X, virtual goal Y)
-        moving_goal_location = Translation2d(virtual_goal_x, virtual_goal_y)
-
-        # # toMovingGoal = moving_goal_location - robot location 2dtranslation calculation
-
-        robot_to_target = (
-            moving_goal_location - self.poseEst.getEstimatedPosition().translation()
-        )
-
-        x = robot_to_target.X()
-        y = robot_to_target.Y()
-        distance = math.sqrt(x**2 + y**2)
-        return distance
+    

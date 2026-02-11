@@ -77,6 +77,7 @@ class Drivetrain(Subsystem):
 
 
         self.previous_sim_speeds = ChassisSpeeds()
+        self.previous_chassisspeeds = ChassisSpeeds()
         self.two_previous_sim_speeds = ChassisSpeeds()
         self.damping_accel = False
 
@@ -321,7 +322,6 @@ class Drivetrain(Subsystem):
         # if FieldConstants.shouldFlip:
         #     vx = -vx
         #     vy = -vy
-
         omega = self.theta_controller.calculate(
             current_pose.rotation().degrees(), target_pose.rotation().degrees()
         ) + feedfoward_theta
@@ -333,11 +333,7 @@ class Drivetrain(Subsystem):
             and self.theta_controller.atSetpoint()
         ):
             # self.robot.running_pid_lineup = False
-            if self.robot.score_intent and self.robot.running_pid_lineup:
-                # self.at_scoring_position_drivetrain.appendleft(True)
-                self.robot.at_scoring_position = True
-            if self.robot.is_intaking and self.robot.running_pid_lineup:
-                self.robot.at_intake_position = True
+            self.robot.running_pid_lineup = False
 
 
         # Drive the robot using the calculated velocities
@@ -385,12 +381,41 @@ class Drivetrain(Subsystem):
 
     def shouldFlipPath(self):
         return DriverStation.getAlliance() == DriverStation.Alliance.kRed
+    
+    def get_hub_angle_distance(self):
+        target_goal = self.robot.fieldConstants.flip_Translation2d(self.robot.fieldConstants.Hub.topCenterPoint.toTranslation2d())
+        field_relative_speeds = self.get_field_relative_speeds()
+        field_relative_accel = self.chassis_accel
 
+        time_from_hub = 0 # TODO: update to longer flight times
+
+        virtual_goal_x = target_goal.x + time_from_hub * (
+            field_relative_speeds.vx + field_relative_accel.vx * 0.1 # TODO: update to longer flight times
+        )
+        virtual_goal_y = target_goal.y + time_from_hub * (
+            field_relative_speeds.vy + field_relative_accel.vy * 0.1 # TODO: update to longer flight times
+        )
+
+        moving_goal_location = Translation2d(virtual_goal_x, virtual_goal_y)
+        robot_to_target = (
+            moving_goal_location - self.robot.poseEstimator.curEstPose
+        )
+
+        x = robot_to_target.X()
+        y = robot_to_target.Y()
+        distance = math.sqrt(x**2 + y**2)
+
+        return (Rotation2d((-1 * robot_to_target.X()), (-1 * robot_to_target.Y())), distance)
+
+    def _get_final_lineup_pose(self, pose : Pose2d):
+        if not self.robot.shoot_intent:
+            return pose
+        else:
+            return Pose2d(pose.translation(), self.get_hub_angle_distance()[0])
     def periodic(self):
         self.chassis_accel = (
             self.get_robot_relative_speeds() - self.previous_chassisspeeds
         ) / 0.05
-
         self.previous_chassisspeeds = self.get_robot_relative_speeds()
 
         if self.robot.in_autonomous_mode and self.robot.running_pid_lineup:

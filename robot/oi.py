@@ -140,23 +140,23 @@ class OI:
 						or abs(self.driver1.RIGHT_JOY_X()) > 0.1
 						or abs(self.driver1.RIGHT_JOY_Y()) > 0.1
 					):
-                        if self.robot.is_intaking:
-                            forward_back *= 0.6
-                            left_right *= 0.6
-                            self.robot.drivetrain.go_to_pose_profiled_pid(self.robot.final_lineup_pose, forward_back, left_right, rotate)
-                        else:
-                            forward_back *= 0.4
-                            left_right *= 0.4
-                            self.robot.drivetrain.go_to_pose_angle_addition(self.robot.final_lineup_pose, forward_back, left_right, rotate)
+                        forward_back *= 0.6
+                        left_right *= 0.6
                     else:
-                        if self.robot.is_intaking:
-                            self.robot.drivetrain.go_to_pose_profiled_pid(self.robot.final_lineup_pose)
-                        else:
-                            self.robot.drivetrain.go_to_pose_angle_addition(self.robot.final_lineup_pose)
+                        forward_back = 0.0
+                        left_right = 0.0
+                        rotate = 0
+                    self.robot.drivetrain.go_to_pose_profiled_pid(self.robot.final_lineup_pose, forward_back, left_right, rotate)
                 # elif (abs(const.SWERVE_KINEMATICS.toChassisSpeeds(self.robot.poseEstimator.get_module_states()).vx) <= 0.005 and
                 #       abs(const.SWERVE_KINEMATICS.toChassisSpeeds(self.robot.poseEstimator.get_module_states()).vy) <= 0.005 and 
                 #       abs(const.SWERVE_KINEMATICS.toChassisSpeeds(self.robot.poseEstimator.get_module_states()).omega_dps) <= 1):
                 #     self.robot.drivetrain.turn_wheels_to_x()
+                elif self.robot.shoot_intent:
+                    self.robot.drivetrain.drive_with_pid(
+                            Translation2d(forward_back, left_right)
+                            * const.SWERVE_MAX_SPEED,
+                            self.robot.drivetrain.get_hub_angle_distance()[0].degrees(),
+                        )
                 else:
                     if abs(rotate) >= 0.02:
                         self.cardinal_directing = False
@@ -220,4 +220,8 @@ class OI:
         @self.driver1.X.whenPressed
         def _():
             self.robot.shoot_fuel = not self.robot.shoot_fuel
+        
+        @self.driver1.RIGHT_BUMPER.whenPressed
+        def _():
+            self.robot.shoot_intent = not self.robot.shoot_intent
             
