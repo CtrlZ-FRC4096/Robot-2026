@@ -220,7 +220,7 @@ class Robot(CoroutineRobot):
         self.in_teleop_mode = False
 
         ## SIMMING STUFF ##
-        self.max_fuel_in_hopper = 30
+        self.max_fuel_in_hopper = 24
         self.x_hopper_max = inchesToMeters(20)
         self.y_hopper_max = inchesToMeters(25)
         self.z_hopper_max = inchesToMeters(15)

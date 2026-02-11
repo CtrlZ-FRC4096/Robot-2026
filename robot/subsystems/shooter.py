@@ -96,7 +96,7 @@ class Shooter(Subsystem):
         elif self.robot.shoot_intent:
             self.set_fly_speed(30.0)
             self.stop_accelerator()
-            if True:
+            if self.robot.poseEstimator.curEstPose.X() < self.robot.fieldConstants.LinesVertical.allianceZone:
                 self.set_hood_position(60.0) #add pose checking
         elif self.robot.is_climbing:
             self.set_hood_position(0.0)

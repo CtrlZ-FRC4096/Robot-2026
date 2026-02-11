@@ -154,7 +154,7 @@ class PoseEstimator(Subsystem):
         )
 
 
-        self.curEstPose = Pose2d(0, 0, 0)
+        self.curEstPose = Pose2d(7, 5, 0)
 
         self.poseEst = SwerveDrive4PoseEstimator(
             const.SWERVE_KINEMATICS, self.getYaw(), self.get_module_positions(), self.curEstPose # type: ignore

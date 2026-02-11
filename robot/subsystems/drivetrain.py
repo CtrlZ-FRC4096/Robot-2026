@@ -60,7 +60,7 @@ class Drivetrain(Subsystem):
         super().__init__()
         self.robot = robot
 
-        self.angle_pid = PIDController(0.075, 0.0, 0.001)
+        self.angle_pid = PIDController((0.3 if self.robot.isSimulation() else 0.075), 0.0, 0.001)
         self.angle_pid.enableContinuousInput(0, 360)
         self.angle_pid.setTolerance(0.5)  # Set position tolerance to 0.5 degrees
 
@@ -243,7 +243,7 @@ class Drivetrain(Subsystem):
                 self.damping_accel = False
             self.final_velo = final_vel.translation()
 
-            self.robot.poseEstimator.curEstPose = Pose2d(curPose.X() + final_vel.X() / 30, curPose.Y() + final_vel.Y() / 30, Rotation2d.fromDegrees(curPose.rotation().degrees() + final_vel.rotation().degrees() /700.0))
+            self.robot.poseEstimator.curEstPose = Pose2d(curPose.X() + final_vel.X() / 30, curPose.Y() + final_vel.Y() / 30, Rotation2d.fromDegrees(curPose.rotation().degrees() + final_vel.rotation().degrees() / 20))
             if self.robot.poseEstimator.poseIsOffField(self.robot.poseEstimator.curEstPose) or self.in_obstacle(self.robot.poseEstimator.curEstPose.translation()):
                 self.robot.poseEstimator.curEstPose = curPose
             self.robot.poseEstimator.set_yaw(self.robot.poseEstimator.curEstPose.rotation().degrees())
@@ -398,14 +398,14 @@ class Drivetrain(Subsystem):
 
         moving_goal_location = Translation2d(virtual_goal_x, virtual_goal_y)
         robot_to_target = (
-            moving_goal_location - self.robot.poseEstimator.curEstPose
+            moving_goal_location - self.robot.poseEstimator.curEstPose.translation()
         )
 
         x = robot_to_target.X()
         y = robot_to_target.Y()
         distance = math.sqrt(x**2 + y**2)
 
-        return (Rotation2d((-1 * robot_to_target.X()), (-1 * robot_to_target.Y())), distance)
+        return (Rotation2d.fromDegrees(Rotation2d((-1 * robot_to_target.X()), (-1 * robot_to_target.Y())).degrees() - 90), distance)
 
     def _get_final_lineup_pose(self, pose : Pose2d):
         if not self.robot.shoot_intent:
