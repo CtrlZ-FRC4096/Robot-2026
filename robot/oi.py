@@ -224,4 +224,5 @@ class OI:
         @self.driver1.RIGHT_BUMPER.whenPressed
         def _():
             self.robot.shoot_intent = not self.robot.shoot_intent
+            self.robot_oriented_angle = self.robot.poseEstimator.curEstPose.rotation().degrees()
             

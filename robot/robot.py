@@ -153,9 +153,9 @@ class Robot(CoroutineRobot):
             self.drivetrain,
             self.leds,
             self.poseEstimator,
-            self.intake,
+            # self.intake,
             self.shooter,
-            self.hopper,
+            # self.hopper,
         ]
 
         # If everything in self.subsystems is a Subsystem object, then
@@ -202,6 +202,8 @@ class Robot(CoroutineRobot):
         self.spin_up = False
         self.is_climbing = False
         self.is_intaking = False
+
+        self.virtual_target = self.poseEstimator.field.getObject("Virtual Target")
 
         self.timer = Timer()
 

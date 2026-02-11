@@ -34,14 +34,14 @@ class Shooter(Subsystem):
 
         self.hood_motor = MotorWrapper(const.SHOOTER_HOOD_MOTOR_ID, "carnivore")
 
-        self.right_up_fly_motor.set_control(controls.Follower(const.LEFT_FLY_ID, False))
-        self.right_down_fly_motor.set_control(controls.Follower(const.LEFT_FLY_ID, False))
+        self.right_up_fly_motor.set_control(controls.Follower(const.LEFT_FLY_ID, signals.MotorAlignmentValue(0)))
+        self.right_down_fly_motor.set_control(controls.Follower(const.LEFT_FLY_ID, signals.MotorAlignmentValue(0)))
 
     def get_fly_speed(self):
         if self.robot.isSimulation():
             return self.commanded_fly_speed
         else:
-            return self.left_fly_motor.get_velocity().value
+            return 0.01 #self.left_fly_motor.get_velocity().value
                     
     def set_fly_speed(self, speed):
         self.commanded_fly_speed = speed
@@ -51,7 +51,7 @@ class Shooter(Subsystem):
         if self.robot.isSimulation():
             return self.commanded_accelerator_speed
         else:
-            self.accelerator_motor.get_velocity().value
+            return 0.01 #self.accelerator_motor.get_velocity().value
 
     def set_accelerator_speed(self, speed):
         self.commanded_accelerator_speed = speed
@@ -94,10 +94,11 @@ class Shooter(Subsystem):
             self.set_accelerator_speed(30.0)
             self.set_hood_position(30.0)
         elif self.robot.shoot_intent:
-            self.set_fly_speed(30.0)
-            self.stop_accelerator()
-            if self.robot.poseEstimator.curEstPose.X() < self.robot.fieldConstants.LinesVertical.allianceZone:
-                self.set_hood_position(60.0) #add pose checking
+            pass
+            # self.set_fly_speed(30.0)
+            # self.stop_accelerator()
+            # if self.robot.poseEstimator.curEstPose.X() < self.robot.fieldConstants.LinesVertical.allianceZone:
+            #     self.set_hood_position(60.0) #add pose checking
         elif self.robot.is_climbing:
             self.set_hood_position(0.0)
             self.stop_fly()
@@ -107,15 +108,15 @@ class Shooter(Subsystem):
             self.stop_fly()
             self.stop_accelerator()
     def log(self):
-        SmartDashboard.putNumber("Shooter/Left Fly Speed", self.left_fly_motor.get_velocity().value)
-        SmartDashboard.putNumber("Shooter/Right Up Fly Speed", self.right_up_fly_motor.get_velocity().value)
-        SmartDashboard.putNumber("Shooter/Right Down Fly Speed", self.right_down_fly_motor.get_velocity().value)
+        # SmartDashboard.putNumber("Shooter/Left Fly Speed", self.left_fly_motor.get_velocity().value)
+        # SmartDashboard.putNumber("Shooter/Right Up Fly Speed", self.right_up_fly_motor.get_velocity().value)
+        # SmartDashboard.putNumber("Shooter/Right Down Fly Speed", self.right_down_fly_motor.get_velocity().value)
         SmartDashboard.putNumber("Shooter/Commanded Fly Speed", self.commanded_fly_speed)
 
-        SmartDashboard.putNumber("Shooter/Accelerator Speed", self.get_accelerator_speed())
+        # SmartDashboard.putNumber("Shooter/Accelerator Speed", self.get_accelerator_speed())
         SmartDashboard.putNumber("Shooter/Commanded Accelerator Speed", self.commanded_accelerator_speed)
         
-        SmartDashboard.putNumber("Shooter/Hood Position", self.get_hood_position())
+        # SmartDashboard.putNumber("Shooter/Hood Position", self.get_hood_position())
         SmartDashboard.putNumber("Shooter/Commanded Hood Position", self.commanded_hood_position)
 
         SmartDashboard.putBoolean("States/Shoot Fuel", self.robot.shoot_fuel)
