@@ -16,6 +16,7 @@ import math
 from motor_wrapper import MotorWrapper
 import const
 from wpilib import SmartDashboard
+from wpimath.units import radiansToDegrees
 
 class Intake(Subsystem):
     def __init__(self, robot: "Robot"):
@@ -75,6 +76,14 @@ class Intake(Subsystem):
         else:
             return self.left_intake_motor.get_velocity().value
     
+    def get_snake_intake_angle(self):
+        cur_speeds = self.robot.drivetrain.get_robot_relative_speeds()
+        cur_rotation = self.robot.poseEstimator.curEstPose.rotation().degrees()
+        angle = math.atan2(cur_speeds.vy, cur_speeds.vx)
+        if abs(cur_speeds.vx) <= 0.01 and abs(cur_speeds.vy) <= 0.01:
+            return cur_rotation
+        return radiansToDegrees(angle)
+
     def periodic(self):
         if self.robot.is_intaking:
             if self.robot.fieldConstants.LinesVertical.starting < self.robot.poseEstimator.curEstPose.X() < self.robot.fieldConstants.fieldLength - self.robot.fieldConstants.LinesVertical.starting: # neutral zone

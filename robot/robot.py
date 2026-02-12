@@ -153,9 +153,9 @@ class Robot(CoroutineRobot):
             self.drivetrain,
             self.leds,
             self.poseEstimator,
-            # self.intake,
+            self.intake,
             self.shooter,
-            # self.hopper,
+            self.hopper,
         ]
 
         # If everything in self.subsystems is a Subsystem object, then

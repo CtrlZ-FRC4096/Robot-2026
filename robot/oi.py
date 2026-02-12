@@ -151,6 +151,12 @@ class OI:
                 #       abs(const.SWERVE_KINEMATICS.toChassisSpeeds(self.robot.poseEstimator.get_module_states()).vy) <= 0.005 and 
                 #       abs(const.SWERVE_KINEMATICS.toChassisSpeeds(self.robot.poseEstimator.get_module_states()).omega_dps) <= 1):
                 #     self.robot.drivetrain.turn_wheels_to_x()
+                elif self.robot.is_intaking and not self.robot.shoot_intent:
+                    self.robot.drivetrain.drive_with_pid(
+                            Translation2d(forward_back, left_right)
+                            * const.SWERVE_MAX_SPEED,
+                            self.robot.intake.get_snake_intake_angle(),
+                        )
                 elif self.robot.shoot_intent:
                     self.robot.drivetrain.drive_with_pid(
                             Translation2d(forward_back, left_right)

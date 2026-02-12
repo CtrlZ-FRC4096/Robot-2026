@@ -24,8 +24,8 @@ from wpimath.kinematics import (
     SwerveModuleState
 )
 from phoenix6 import configs
-# from shapely import Polygon, Point
-# from shapely.affinity import translate, rotate
+from shapely import Polygon, Point
+from shapely.affinity import translate, rotate
 
 
 # from pathplannerlib.commands import PathfindHolonomic
@@ -62,7 +62,7 @@ class Drivetrain(Subsystem):
 
         self.angle_pid = PIDController((0.3 if self.robot.isSimulation() else 0.075), 0.0, 0.001)
         self.angle_pid.enableContinuousInput(0, 360)
-        self.angle_pid.setTolerance(0.5)  # Set position tolerance to 0.5 degrees
+        self.angle_pid.setTolerance(1 if self.robot.isSimulation() else 0.5)  # Set position tolerance to 0.5 degrees
 
         self.x_controller = PIDController(2.25, 0.01, 0.025) #0.01
         self.y_controller = PIDController(2.25, 0.01, 0.025) #0.01
@@ -158,28 +158,28 @@ class Drivetrain(Subsystem):
             (inchesToMeters(650.813), inchesToMeters(317.688)),
             (0, inchesToMeters(317.688))
         ]
-        # field_boundary = Polygon(field_boundary_points)
+        field_boundary = Polygon(field_boundary_points)
 
-        # blue_hub = Polygon(blue_hub_pts)
-        # blue_tower = Polygon(blue_tower_pts)
-        # blue_trench_left = Polygon(blue_trench_left_pts)
-        # blue_trench_right = Polygon(blue_trench_right_pts)
+        blue_hub = Polygon(blue_hub_pts)
+        blue_tower = Polygon(blue_tower_pts)
+        blue_trench_left = Polygon(blue_trench_left_pts)
+        blue_trench_right = Polygon(blue_trench_right_pts)
 
-        # red_hub = Polygon(red_hub_pts)
-        # red_tower = Polygon(red_tower_pts)
-        # red_trench_left = Polygon(red_trench_left_pts)
-        # red_trench_right = Polygon(red_trench_right_pts)
+        red_hub = Polygon(red_hub_pts)
+        red_tower = Polygon(red_tower_pts)
+        red_trench_left = Polygon(red_trench_left_pts)
+        red_trench_right = Polygon(red_trench_right_pts)
 
         self.sim_obstacles = [
-            # (field_boundary, "within"),
-            # (blue_hub, "overlaps"),
-            # (blue_tower, "overlaps"),
-            # (blue_trench_left, "overlaps"),
-            # (blue_trench_right, "overlaps"),
-            # (red_hub, "overlaps"),
-            # (red_tower, "overlaps"),
-            # (red_trench_left, "overlaps"),
-            # (red_trench_right, "overlaps")
+            (field_boundary, "within"),
+            (blue_hub, "overlaps"),
+            (blue_tower, "overlaps"),
+            (blue_trench_left, "overlaps"),
+            (blue_trench_right, "overlaps"),
+            (red_hub, "overlaps"),
+            (red_tower, "overlaps"),
+            (red_trench_left, "overlaps"),
+            (red_trench_right, "overlaps")
         ]
 
     def drive(self, translation: Translation2d, rotation, field_relative, is_open_loop):
@@ -265,10 +265,10 @@ class Drivetrain(Subsystem):
         p3  = (half_length, half_width)
         p4 = (half_length, -half_width)
 
-        # base_robot = Polygon([p1, p2, p3, p4])
-        # rotated_robot = rotate(base_robot, cur_pose.rotation().degrees())
-        # final_robot = translate(rotated_robot, xoff=cur_pose.X(), yoff=cur_pose.Y())
-        return cur_pose #final_robot
+        base_robot = Polygon([p1, p2, p3, p4])
+        rotated_robot = rotate(base_robot, cur_pose.rotation().degrees())
+        final_robot = translate(rotated_robot, xoff=cur_pose.X(), yoff=cur_pose.Y())
+        return final_robot
 
     def in_obstacle(self, pose : Translation2d):
         robot = self.get_robot_shape()
@@ -377,7 +377,7 @@ class Drivetrain(Subsystem):
             self.robot.poseEstimator.get_module_states()
         )  # Check this in swervemodule.py, we need to convert kraken speed to m/s
         chassis_speeds = const.SWERVE_KINEMATICS.toChassisSpeeds(module_states)  # type: ignore
-        return chassis_speeds
+        return self.previous_sim_speeds if self.robot.isSimulation() else chassis_speeds
 
     def shouldFlipPath(self):
         return DriverStation.getAlliance() == DriverStation.Alliance.kRed
