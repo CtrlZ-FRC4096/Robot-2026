@@ -13,7 +13,6 @@ from wpimath.geometry import Rotation2d, Translation2d
 from wpimath.trajectory import TrapezoidProfile
 from wpilib import Timer
 import math
-from motor_wrapper import MotorWrapper
 import const
 from wpilib import SmartDashboard
 from wpimath.units import radiansToDegrees
@@ -23,10 +22,19 @@ class Intake(Subsystem):
         super().__init__()
         self.robot = robot
         
-        self.left_intake_motor = MotorWrapper(const.LEFT_INTAKE_MOTOR_ID, "carnivore")
-        self.right_intake_motor = MotorWrapper(const.RIGHT_INTAKE_MOTOR_ID, "carnivore")
-        self.inside_track_motor = MotorWrapper(const.INSIDE_TRACK_MOTOR_ID, "carnivore")
-        self.deploy_motor = MotorWrapper(const.INTAKE_DEPLOY_MOTOR_ID, "carnivore")
+        self.left_intake_motor = hardware.TalonFX(const.LEFT_INTAKE_MOTOR_ID, "carnivore")
+        self.right_intake_motor = hardware.TalonFX(const.RIGHT_INTAKE_MOTOR_ID, "carnivore")
+        self.inside_track_motor = hardware.TalonFX(const.INSIDE_TRACK_MOTOR_ID, "carnivore")
+        self.deploy_motor = hardware.TalonFX(const.INTAKE_DEPLOY_MOTOR_ID, "carnivore")
+
+        self.intake_motor_config = self.robot.get_motor_config()
+        self.inside_track_motor_config = self.robot.get_motor_config()
+        self.deploy_motor_config = self.robot.get_motor_config()
+
+        self.left_intake_motor.configurator.apply(self.intake_motor_config)
+        self.right_intake_motor.configurator.apply(self.intake_motor_config)
+        self.inside_track_motor.configurator.apply(self.inside_track_motor_config)
+        self.deploy_motor.configurator.apply(self.deploy_motor_config)
 
         self.right_intake_motor.set_control(controls.Follower(const.LEFT_INTAKE_MOTOR_ID, signals.MotorAlignmentValue(0)))
         self.inside_track_motor.set_control(controls.Follower(const.LEFT_INTAKE_MOTOR_ID, signals.MotorAlignmentValue(0)))

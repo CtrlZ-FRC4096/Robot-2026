@@ -13,7 +13,6 @@ from wpimath.geometry import Rotation2d, Translation2d
 from wpimath.trajectory import TrapezoidProfile
 from wpilib import Timer
 import math
-from motor_wrapper import MotorWrapper
 import const
 from wpilib import SmartDashboard
 
@@ -26,13 +25,24 @@ class Shooter(Subsystem):
         self.commanded_accelerator_speed = 0.0
 
         # Flywheel motors
-        self.left_fly_motor = MotorWrapper(const.LEFT_FLY_ID, "carnivore")
-        self.right_up_fly_motor = MotorWrapper(const.RIGHT_UP_FLY_ID, "carnivore")
-        self.right_down_fly_motor = MotorWrapper(const.RIGHT_DOWN_FLY_ID, "carnivore")
+        self.left_fly_motor = hardware.TalonFX(const.LEFT_FLY_ID, "rio")
+        self.right_up_fly_motor = hardware.TalonFX(const.RIGHT_UP_FLY_ID, "rio")
+        self.right_down_fly_motor = hardware.TalonFX(const.RIGHT_DOWN_FLY_ID, "rio")
 
-        self.accelerator_motor = MotorWrapper(const.SHOOTER_ACCELERATOR_MOTOR_ID, "carnivore")
+        self.accelerator_motor = hardware.TalonFX(const.SHOOTER_ACCELERATOR_MOTOR_ID, "rio")
 
-        self.hood_motor = MotorWrapper(const.SHOOTER_HOOD_MOTOR_ID, "carnivore")
+        self.hood_motor = hardware.TalonFX(const.SHOOTER_HOOD_MOTOR_ID, "rio")
+
+        self.fly_motor_config = self.robot.get_motor_config()
+        self.left_fly_motor.configurator.apply(self.fly_motor_config)
+        self.right_up_fly_motor.configurator.apply(self.fly_motor_config)
+        self.right_down_fly_motor.configurator.apply(self.fly_motor_config)
+
+        self.accelerator_motor_config = self.robot.get_motor_config()
+        self.accelerator_motor.configurator.apply(self.accelerator_motor_config)
+
+        self.hood_motor_config = self.robot.get_motor_config()
+        self.hood_motor.configurator.apply(self.hood_motor_config)
 
         self.right_up_fly_motor.set_control(controls.Follower(const.LEFT_FLY_ID, signals.MotorAlignmentValue(0)))
         self.right_down_fly_motor.set_control(controls.Follower(const.LEFT_FLY_ID, signals.MotorAlignmentValue(0)))

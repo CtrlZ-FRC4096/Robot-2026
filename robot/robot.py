@@ -235,7 +235,7 @@ class Robot(CoroutineRobot):
             yield
             self.scheduler.run()
 
-    def get_motor_config(self, inverted, k_p, k_i, k_d, k_v, k_a, k_g, k_s):
+    def get_motor_config(self, inverted=0, k_p=0.0, k_i=0.0, k_d=0.0, k_v=0.0, k_a=0.0, k_g=0.0, k_s=0.0):
         motor_config = configs.TalonFXConfiguration()
         motor_config.motor_output.inverted = signals.InvertedValue(inverted)
         motor_config.current_limits.stator_current_limit = 100
