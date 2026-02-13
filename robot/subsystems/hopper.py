@@ -16,6 +16,7 @@ import math
 from motor_wrapper import MotorWrapper
 import const
 from wpilib import SmartDashboard
+from math import sin, pi
 
 class Hopper(Subsystem):
     def __init__(self, robot: "Robot"):
@@ -24,7 +25,13 @@ class Hopper(Subsystem):
         self.commanded_speed = 0.0
 
         # Flywheel motors
-        self.indexer_motor = hardware.TalonFX(const.INDEXER_MOTOR_ID, "rio")  
+        self.indexer_motor = MotorWrapper(const.INDEXER_MOTOR_ID, "rio")  
+
+        # pulsing indexer
+        self.hz = 4
+        self.amp = 3
+
+        self.time = Timer()
 
     def get_speed(self):
         if self.robot.isSimulation():
@@ -43,6 +50,8 @@ class Hopper(Subsystem):
     def periodic(self):
         if self.robot.shoot_fuel:
             self.set_speed(30.0) # TUNE
+        elif self.robot.pulse_indexer:
+            self.set_speed(abs(sin(self.time.get()*pi*self.hz)*self.amp)) # moves fuel towards shooter
         elif self.robot.is_climbing:
             self.stop()
         elif self.robot.mechanisms_at_default:
