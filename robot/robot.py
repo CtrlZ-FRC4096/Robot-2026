@@ -204,6 +204,10 @@ class Robot(CoroutineRobot):
         self.is_intaking = False
         self.pulse_indexer = False
 
+        self.snake_intake = False
+
+        self.virtual_target = self.poseEstimator.field.getObject("Virtual Target")
+
         self.timer = Timer()
 
         log_refresh_rate = 0.02 if self.isSimulation() else 0.25
@@ -221,7 +225,7 @@ class Robot(CoroutineRobot):
         self.in_teleop_mode = False
 
         ## SIMMING STUFF ##
-        self.max_fuel_in_hopper = 30
+        self.max_fuel_in_hopper = 24
         self.x_hopper_max = inchesToMeters(20)
         self.y_hopper_max = inchesToMeters(25)
         self.z_hopper_max = inchesToMeters(15)

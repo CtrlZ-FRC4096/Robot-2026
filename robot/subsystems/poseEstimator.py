@@ -105,7 +105,6 @@ class PoseEstimator(Subsystem):
         self.camera_Y = {}
         self.camera_theta = {}
 
-
         self.modules = (
             SwerveModule(
                 "front_left",
@@ -155,7 +154,7 @@ class PoseEstimator(Subsystem):
         )
 
 
-        self.curEstPose = Pose2d(0, 0, 0)
+        self.curEstPose = Pose2d(7, 5, 0)
 
         self.poseEst = SwerveDrive4PoseEstimator(
             const.SWERVE_KINEMATICS, self.getYaw(), self.get_module_positions(), self.curEstPose # type: ignore
@@ -291,7 +290,6 @@ class PoseEstimator(Subsystem):
         else:
             return True
 
-
     def periodic(self):
         allianceColor = DriverStation.getAlliance()
         self.single_tag_IDs = set()
@@ -376,3 +374,5 @@ class PoseEstimator(Subsystem):
                 f"Swerve/{module.module_name}/Velcoity", module.get_state().speed
             )
             SmartDashboard.putNumber(f"Swerve/{module.module_name}/Motor Position", module.get_position().distance)
+
+    

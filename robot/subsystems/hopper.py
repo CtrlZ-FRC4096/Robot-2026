@@ -25,7 +25,7 @@ class Hopper(Subsystem):
         self.commanded_speed = 0.0
 
         # Flywheel motors
-        self.indexer_motor = MotorWrapper(const.INDEXER_MOTOR_ID, "carnivore")
+        self.indexer_motor = MotorWrapper(const.INDEXER_MOTOR_ID, "rio")  
 
         # pulsing indexer
         self.hz = 4
@@ -46,7 +46,7 @@ class Hopper(Subsystem):
     def stop(self):
         self.commanded_speed = 0.0
         self.indexer_motor.set_control(controls.VelocityTorqueCurrentFOC(0.0))
-    
+
     def periodic(self):
         if self.robot.shoot_fuel:
             self.set_speed(30.0) # TUNE
