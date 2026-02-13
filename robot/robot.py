@@ -202,6 +202,7 @@ class Robot(CoroutineRobot):
         self.spin_up = False
         self.is_climbing = False
         self.is_intaking = False
+        self.pulse_indexer = False
 
         self.snake_intake = False
 
