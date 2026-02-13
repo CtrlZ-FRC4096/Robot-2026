@@ -151,7 +151,7 @@ class OI:
                 #       abs(const.SWERVE_KINEMATICS.toChassisSpeeds(self.robot.poseEstimator.get_module_states()).vy) <= 0.005 and 
                 #       abs(const.SWERVE_KINEMATICS.toChassisSpeeds(self.robot.poseEstimator.get_module_states()).omega_dps) <= 1):
                 #     self.robot.drivetrain.turn_wheels_to_x()
-                elif self.robot.is_intaking and not self.robot.shoot_intent:
+                elif self.robot.is_intaking and not self.robot.shoot_intent and self.robot.snake_intake:
                     self.robot.drivetrain.drive_with_pid(
                             Translation2d(forward_back, left_right)
                             * const.SWERVE_MAX_SPEED,
@@ -223,6 +223,11 @@ class OI:
         def _():
             self.robot.is_intaking = not self.robot.is_intaking
         
+        @self.driver1.START.whenPressed
+        def _():
+            self.robot.snake_intake = not self.robot.snake_intake
+            self.robot_oriented_angle = self.robot.poseEstimator.curEstPose.rotation().degrees()
+
         @self.driver1.X.whenPressed
         def _():
             self.robot.shoot_fuel = not self.robot.shoot_fuel

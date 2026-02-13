@@ -40,7 +40,7 @@ class Hopper(Subsystem):
     def stop(self):
         self.commanded_speed = 0.0
         self.indexer_motor.set_control(controls.VelocityTorqueCurrentFOC(0.0))
-    
+
     def periodic(self):
         if self.robot.shoot_fuel:
             self.set_speed(30.0) # TUNE

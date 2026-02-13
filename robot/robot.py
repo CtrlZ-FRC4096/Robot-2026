@@ -203,6 +203,8 @@ class Robot(CoroutineRobot):
         self.is_climbing = False
         self.is_intaking = False
 
+        self.snake_intake = False
+
         self.virtual_target = self.poseEstimator.field.getObject("Virtual Target")
 
         self.timer = Timer()

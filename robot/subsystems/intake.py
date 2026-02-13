@@ -50,7 +50,7 @@ class Intake(Subsystem):
             return
         self.commanded_position = position
         rotations = position # ADD GEAR RATIOS STUFF
-        self.deploy_motor.set_control(controls.VelocityTorqueCurrentFOC(rotations)) # USE MOTION MAGIC
+        self.deploy_motor.set_control(controls.PositionTorqueCurrentFOC(rotations)) # USE MOTION MAGIC
     
     def get_position(self):
         if self.robot.isSimulation():
