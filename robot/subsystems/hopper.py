@@ -24,8 +24,7 @@ class Hopper(Subsystem):
         self.commanded_speed = 0.0
 
         # Flywheel motors
-        self.indexer_motor = MotorWrapper(const.INDEXER_MOTOR_ID, "rio")  
-
+        self.indexer_motor = hardware.TalonFX(const.INDEXER_MOTOR_ID, "rio")  
 
     def get_speed(self):
         if self.robot.isSimulation():
