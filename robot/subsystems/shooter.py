@@ -23,6 +23,7 @@ class Shooter(Subsystem):
         self.commanded_fly_speed = 0.0
         self.commanded_hood_position = 0.0
         self.commanded_accelerator_speed = 0.0
+        self.request = controls.MotionMagicVoltage(0, enable_foc=True)
 
         # Flywheel motors
         self.left_fly_motor = hardware.TalonFX(const.LEFT_FLY_ID, "rio")
@@ -72,7 +73,8 @@ class Shooter(Subsystem):
             return
         self.commanded_hood_position = position
         rotations = position # ADD GEAR RATIOS STUFF
-        self.hood_motor.set_control(controls.VelocityTorqueCurrentFOC(rotations)) # USE MOTION MAGIC
+        #self.hood_motor.set_control(controls.VelocityTorqueCurrentFOC(rotations)) # USE MOTION MAGIC
+        self.hood_motor.set_control(self.request.with_position(rotations)) # USING MOTION MAGIC
     
     def get_hood_position(self):
         if self.robot.isSimulation():

@@ -21,6 +21,7 @@ class Intake(Subsystem):
     def __init__(self, robot: "Robot"):
         super().__init__()
         self.robot = robot
+        self.request = controls.MotionMagicVoltage(0, enable_foc=True)
         
         self.left_intake_motor = hardware.TalonFX(const.LEFT_INTAKE_MOTOR_ID, "carnivore")
         self.right_intake_motor = hardware.TalonFX(const.RIGHT_INTAKE_MOTOR_ID, "carnivore")
@@ -58,7 +59,8 @@ class Intake(Subsystem):
             return
         self.commanded_position = position
         rotations = position # ADD GEAR RATIOS STUFF
-        self.deploy_motor.set_control(controls.PositionTorqueCurrentFOC(rotations)) # USE MOTION MAGIC
+        #self.deploy_motor.set_control(controls.PositionTorqueCurrentFOC(rotations)) # USE MOTION MAGIC
+        self.deploy_motor.set_control(self.request.with_position(rotations)) # USING MOTION MAGIC
     
     def get_position(self):
         if self.robot.isSimulation():
