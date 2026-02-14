@@ -73,7 +73,6 @@ class Shooter(Subsystem):
         if abs(self.get_hood_position() - position) <= 0.02:
             return
         self.commanded_hood_position = position
-        print("change")
         rotations = position # ADD GEAR RATIOS STUFF
         #self.hood_motor.set_control(controls.VelocityTorqueCurrentFOC(rotations)) # USE MOTION MAGIC
         self.hood_motor.set_control(self.request.with_position(rotations)) # USING MOTION MAGIC
@@ -103,7 +102,7 @@ class Shooter(Subsystem):
         self.stop_accelerator()
     
     def pose_in_trench(self):
-        pose = self.robot.poseEstimator.curEstPose
+        pose = self.robot.poseEstimator.curEstPose.translation() + Translation2d(0, 0.27).rotateBy(self.robot.poseEstimator.curEstPose.rotation())
 
         min_x_blue = inchesToMeters(156.406)
         max_x_blue = inchesToMeters(205.406)
