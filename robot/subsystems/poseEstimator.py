@@ -272,8 +272,24 @@ class PoseEstimator(Subsystem):
     def get_weight_by_accel(self):
         if (self.get_skidding_ratio() > const.SKIDDING_RATIO_MAX) or (self.get_jerk_val() > const.COLLISION_JERK_MAX):
             return 0 # make empty (no fuel) weight profile
-        # torque-current / acceleration
-        return 0 if self.robot.isSimulation() else sum([m.drive_motor.get_torque_current().value/m.drive_motor.get_acceleration().value for m in self.modules])/4
+        tda = [] # torque-current / acceleration
+        for i in range(4):
+            if self.modules[i].drive_motor.get_acceleration().value != 0:
+                tda.append(self.modules[i].drive_motor.get_torque_current().value/self.modules[i].drive_motor.get_acceleration().value)
+            else:
+                tda.append(None)
+        icount = 0
+        total = 0
+        for val in tda:
+            if val != None:
+                icount += 1
+                total += val
+        # calc avg of all non-None values
+        if icount > 0:
+            avg = total/icount
+        else:
+            avg = 0 # make empty (no fuel) weight profile
+        return 0 if self.robot.isSimulation() else avg
 
     def poseIsOffField(self, pose: Pose2d):
         trans = pose.translation()
