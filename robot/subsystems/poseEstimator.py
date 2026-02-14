@@ -268,6 +268,12 @@ class PoseEstimator(Subsystem):
         self.last_period_accel_y = cur_accel_x
 
         return np.sqrt(cur_jerk_x**2 + cur_jerk_y**2)
+    
+    def get_weight_by_accel(self):
+        if (self.get_skidding_ratio() > const.SKIDDING_RATIO_MAX) or (self.get_jerk_val() > const.COLLISION_JERK_MAX):
+            return 0 # make empty (no fuel) weight profile
+        # torque-current / acceleration
+        return sum([m.drive_motor.get_torque_current().value/m.drive_motor.get_acceleration().value for m in self.modules])/4
 
     def poseIsOffField(self, pose: Pose2d):
         trans = pose.translation()
@@ -374,5 +380,5 @@ class PoseEstimator(Subsystem):
                 f"Swerve/{module.module_name}/Velcoity", module.get_state().speed
             )
             SmartDashboard.putNumber(f"Swerve/{module.module_name}/Motor Position", module.get_position().distance)
-
-    
+        
+        SmartDashboard.putNumber("Weight by Acceleration", self.get_weight_by_accel())
