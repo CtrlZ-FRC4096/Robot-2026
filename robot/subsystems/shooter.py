@@ -11,6 +11,7 @@ import wpimath
 import wpimath.controller
 from wpimath.geometry import Rotation2d, Translation2d
 from wpimath.trajectory import TrapezoidProfile
+from wpimath.units import inchesToMeters
 from wpilib import Timer
 import math
 import const
@@ -100,25 +101,47 @@ class Shooter(Subsystem):
         self.stop_fly()
         self.stop_accelerator()
     
+    def pose_in_trench(self):
+        pose = self.robot.poseEstimator.curEstPose
+
+        min_x_blue = inchesToMeters(156.406)
+        max_x_blue = inchesToMeters(205.406)
+        min_x_red = inchesToMeters(446.156)
+        max_x_red = inchesToMeters(494.844)
+
+        min_y_right = inchesToMeters(0)
+        max_y_right = inchesToMeters(51.219)
+        min_y_left = inchesToMeters(267.268)
+        max_y_left = inchesToMeters(318.111)
+        
+        if ((min_x_blue <= pose.X() <= max_x_blue and min_y_right <= pose.Y() <= max_y_right) # blue right trench
+        or (min_x_blue <= pose.X() <= max_x_blue and min_y_left <= pose.Y() <= max_y_left) # blue left trench
+        or (min_x_red <= pose.X() <= max_x_red and min_y_right <= pose.Y() <= max_y_right) # red right trench
+        or (min_x_red <= pose.X() <= max_x_red and min_y_left <= pose.Y() <= max_y_left) # red left trench
+        ):
+            return True
+        else:
+            return False
+
     def periodic(self):
-        if self.robot.shoot_fuel:
+        if self.robot.mechanisms_at_default or self.pose_in_trench():
+            self.set_hood_position(0.0)
+            self.stop_accelerator()
+            if self.robot.mechanisms_at_default:
+                self.stop_fly()
+        elif self.robot.shoot_fuel:
             self.set_fly_speed(30.0)
             self.set_accelerator_speed(30.0)
             self.set_hood_position(30.0)
         elif self.robot.shoot_intent:
-            pass
-            # self.set_fly_speed(30.0)
-            # self.stop_accelerator()
-            # if self.robot.poseEstimator.curEstPose.X() < self.robot.fieldConstants.LinesVertical.allianceZone:
-            #     self.set_hood_position(60.0) #add pose checking
+            self.set_fly_speed(0.0)
+            self.stop_accelerator()
+            self.set_hood_position(60.0) #add pose checking
         elif self.robot.is_climbing:
             self.set_hood_position(0.0)
             self.stop_fly()
             self.stop_accelerator()
-        elif self.robot.mechanisms_at_default:
-            self.set_hood_position(0.0)
-            self.stop_fly()
-            self.stop_accelerator()
+        
     def log(self):
         # SmartDashboard.putNumber("Shooter/Left Fly Speed", self.left_fly_motor.get_velocity().value)
         # SmartDashboard.putNumber("Shooter/Right Up Fly Speed", self.right_up_fly_motor.get_velocity().value)
@@ -133,3 +156,5 @@ class Shooter(Subsystem):
 
         SmartDashboard.putBoolean("States/Shoot Fuel", self.robot.shoot_fuel)
         SmartDashboard.putBoolean("States/Shoot Intent", self.robot.shoot_intent)
+
+        SmartDashboard.putBoolean("Shooter/Near Trench", self.pose_in_trench())
