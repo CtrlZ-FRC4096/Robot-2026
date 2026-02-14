@@ -102,7 +102,7 @@ class Shooter(Subsystem):
         self.stop_accelerator()
     
     def pose_in_trench(self):
-        pose = self.robot.poseEstimator.curEstPose
+        pose = self.robot.poseEstimator.curEstPose.translation() + Translation2d(0, 0.27).rotateBy(self.robot.poseEstimator.curEstPose.rotation())
 
         min_x_blue = inchesToMeters(156.406)
         max_x_blue = inchesToMeters(205.406)
@@ -136,7 +136,7 @@ class Shooter(Subsystem):
         elif self.robot.shoot_intent:
             self.set_fly_speed(0.0)
             self.stop_accelerator()
-            self.set_hood_position(60.0) #add pose checking
+            self.set_hood_position(30.0) #add pose checking
         elif self.robot.is_climbing:
             self.set_hood_position(0.0)
             self.stop_fly()
