@@ -325,8 +325,7 @@ class PoseEstimator(Subsystem):
         for cam in self.cams:
             cam.update(
                 self.curEstPose,
-                allianceColor=allianceColor,
-                yaw=self.getYaw(),
+                self.gyro.getRotation3d()
             )
             single_tag_poses = cam.getPoseSingleTag()
             self.single_tag_IDs.update(cam.getSingleTagIDs())

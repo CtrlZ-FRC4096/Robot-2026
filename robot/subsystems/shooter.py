@@ -44,11 +44,11 @@ class Shooter(Subsystem):
         self.accelerator_motor_config = self.robot.get_motor_config(1, 4.0, 0, 0, 0, 0, 0, 0)
         self.accelerator_motor.configurator.apply(self.accelerator_motor_config)
 
-        self.hood_motor_config = self.robot.get_motor_config()
+        self.hood_motor_config = self.robot.get_motor_config(0, 2.0, 0, 0, 0, 0, 0, 0, 0)
         self.hood_motor.configurator.apply(self.hood_motor_config)
 
-        self.left_up_fly_motor.set_control(controls.Follower(const.RIGHT_FLY_ID, signals.MotorAlignmentValue(0)))
-        self.left_down_fly_motor.set_control(controls.Follower(const.RIGHT_FLY_ID, signals.MotorAlignmentValue(0)))
+        self.left_up_fly_motor.set_control(controls.Follower(const.RIGHT_FLY_ID, False))
+        self.left_down_fly_motor.set_control(controls.Follower(const.RIGHT_FLY_ID, False))
 
         self.test_fly_speed = 45
         self.test_accelerator_speed = 95

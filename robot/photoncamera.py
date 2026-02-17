@@ -62,8 +62,7 @@ class WrapperedPhotonCameraTag:
     def update(
         self,
         prevEstPoseSingleTag: Pose2d,
-        allianceColor: str,
-        yaw: Rotation2d,
+        gyro_rotation : Rotation3d
     ):
         # self.counter += 1
         self.poseEstimates = []
@@ -106,6 +105,10 @@ class WrapperedPhotonCameraTag:
             tgtID = target.getFiducialId()
 
             tagFieldPose = self.tag_map.getTagPose(tgtID)
+
+            # tgt_to_camera = target.getBestCameraToTarget().inverse()
+            # camera_to_robot = self.robotToCam.inverse()
+            # robot_pose = tagFieldPose.transformBy(tgt_to_camera).transformBy(camera_to_robot).transformBy(Transform3d(Translation3d(), Rotation3d(gyro_rotation.X(), gyro_rotation.Y(), 0)))
 
             target_x_angle = math.radians(target.getYaw())
             target_y_angle = -1 * math.radians(target.getPitch())
