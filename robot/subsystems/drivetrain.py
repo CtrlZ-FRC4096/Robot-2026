@@ -24,8 +24,7 @@ from wpimath.kinematics import (
     SwerveModuleState
 )
 from phoenix6 import configs
-from shapely import Polygon, Point
-from shapely.affinity import translate, rotate
+
 
 
 # from pathplannerlib.commands import PathfindHolonomic
@@ -51,18 +50,21 @@ from pathplannerlib.config import PIDConstants
 from pathplannerlib.path import PathPlannerTrajectory
 from pathplannerlib.path import PathPlannerPath, PathConstraints
 from wpimath.estimator import SwerveDrive4PoseEstimator
-from photoncamera import WrapperedPhotonCamera
+from photoncamera import WrapperedPhotonCameraTag
 from wpimath.units import degreesToRadians, inchesToMeters, radiansToDegrees
 from collections import deque
+
+from shapely import Polygon, Point
+from shapely.affinity import translate, rotate
 
 class Drivetrain(Subsystem):
     def __init__(self, robot: "Robot"):
         super().__init__()
         self.robot = robot
 
-        self.angle_pid = PIDController(0.075, 0.0, 0.001)
+        self.angle_pid = PIDController((0.3 if self.robot.isSimulation() else 0.075), 0.0, 0.001)
         self.angle_pid.enableContinuousInput(0, 360)
-        self.angle_pid.setTolerance(0.5)  # Set position tolerance to 0.5 degrees
+        self.angle_pid.setTolerance(1 if self.robot.isSimulation() else 0.5)  # Set position tolerance to 0.5 degrees
 
         self.x_controller = PIDController(2.25, 0.01, 0.025) #0.01
         self.y_controller = PIDController(2.25, 0.01, 0.025) #0.01
@@ -77,6 +79,7 @@ class Drivetrain(Subsystem):
 
 
         self.previous_sim_speeds = ChassisSpeeds()
+        self.previous_chassisspeeds = ChassisSpeeds()
         self.two_previous_sim_speeds = ChassisSpeeds()
         self.damping_accel = False
 
@@ -157,30 +160,58 @@ class Drivetrain(Subsystem):
             (inchesToMeters(650.813), inchesToMeters(317.688)),
             (0, inchesToMeters(317.688))
         ]
-        field_boundary = Polygon(field_boundary_points)
+        
+        
+        if self.robot.isSimulation():    
+            field_boundary = Polygon(field_boundary_points)
 
-        blue_hub = Polygon(blue_hub_pts)
-        blue_tower = Polygon(blue_tower_pts)
-        blue_trench_left = Polygon(blue_trench_left_pts)
-        blue_trench_right = Polygon(blue_trench_right_pts)
+            blue_hub = Polygon(blue_hub_pts)
+            blue_tower = Polygon(blue_tower_pts)
+            blue_trench_left = Polygon(blue_trench_left_pts)
+            blue_trench_right = Polygon(blue_trench_right_pts)
 
-        red_hub = Polygon(red_hub_pts)
-        red_tower = Polygon(red_tower_pts)
-        red_trench_left = Polygon(red_trench_left_pts)
-        red_trench_right = Polygon(red_trench_right_pts)
+            red_hub = Polygon(red_hub_pts)
+            red_tower = Polygon(red_tower_pts)
+            red_trench_left = Polygon(red_trench_left_pts)
+            red_trench_right = Polygon(red_trench_right_pts)
 
-        self.sim_obstacles = [
-            (field_boundary, "within"),
-            (blue_hub, "overlaps"),
-            (blue_tower, "overlaps"),
-            (blue_trench_left, "overlaps"),
-            (blue_trench_right, "overlaps"),
-            (red_hub, "overlaps"),
-            (red_tower, "overlaps"),
-            (red_trench_left, "overlaps"),
-            (red_trench_right, "overlaps")
-        ]
+            self.sim_obstacles = [
+                (field_boundary, "within"),
+                (blue_hub, "overlaps"),
+                (blue_tower, "overlaps"),
+                (blue_trench_left, "overlaps"),
+                (blue_trench_right, "overlaps"),
+                (red_hub, "overlaps"),
+                (red_tower, "overlaps"),
+                (red_trench_left, "overlaps"),
+                (red_trench_right, "overlaps")
+            ]
+    def get_robot_shape(self):
+        cur_pose : Pose2d = self.robot.poseEstimator.curEstPose
+        half_length = inchesToMeters(26 + 7.25) / 2.0
+        half_width = inchesToMeters(28.5 + 7.25) / 2.0
+        p1 = (-half_length, -half_width)
+        p2 = (-half_length, half_width)
+        p3  = (half_length, half_width)
+        p4 = (half_length, -half_width)
 
+        base_robot = Polygon([p1, p2, p3, p4])
+        rotated_robot = rotate(base_robot, cur_pose.rotation().degrees())
+        final_robot = translate(rotated_robot, xoff=cur_pose.X(), yoff=cur_pose.Y())
+        return final_robot
+
+    def in_obstacle(self, pose : Translation2d):
+        robot = self.get_robot_shape()
+        for obstacle in self.sim_obstacles:
+            match obstacle[1]:
+                case "overlaps":
+                    if obstacle[0].overlaps(robot):
+                        return True
+                case "within":
+                    if not robot.within(obstacle[0]):
+                        return True
+        return False
+    
     def drive(self, translation: Translation2d, rotation, field_relative, is_open_loop):
         SmartDashboard.putNumber("Swerve/Translation X", translation.x)
         SmartDashboard.putNumber("Swerve/Translation Y", translation.y)
@@ -242,7 +273,7 @@ class Drivetrain(Subsystem):
                 self.damping_accel = False
             self.final_velo = final_vel.translation()
 
-            self.robot.poseEstimator.curEstPose = Pose2d(curPose.X() + final_vel.X() / 30, curPose.Y() + final_vel.Y() / 30, Rotation2d.fromDegrees(curPose.rotation().degrees() + final_vel.rotation().degrees() / 8.0))
+            self.robot.poseEstimator.curEstPose = Pose2d(curPose.X() + final_vel.X() / 30, curPose.Y() + final_vel.Y() / 30, Rotation2d.fromDegrees(curPose.rotation().degrees() + final_vel.rotation().degrees() / 20))
             if self.robot.poseEstimator.poseIsOffField(self.robot.poseEstimator.curEstPose) or self.in_obstacle(self.robot.poseEstimator.curEstPose.translation()):
                 self.robot.poseEstimator.curEstPose = curPose
             self.robot.poseEstimator.set_yaw(self.robot.poseEstimator.curEstPose.rotation().degrees())
@@ -254,32 +285,6 @@ class Drivetrain(Subsystem):
             for idx, module in enumerate(self.robot.poseEstimator.modules):
                 SmartDashboard.putNumber("module state " + str(idx + 1), module_states[idx].speed)
                 module.set_desired_state(module_states[idx], is_open_loop)
-    
-    def get_robot_shape(self):
-        cur_pose : Pose2d = self.robot.poseEstimator.curEstPose
-        half_length = inchesToMeters(26 + 7.25) / 2.0
-        half_width = inchesToMeters(28.5 + 7.25) / 2.0
-        p1 = (-half_length, -half_width)
-        p2 = (-half_length, half_width)
-        p3  = (half_length, half_width)
-        p4 = (half_length, -half_width)
-
-        base_robot = Polygon([p1, p2, p3, p4])
-        rotated_robot = rotate(base_robot, cur_pose.rotation().degrees())
-        final_robot = translate(rotated_robot, xoff=cur_pose.X(), yoff=cur_pose.Y())
-        return final_robot
-
-    def in_obstacle(self, pose : Translation2d):
-        robot = self.get_robot_shape()
-        for obstacle in self.sim_obstacles:
-            match obstacle[1]:
-                case "overlaps":
-                    if obstacle[0].overlaps(robot):
-                        return True
-                case "within":
-                    if not robot.within(obstacle[0]):
-                        return True
-        return False
 
 
     def drive_with_pid(self, translation: Translation2d, target_angle):
@@ -321,7 +326,6 @@ class Drivetrain(Subsystem):
         # if FieldConstants.shouldFlip:
         #     vx = -vx
         #     vy = -vy
-
         omega = self.theta_controller.calculate(
             current_pose.rotation().degrees(), target_pose.rotation().degrees()
         ) + feedfoward_theta
@@ -333,11 +337,7 @@ class Drivetrain(Subsystem):
             and self.theta_controller.atSetpoint()
         ):
             # self.robot.running_pid_lineup = False
-            if self.robot.score_intent and self.robot.running_pid_lineup:
-                # self.at_scoring_position_drivetrain.appendleft(True)
-                self.robot.at_scoring_position = True
-            if self.robot.is_intaking and self.robot.running_pid_lineup:
-                self.robot.at_intake_position = True
+            self.robot.running_pid_lineup = False
 
 
         # Drive the robot using the calculated velocities
@@ -381,14 +381,49 @@ class Drivetrain(Subsystem):
             self.robot.poseEstimator.get_module_states()
         )  # Check this in swervemodule.py, we need to convert kraken speed to m/s
         chassis_speeds = const.SWERVE_KINEMATICS.toChassisSpeeds(module_states)  # type: ignore
-        return chassis_speeds
+        return self.previous_sim_speeds if self.robot.isSimulation() else chassis_speeds
 
     def shouldFlipPath(self):
         return DriverStation.getAlliance() == DriverStation.Alliance.kRed
+    
+    def get_hub_angle_distance(self):
+        target_goal = self.robot.fieldConstants.flip_Translation2d(self.robot.fieldConstants.Hub.topCenterPoint.toTranslation2d())
+        field_relative_speeds = self.get_field_relative_speeds()
+        field_relative_accel = self.chassis_accel
 
+        time_from_hub = 1# TODO: update to longer flight times
+
+        virtual_goal_x = target_goal.x - time_from_hub * (
+            field_relative_speeds.vx + field_relative_accel.vx * 0.1 # TODO: update to longer flight times
+        )
+        virtual_goal_y = target_goal.y - time_from_hub * (
+            field_relative_speeds.vy + field_relative_accel.vy * 0.1 # TODO: update to longer flight times
+        )
+
+        moving_goal_location = Translation2d(virtual_goal_x, virtual_goal_y)
+        robot_to_target = (
+            moving_goal_location - self.robot.poseEstimator.curEstPose.translation()
+        )
+        self.robot.virtual_target.setPose(Pose2d(virtual_goal_x, virtual_goal_y, 0))
+        x = robot_to_target.X()
+        y = robot_to_target.Y()
+        distance = math.sqrt(x**2 + y**2)
+
+        return (Rotation2d.fromDegrees(Rotation2d((-1 * robot_to_target.X()), (-1 * robot_to_target.Y())).degrees() - 90), distance)
+
+    def _get_final_lineup_pose(self, pose : Pose2d):
+        if not self.robot.shoot_intent:
+            return pose
+        else:
+            return Pose2d(pose.translation(), self.get_hub_angle_distance()[0])
     def periodic(self):
+        self.chassis_accel = (
+            self.get_robot_relative_speeds() - self.previous_chassisspeeds
+        ) / 0.05
+        self.previous_chassisspeeds = self.get_robot_relative_speeds()
+
         if self.robot.in_autonomous_mode and self.robot.running_pid_lineup:
-                self.go_to_pose_profiled_pid(self.robot.final_lineup_pose)
+            self.go_to_pose_profiled_pid(self.robot.final_lineup_pose)
 
     def log(self):
         SmartDashboard.putData("PID Controller Reef XY", self.xy_controller)

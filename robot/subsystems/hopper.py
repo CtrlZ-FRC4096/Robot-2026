@@ -13,9 +13,9 @@ from wpimath.geometry import Rotation2d, Translation2d
 from wpimath.trajectory import TrapezoidProfile
 from wpilib import Timer
 import math
-from motor_wrapper import MotorWrapper
 import const
 from wpilib import SmartDashboard
+from math import sin, pi
 
 class Hopper(Subsystem):
     def __init__(self, robot: "Robot"):
@@ -24,8 +24,17 @@ class Hopper(Subsystem):
         self.commanded_speed = 0.0
 
         # Flywheel motors
-        self.indexer_motor = MotorWrapper(const.INDEXER_MOTOR_ID, "carnivore")  
+        self.indexer_motor = hardware.TalonFX(const.INDEXER_MOTOR_ID, "rio")  
+        self.indexer_motor_config = self.robot.get_motor_config(1, 2.0, 0.0, 0.0, 0.24, 0, 0, 3.5)
+        self.indexer_motor.configurator.apply(self.indexer_motor_config)
 
+        self.test_indexer_speed = 95
+
+        # pulsing indexer
+        self.hz = 4
+        self.amp = 3
+
+        self.time = Timer()
 
     def get_speed(self):
         if self.robot.isSimulation():
@@ -40,10 +49,12 @@ class Hopper(Subsystem):
     def stop(self):
         self.commanded_speed = 0.0
         self.indexer_motor.set_control(controls.VelocityTorqueCurrentFOC(0.0))
-    
+
     def periodic(self):
         if self.robot.shoot_fuel:
-            self.set_speed(30.0) # TUNE
+            pass
+        # elif self.robot.pulse_indexer:
+        #     self.set_speed(abs(sin(self.time.get()*pi*self.hz)*self.amp)) # moves fuel towards shooter
         elif self.robot.is_climbing:
             self.stop()
         elif self.robot.mechanisms_at_default:
@@ -52,3 +63,5 @@ class Hopper(Subsystem):
     def log(self):
         SmartDashboard.putNumber("Hopper/Actual Speed", self.get_speed())
         SmartDashboard.putNumber("Hopper/Commanded Speed", self.commanded_speed)
+        SmartDashboard.putNumber("Test/Test indexer speed", self.test_indexer_speed)
+

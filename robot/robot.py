@@ -37,7 +37,7 @@ from wpimath.units import inchesToMeters
 from wpimath.estimator import SwerveDrive4PoseEstimator
 
 
-from phoenix6 import controls
+from phoenix6 import controls, signals, configs
 
 # import subsystems.limelight
 import subsystems.leds
@@ -202,6 +202,11 @@ class Robot(CoroutineRobot):
         self.spin_up = False
         self.is_climbing = False
         self.is_intaking = False
+        self.pulse_indexer = False
+
+        self.snake_intake = False
+
+        self.virtual_target = self.poseEstimator.field.getObject("Virtual Target")
 
         self.timer = Timer()
 
@@ -231,6 +236,34 @@ class Robot(CoroutineRobot):
         while True:
             yield
             self.scheduler.run()
+
+    def get_motor_config(self, inverted=0, k_p=0.0, k_i=0.0, k_d=0.0, k_v=0.0, k_a=0.0, k_g=0.0, k_s=0.0):
+        motor_config = configs.TalonFXConfiguration()
+        motor_config.motor_output.inverted = signals.InvertedValue(inverted)
+        motor_config.current_limits.stator_current_limit = 100
+        motor_config.current_limits.supply_current_limit_enable = True
+
+        motor_config.slot0.k_p = k_p
+        motor_config.slot0.k_i = k_i
+        motor_config.slot0.k_d = k_d
+        motor_config.slot0.k_v = k_v
+        motor_config.slot0.k_a = k_a
+        motor_config.slot0.k_g = k_g
+        motor_config.slot0.k_s = k_s
+
+        motor_config.closed_loop_ramps.torque_closed_loop_ramp_period = 0.02
+        motor_config.open_loop_ramps.torque_open_loop_ramp_period = 0.02
+        motor_config.closed_loop_ramps.duty_cycle_closed_loop_ramp_period = 0.02
+        motor_config.open_loop_ramps.duty_cycle_open_loop_ramp_period = 0.02
+        motor_config.closed_loop_ramps.voltage_closed_loop_ramp_period = 0.02
+        motor_config.open_loop_ramps.voltage_open_loop_ramp_period = 0.02
+
+        motor_config.current_limits.supply_current_limit = 80
+        motor_config.torque_current.peak_forward_torque_current = 80
+        motor_config.torque_current.peak_reverse_torque_current = -80
+
+        return motor_config
+
 
     ### DISABLED ###
 

@@ -142,13 +142,27 @@ class OI:
 					):
                         forward_back *= 0.6
                         left_right *= 0.6
-                        self.robot.drivetrain.go_to_pose_profiled_pid(self.robot.final_lineup_pose, forward_back, left_right, rotate)
                     else:
-                        self.robot.drivetrain.go_to_pose_profiled_pid(self.robot.final_lineup_pose)
+                        forward_back = 0.0
+                        left_right = 0.0
+                        rotate = 0
+                    self.robot.drivetrain.go_to_pose_profiled_pid(self.robot.final_lineup_pose, forward_back, left_right, rotate)
                 # elif (abs(const.SWERVE_KINEMATICS.toChassisSpeeds(self.robot.poseEstimator.get_module_states()).vx) <= 0.005 and
                 #       abs(const.SWERVE_KINEMATICS.toChassisSpeeds(self.robot.poseEstimator.get_module_states()).vy) <= 0.005 and 
                 #       abs(const.SWERVE_KINEMATICS.toChassisSpeeds(self.robot.poseEstimator.get_module_states()).omega_dps) <= 1):
                 #     self.robot.drivetrain.turn_wheels_to_x()
+                elif self.robot.is_intaking and not self.robot.shoot_intent and self.robot.snake_intake:
+                    self.robot.drivetrain.drive_with_pid(
+                            Translation2d(forward_back, left_right)
+                            * const.SWERVE_MAX_SPEED,
+                            self.robot.intake.get_snake_intake_angle(),
+                        )
+                elif self.robot.shoot_intent:
+                    self.robot.drivetrain.drive_with_pid(
+                            Translation2d(forward_back, left_right)
+                            * const.SWERVE_MAX_SPEED,
+                            self.robot.drivetrain.get_hub_angle_distance()[0].degrees(),
+                        )
                 else:
                     if abs(rotate) >= 0.02:
                         self.cardinal_directing = False
@@ -209,7 +223,74 @@ class OI:
         def _():
             self.robot.is_intaking = not self.robot.is_intaking
         
-        @self.driver1.X.whenPressed
+        @self.driver1.START.whenPressed
         def _():
-            self.robot.shoot_fuel = not self.robot.shoot_fuel
+            self.robot.snake_intake = not self.robot.snake_intake
+            self.robot_oriented_angle = self.robot.poseEstimator.curEstPose.rotation().degrees()
+        
+        @self.driver1.Y.whenPressed
+        def _():
+            self.robot.mechanisms_at_default = True
+            self.robot.is_intaking = False
+            self.robot.shoot_fuel = False
+            self.robot.shoot_intent = False
+
+        @self.driver1.X.whenHeld
+        def _():
+            self.robot.shoot_fuel = True
+            self.robot.mechanisms_at_default = False
+            self.robot.shoot_intent = False
+            self.robot.is_climbing = False
+        @self.driver1.X.whenReleased
+        def _():
+            self.robot.shoot_fuel = False
+            self.robot.shoot_intent = False
             
+        # @self.driver1.B.whenPressed
+        # def _():
+        #     self.robot.shoot_intent = not self.robot.shoot_intent
+        #     self.robot.mechanisms_at_default = not self.robot.shoot_intent
+        #     self.robot_oriented_angle = self.robot.poseEstimator.curEstPose.rotation().degrees()
+
+        @self.driver1.RIGHT_TRIGGER_AS_BUTTON.whenHeld #shoot
+        def _():
+            self.robot.mechanisms_at_default = False
+            self.robot.shoot_intent = True
+            self.robot.shoot_fuel = False
+            self.robot.is_climbing = False
+        @self.driver1.RIGHT_TRIGGER_AS_BUTTON.whenReleased
+        def _():
+            self.robot.shoot_intent = False
+            self.robot.shoot_fuel = False
+            self.robot.is_climbing = False
+
+        @self.driver2.RIGHT_BUMPER.whenPressed
+        def _():
+            self.robot.shooter.test_accelerator_speed += 1
+        @self.driver2.LEFT_BUMPER.whenPressed
+        def _():
+            self.robot.shooter.test_accelerator_speed -= 1
+        @self.driver2.POV.UP.whenPressed
+        def _():
+            self.robot.shooter.test_fly_speed += 1
+        @self.driver2.POV.DOWN.whenPressed
+        def _():
+            self.robot.shooter.test_fly_speed -= 1
+        @self.driver2.B.whenPressed
+        def _():
+            self.robot.shooter.test_hood_position += 1
+        @self.driver2.X.whenPressed
+        def _():
+            self.robot.shooter.test_hood_position -= 1
+        @self.driver2.Y.whenPressed
+        def _():
+            self.robot.hopper.test_indexer_speed += 1
+        @self.driver2.A.whenPressed
+        def _():
+            self.robot.hopper.test_indexer_speed -= 1
+        @self.driver2.POV.RIGHT.whenPressed
+        def _():
+            self.robot.intake.test_intake_speed += 1
+        @self.driver2.POV.LEFT.whenPressed
+        def _():
+            self.robot.intake.test_intake_speed -= 1

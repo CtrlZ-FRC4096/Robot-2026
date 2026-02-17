@@ -33,7 +33,7 @@ class FieldConstants:
         self.fieldLength = self.tag_map.getFieldLength()
         self.fieldWidth = self.tag_map.getFieldWidth()
         self.fuelDiameter = 0.15 # meters
-        self.shouldFlip = False
+        self.shouldFlip = True
         
         self.aprilTagCount = len(self.tag_map.getTags())
         self.aprilTagWidth = inchesToMeters(6.5)

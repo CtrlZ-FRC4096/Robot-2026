@@ -13,25 +13,36 @@ from wpimath.geometry import Rotation2d, Translation2d
 from wpimath.trajectory import TrapezoidProfile
 from wpilib import Timer
 import math
-from motor_wrapper import MotorWrapper
 import const
 from wpilib import SmartDashboard
+from wpimath.units import radiansToDegrees
 
 class Intake(Subsystem):
     def __init__(self, robot: "Robot"):
         super().__init__()
         self.robot = robot
+        self.request = controls.MotionMagicVoltage(0, enable_foc=True)
         
-        self.left_intake_motor = MotorWrapper(const.LEFT_INTAKE_MOTOR_ID, "carnivore")
-        self.right_intake_motor = MotorWrapper(const.RIGHT_INTAKE_MOTOR_ID, "carnivore")
-        self.inside_track_motor = MotorWrapper(const.INSIDE_TRACK_MOTOR_ID, "carnivore")
-        self.deploy_motor = MotorWrapper(const.INTAKE_DEPLOY_MOTOR_ID, "carnivore")
+        self.left_intake_motor = hardware.TalonFX(const.LEFT_INTAKE_MOTOR_ID, "carnivore")
+        self.right_intake_motor = hardware.TalonFX(const.RIGHT_INTAKE_MOTOR_ID, "carnivore")
+        self.inside_track_motor = hardware.TalonFX(const.INSIDE_TRACK_MOTOR_ID, "carnivore")
+        self.deploy_motor = hardware.TalonFX(const.INTAKE_DEPLOY_MOTOR_ID, "carnivore")
 
-        self.right_intake_motor.set_control(controls.Follower(const.LEFT_INTAKE_MOTOR_ID, False))
-        self.inside_track_motor.set_control(controls.Follower(const.LEFT_INTAKE_MOTOR_ID, False))
+        self.intake_motor_config = self.robot.get_motor_config()
+        self.inside_track_motor_config = self.robot.get_motor_config()
+        self.deploy_motor_config = self.robot.get_motor_config()
+
+        self.left_intake_motor.configurator.apply(self.intake_motor_config)
+        self.right_intake_motor.configurator.apply(self.intake_motor_config)
+        self.inside_track_motor.configurator.apply(self.inside_track_motor_config)
+        self.deploy_motor.configurator.apply(self.deploy_motor_config)
+
+        self.right_intake_motor.set_control(controls.Follower(const.LEFT_INTAKE_MOTOR_ID, signals.MotorAlignmentValue(0)))
+        self.inside_track_motor.set_control(controls.Follower(const.LEFT_INTAKE_MOTOR_ID, signals.MotorAlignmentValue(0)))
 
         self.commanded_intake_speed = 0.0
         self.commanded_position = 0.0
+        self.test_intake_speed = 50
 
     def stop(self):
         self.stop_deploy()
@@ -49,7 +60,8 @@ class Intake(Subsystem):
             return
         self.commanded_position = position
         rotations = position # ADD GEAR RATIOS STUFF
-        self.deploy_motor.set_control(controls.VelocityTorqueCurrentFOC(rotations)) # USE MOTION MAGIC
+        #self.deploy_motor.set_control(controls.PositionTorqueCurrentFOC(rotations)) # USE MOTION MAGIC
+        self.deploy_motor.set_control(self.request.with_position(rotations)) # USING MOTION MAGIC
     
     def get_position(self):
         if self.robot.isSimulation():
@@ -75,10 +87,18 @@ class Intake(Subsystem):
         else:
             return self.left_intake_motor.get_velocity().value
     
+    def get_snake_intake_angle(self):
+        cur_speeds = self.robot.drivetrain.get_robot_relative_speeds()
+        cur_rotation = self.robot.poseEstimator.curEstPose.rotation().degrees()
+        angle = math.atan2(cur_speeds.vy, cur_speeds.vx)
+        if abs(cur_speeds.vx) <= 0.01 and abs(cur_speeds.vy) <= 0.01:
+            return cur_rotation
+        return radiansToDegrees(angle)
+
     def periodic(self):
         if self.robot.is_intaking:
-            if self.robot.fieldConstants.LinesVertical.starting < self.robot.poseEstimator.curEstPose.X() < self.robot.fieldConstants.fieldLength - self.robot.fieldConstants.LinesVertical.starting: # neutral zone
-                self.set_intake_speed(0) # TUNE
+            # if self.robot.fieldConstants.LinesVertical.starting < self.robot.poseEstimator.curEstPose.X() < self.robot.fieldConstants.fieldLength - self.robot.fieldConstants.LinesVertical.starting: # neutral zone
+                self.set_intake_speed(self.test_intake_speed) # TUNE
                 self.set_position(45) # TUNE
         elif self.robot.is_climbing:
             self.stop_intake()
@@ -95,4 +115,6 @@ class Intake(Subsystem):
         SmartDashboard.putNumber("Intake/Actual Intake Position", self.get_position())
         SmartDashboard.putNumber("Intake/Actual Left Intake Speed", self.get_intake_speed())
         SmartDashboard.putNumber("Intake/Actual Right Intake Speed", self.right_intake_motor.get_velocity().value)
+
+        SmartDashboard.putNumber("Test/Test intake speed", self.test_intake_speed)
         
