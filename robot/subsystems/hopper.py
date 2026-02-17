@@ -52,9 +52,12 @@ class Hopper(Subsystem):
 
     def periodic(self):
         if self.robot.shoot_fuel:
-            self.set_speed(self.test_indexer_speed) # TUNE
-        elif self.robot.pulse_indexer:
-            self.set_speed(abs(sin(self.time.get()*pi*self.hz)*self.amp)) # moves fuel towards shooter
+            if self.robot.shooter.get_accelerator_speed() <= 80 and self.robot.shooter.get_fly_speed() <= 40:
+                self.set_speed(-15.0)
+            else:
+                self.set_speed(self.test_indexer_speed) # TUNE
+        # elif self.robot.pulse_indexer:
+        #     self.set_speed(abs(sin(self.time.get()*pi*self.hz)*self.amp)) # moves fuel towards shooter
         elif self.robot.is_climbing:
             self.stop()
         elif self.robot.mechanisms_at_default:
@@ -64,3 +67,4 @@ class Hopper(Subsystem):
         SmartDashboard.putNumber("Hopper/Actual Speed", self.get_speed())
         SmartDashboard.putNumber("Hopper/Commanded Speed", self.commanded_speed)
         SmartDashboard.putNumber("Test/Test indexer speed", self.test_indexer_speed)
+
