@@ -73,7 +73,7 @@ from wpimath.filter import LinearFilter
 from pathplannerlib.path import PathPlannerTrajectory
 from pathplannerlib.path import PathPlannerPath, PathConstraints
 from wpimath.estimator import SwerveDrive4PoseEstimator
-from photoncamera import WrapperedPhotonCamera
+from photoncamera import WrapperedPhotonCameraTag
 from wpimath.units import degreesToRadians, inchesToMeters
 from robotpy_apriltag import AprilTagField, AprilTagFieldLayout
 
@@ -170,7 +170,7 @@ class PoseEstimator(Subsystem):
         )
 
         self.cams = [
-            WrapperedPhotonCamera("camera2", ROBOT_TO_CAM1),
+            WrapperedPhotonCameraTag("camera2", ROBOT_TO_CAM1),
         ]
 
         self.poseConverge = True

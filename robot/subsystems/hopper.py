@@ -28,6 +28,8 @@ class Hopper(Subsystem):
         self.indexer_motor_config = self.robot.get_motor_config(1, 2.0, 0.0, 0.0, 0.24, 0, 0, 3.5)
         self.indexer_motor.configurator.apply(self.indexer_motor_config)
 
+        self.test_indexer_speed = 95
+
         # pulsing indexer
         self.hz = 4
         self.amp = 3
@@ -50,7 +52,7 @@ class Hopper(Subsystem):
 
     def periodic(self):
         if self.robot.shoot_fuel:
-            self.set_speed(95.0) # TUNE
+            self.set_speed(self.test_indexer_speed) # TUNE
         elif self.robot.pulse_indexer:
             self.set_speed(abs(sin(self.time.get()*pi*self.hz)*self.amp)) # moves fuel towards shooter
         elif self.robot.is_climbing:
@@ -61,3 +63,4 @@ class Hopper(Subsystem):
     def log(self):
         SmartDashboard.putNumber("Hopper/Actual Speed", self.get_speed())
         SmartDashboard.putNumber("Hopper/Commanded Speed", self.commanded_speed)
+        SmartDashboard.putNumber("Test/Test indexer speed", self.test_indexer_speed)

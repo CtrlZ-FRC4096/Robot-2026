@@ -42,6 +42,7 @@ class Intake(Subsystem):
 
         self.commanded_intake_speed = 0.0
         self.commanded_position = 0.0
+        self.test_intake_speed = 50
 
     def stop(self):
         self.stop_deploy()
@@ -96,8 +97,8 @@ class Intake(Subsystem):
 
     def periodic(self):
         if self.robot.is_intaking:
-            if self.robot.fieldConstants.LinesVertical.starting < self.robot.poseEstimator.curEstPose.X() < self.robot.fieldConstants.fieldLength - self.robot.fieldConstants.LinesVertical.starting: # neutral zone
-                self.set_intake_speed(0) # TUNE
+            # if self.robot.fieldConstants.LinesVertical.starting < self.robot.poseEstimator.curEstPose.X() < self.robot.fieldConstants.fieldLength - self.robot.fieldConstants.LinesVertical.starting: # neutral zone
+                self.set_intake_speed(self.test_intake_speed) # TUNE
                 self.set_position(45) # TUNE
         elif self.robot.is_climbing:
             self.stop_intake()
@@ -114,4 +115,6 @@ class Intake(Subsystem):
         SmartDashboard.putNumber("Intake/Actual Intake Position", self.get_position())
         SmartDashboard.putNumber("Intake/Actual Left Intake Speed", self.get_intake_speed())
         SmartDashboard.putNumber("Intake/Actual Right Intake Speed", self.right_intake_motor.get_velocity().value)
+
+        SmartDashboard.putNumber("Test/Test intake speed", self.test_intake_speed)
         

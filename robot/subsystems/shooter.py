@@ -49,6 +49,10 @@ class Shooter(Subsystem):
         self.right_up_fly_motor.set_control(controls.Follower(const.LEFT_FLY_ID, signals.MotorAlignmentValue(0)))
         self.right_down_fly_motor.set_control(controls.Follower(const.LEFT_FLY_ID, signals.MotorAlignmentValue(0)))
 
+        self.test_fly_speed = 80
+        self.test_accelerator_speed = 50
+        self.test_hood_position = 0
+
     def get_fly_speed(self):
         if self.robot.isSimulation():
             return self.commanded_fly_speed
@@ -130,13 +134,13 @@ class Shooter(Subsystem):
             if self.robot.mechanisms_at_default:
                 self.stop_fly()
         elif self.robot.shoot_fuel:
-            self.set_fly_speed(30.0)
-            self.set_accelerator_speed(30.0)
-            self.set_hood_position(30.0)
+            self.set_fly_speed(self.test_fly_speed)
+            self.set_accelerator_speed(self.test_accelerator_speed)
+            self.set_hood_position(self.test_hood_position)
         elif self.robot.shoot_intent:
             self.set_fly_speed(0.0)
             self.stop_accelerator()
-            self.set_hood_position(30.0) #add pose checking
+            self.set_hood_position(self.test_hood_position) #add pose checking
         elif self.robot.is_climbing:
             self.set_hood_position(0.0)
             self.stop_fly()
@@ -158,3 +162,7 @@ class Shooter(Subsystem):
         SmartDashboard.putBoolean("States/Shoot Intent", self.robot.shoot_intent)
 
         SmartDashboard.putBoolean("Shooter/Near Trench", self.pose_in_trench())
+        
+        SmartDashboard.putNumber("Test/Test fly speed", self.test_fly_speed)
+        SmartDashboard.putNumber("Test/Test accelerator speed", self.test_accelerator_speed)
+        SmartDashboard.putNumber("Test/Test hood position", self.test_hood_position)

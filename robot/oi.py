@@ -227,15 +227,53 @@ class OI:
         def _():
             self.robot.snake_intake = not self.robot.snake_intake
             self.robot_oriented_angle = self.robot.poseEstimator.curEstPose.rotation().degrees()
+        
+        @self.driver1.Y.whenPressed
+        def _():
+            self.robot.mechanisms_at_default = True
+            self.robot.is_intaking = False
+            self.robot.shoot_fuel = False
+            self.robot.shoot_intent = False
 
         @self.driver1.X.whenPressed
         def _():
             self.robot.shoot_fuel = not self.robot.shoot_fuel
             self.robot.mechanisms_at_default = not self.robot.shoot_fuel
+            self.robot.shoot_intent = False
         
-        @self.driver1.RIGHT_BUMPER.whenPressed
+        @self.driver1.B.whenPressed
         def _():
             self.robot.shoot_intent = not self.robot.shoot_intent
             self.robot.mechanisms_at_default = not self.robot.shoot_intent
             self.robot_oriented_angle = self.robot.poseEstimator.curEstPose.rotation().degrees()
-            
+
+        @self.driver2.RIGHT_BUMPER.whenPressed
+        def _():
+            self.robot.shooter.test_accelerator_speed += 1
+        @self.driver2.LEFT_BUMPER.whenPressed
+        def _():
+            self.robot.shooter.test_accelerator_speed -= 1
+        @self.driver2.RIGHT_TRIGGER_AS_BUTTON.whenPressed
+        def _():
+            self.robot.shooter.test_fly_speed += 1
+        @self.driver2.LEFT_TRIGGER_AS_BUTTON.whenPressed
+        def _():
+            self.robot.shooter.test_fly_speed -= 1
+        @self.driver2.B.whenPressed
+        def _():
+            self.robot.shooter.test_hood_position += 1
+        @self.driver2.X.whenPressed
+        def _():
+            self.robot.shooter.test_hood_position -= 1
+        @self.driver2.Y.whenPressed
+        def _():
+            self.robot.hopper.test_indexer_speed += 1
+        @self.driver2.A.whenPressed
+        def _():
+            self.robot.hopper.test_indexer_speed -= 1
+        @self.driver2.POV.RIGHT.whenPressed
+        def _():
+            self.robot.intake.test_intake_speed += 1
+        @self.driver2.POV.LEFT.whenPressed
+        def _():
+            self.robot.intake.test_intake_speed -= 1

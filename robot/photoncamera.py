@@ -39,7 +39,7 @@ class CameraPoseObservation:
 # 1 - resolve issues with target ambiguity (two possible poses for each observation)
 # 2 - Convert pose estimates to the field
 # 3 - Handle recording latency of when the image was actually seen
-class WrapperedPhotonCamera:
+class WrapperedPhotonCameraTag:
     def __init__(self, camName, robotToCam):
         # setVersionCheckEnabled(False)
 
@@ -199,3 +199,21 @@ class WrapperedPhotonCamera:
         inY = -0.5 < y < FieldConstants.fieldWidth + 0.5
         inX = -0.5 < x < FieldConstants.fieldLength + 0.5
         return inX and inY
+
+class WrapperedPhotonCameraFuel:
+    def __init__(self, camName, robotToCam):
+        # setVersionCheckEnabled(False)
+
+        self.cam = PhotonCamera(camName)
+        # TODO is this really the name of the camera or is this just as a reminder? Camera1,2,3,or 4??
+        self.cameraDistortVector = const.CAM_DICT[camName][0]
+        self.cameraIntrinsMatrix = const.CAM_DICT[camName][1]
+
+        self.camName = camName
+        self.poseEstimates = []
+        self.robotToCam: Transform3d = robotToCam
+    
+    def update(self, curPose : Pose2d):
+        res = self.cam.getLatestResult()
+        for target in res.getTargets():
+            pass
