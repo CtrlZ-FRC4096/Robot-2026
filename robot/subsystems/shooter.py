@@ -62,7 +62,10 @@ class Shooter(Subsystem):
                     
     def set_fly_speed(self, speed):
         self.commanded_fly_speed = speed
-        self.right_fly_motor.set_control(controls.VelocityTorqueCurrentFOC(speed))
+        if self.get_fly_speed() <= self.commanded_fly_speed * 0.85:
+            self.right_fly_motor.set_control(controls.DutyCycleOut(0.97))
+        else:
+            self.right_fly_motor.set_control(controls.VelocityTorqueCurrentFOC(speed))
 
     def get_accelerator_speed(self):
         if self.robot.isSimulation():
@@ -72,15 +75,20 @@ class Shooter(Subsystem):
 
     def set_accelerator_speed(self, speed):
         self.commanded_accelerator_speed = speed
-        self.accelerator_motor.set_control(controls.VelocityTorqueCurrentFOC(speed))
+        if self.get_accelerator_speed() <= self.commanded_accelerator_speed * 0.85:
+            self.accelerator_motor.set_control(controls.DutyCycleOut(0.97))
+        else:
+            self.accelerator_motor.set_control(controls.VelocityTorqueCurrentFOC(speed))
     
     def set_hood_position(self, position):
         if abs(self.get_hood_position() - position) <= 0.02:
             return
-        self.commanded_hood_position = position
-        rotations = position # ADD GEAR RATIOS STUFF
-        #self.hood_motor.set_control(controls.VelocityTorqueCurrentFOC(rotations)) # USE MOTION MAGIC
-        self.hood_motor.set_control(self.request.with_position(rotations)) # USING MOTION MAGIC
+        if self.pose_in_trench():
+            self.hood_motor.set_control(self.request.with_position(0))
+        else:
+            self.commanded_hood_position = position
+            rotations = position # ADD GEAR RATIOS STUFF
+            self.hood_motor.set_control(self.request.with_position(rotations)) # USING MOTION MAGIC
     
     def get_hood_position(self):
         if self.robot.isSimulation():
@@ -113,12 +121,10 @@ class Shooter(Subsystem):
         max_x_blue = inchesToMeters(205.406)
         min_x_red = inchesToMeters(446.156)
         max_x_red = inchesToMeters(494.844)
-
         min_y_right = inchesToMeters(0)
         max_y_right = inchesToMeters(51.219)
         min_y_left = inchesToMeters(267.268)
         max_y_left = inchesToMeters(318.111)
-        
         if ((min_x_blue <= pose.X() <= max_x_blue and min_y_right <= pose.Y() <= max_y_right) # blue right trench
         or (min_x_blue <= pose.X() <= max_x_blue and min_y_left <= pose.Y() <= max_y_left) # blue left trench
         or (min_x_red <= pose.X() <= max_x_red and min_y_right <= pose.Y() <= max_y_right) # red right trench
@@ -128,20 +134,24 @@ class Shooter(Subsystem):
         else:
             return False
 
+    def ready_to_shoot(self):
+        if abs(self.get_hood_position() - self.commanded_accelerator_speed) <= 2 and abs(self.get_fly_speed() - self.commanded_fly_speed) <= 2: #and pointed at hub   
+            return True
+        else:
+            return False
+        
     def periodic(self):
-        if self.robot.mechanisms_at_default or self.pose_in_trench():
+        if self.robot.mechanisms_at_default:
             self.set_hood_position(0.0)
             self.stop_accelerator()
-            if self.robot.mechanisms_at_default:
-                self.stop_fly()
-        elif self.robot.shoot_fuel:
-            self.set_fly_speed(self.test_fly_speed)
-            self.set_accelerator_speed(self.test_accelerator_speed)
-            self.set_hood_position(self.test_hood_position)
+            self.stop_fly()
         elif self.robot.shoot_intent:
-            self.set_fly_speed(0.0)
-            self.stop_accelerator()
-            self.set_hood_position(self.test_hood_position) #add pose checking
+            self.set_fly_speed(self.test_fly_speed)
+            self.set_hood_position(self.test_hood_position)
+            if self.robot.shoot_fuel or (self.ready_to_shoot()):
+                self.set_accelerator_speed(self.test_accelerator_speed)
+                if abs(self.get_accelerator_speed() - self.commanded_accelerator_speed) <= 2:
+                    self.robot.hopper.set_speed(95) 
         elif self.robot.is_climbing:
             self.set_hood_position(0.0)
             self.stop_fly()

@@ -52,10 +52,7 @@ class Hopper(Subsystem):
 
     def periodic(self):
         if self.robot.shoot_fuel:
-            if self.robot.shooter.get_accelerator_speed() <= 80 and self.robot.shooter.get_fly_speed() <= 40:
-                self.set_speed(-15.0)
-            else:
-                self.set_speed(self.test_indexer_speed) # TUNE
+            pass
         # elif self.robot.pulse_indexer:
         #     self.set_speed(abs(sin(self.time.get()*pi*self.hz)*self.amp)) # moves fuel towards shooter
         elif self.robot.is_climbing:

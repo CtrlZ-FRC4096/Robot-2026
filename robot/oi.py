@@ -235,17 +235,34 @@ class OI:
             self.robot.shoot_fuel = False
             self.robot.shoot_intent = False
 
-        @self.driver1.X.whenPressed
+        @self.driver1.X.whenHeld
         def _():
-            self.robot.shoot_fuel = not self.robot.shoot_fuel
-            self.robot.mechanisms_at_default = not self.robot.shoot_fuel
+            self.robot.shoot_fuel = True
+            self.robot.mechanisms_at_default = False
             self.robot.shoot_intent = False
-        
-        @self.driver1.B.whenPressed
+            self.robot.is_climbing = False
+        @self.driver1.X.whenReleased
         def _():
-            self.robot.shoot_intent = not self.robot.shoot_intent
-            self.robot.mechanisms_at_default = not self.robot.shoot_intent
-            self.robot_oriented_angle = self.robot.poseEstimator.curEstPose.rotation().degrees()
+            self.robot.shoot_fuel = False
+            self.robot.shoot_intent = False
+            
+        # @self.driver1.B.whenPressed
+        # def _():
+        #     self.robot.shoot_intent = not self.robot.shoot_intent
+        #     self.robot.mechanisms_at_default = not self.robot.shoot_intent
+        #     self.robot_oriented_angle = self.robot.poseEstimator.curEstPose.rotation().degrees()
+
+        @self.driver1.RIGHT_TRIGGER_AS_BUTTON.whenHeld #shoot
+        def _():
+            self.robot.mechanisms_at_default = False
+            self.robot.shoot_intent = True
+            self.robot.shoot_fuel = False
+            self.robot.is_climbing = False
+        @self.driver1.RIGHT_TRIGGER_AS_BUTTON.whenReleased
+        def _():
+            self.robot.shoot_intent = False
+            self.robot.shoot_fuel = False
+            self.robot.is_climbing = False
 
         @self.driver2.RIGHT_BUMPER.whenPressed
         def _():
@@ -253,10 +270,10 @@ class OI:
         @self.driver2.LEFT_BUMPER.whenPressed
         def _():
             self.robot.shooter.test_accelerator_speed -= 1
-        @self.driver2.RIGHT_TRIGGER_AS_BUTTON.whenPressed
+        @self.driver2.POV.UP.whenPressed
         def _():
             self.robot.shooter.test_fly_speed += 1
-        @self.driver2.LEFT_TRIGGER_AS_BUTTON.whenPressed
+        @self.driver2.POV.DOWN.whenPressed
         def _():
             self.robot.shooter.test_fly_speed -= 1
         @self.driver2.B.whenPressed

@@ -24,8 +24,7 @@ from wpimath.kinematics import (
     SwerveModuleState
 )
 from phoenix6 import configs
-# from shapely import Polygon, Point
-# from shapely.affinity import translate, rotate
+
 
 
 # from pathplannerlib.commands import PathfindHolonomic
@@ -54,6 +53,9 @@ from wpimath.estimator import SwerveDrive4PoseEstimator
 from photoncamera import WrapperedPhotonCameraTag
 from wpimath.units import degreesToRadians, inchesToMeters, radiansToDegrees
 from collections import deque
+
+from shapely import Polygon, Point
+from shapely.affinity import translate, rotate
 
 class Drivetrain(Subsystem):
     def __init__(self, robot: "Robot"):
@@ -158,30 +160,58 @@ class Drivetrain(Subsystem):
             (inchesToMeters(650.813), inchesToMeters(317.688)),
             (0, inchesToMeters(317.688))
         ]
-        # field_boundary = Polygon(field_boundary_points)
+        
+        
+        if self.robot.isSimulation():    
+            field_boundary = Polygon(field_boundary_points)
 
-        # blue_hub = Polygon(blue_hub_pts)
-        # blue_tower = Polygon(blue_tower_pts)
-        # blue_trench_left = Polygon(blue_trench_left_pts)
-        # blue_trench_right = Polygon(blue_trench_right_pts)
+            blue_hub = Polygon(blue_hub_pts)
+            blue_tower = Polygon(blue_tower_pts)
+            blue_trench_left = Polygon(blue_trench_left_pts)
+            blue_trench_right = Polygon(blue_trench_right_pts)
 
-        # red_hub = Polygon(red_hub_pts)
-        # red_tower = Polygon(red_tower_pts)
-        # red_trench_left = Polygon(red_trench_left_pts)
-        # red_trench_right = Polygon(red_trench_right_pts)
+            red_hub = Polygon(red_hub_pts)
+            red_tower = Polygon(red_tower_pts)
+            red_trench_left = Polygon(red_trench_left_pts)
+            red_trench_right = Polygon(red_trench_right_pts)
 
-        # self.sim_obstacles = [
-        #     (field_boundary, "within"),
-        #     (blue_hub, "overlaps"),
-        #     (blue_tower, "overlaps"),
-        #     (blue_trench_left, "overlaps"),
-        #     (blue_trench_right, "overlaps"),
-        #     (red_hub, "overlaps"),
-        #     (red_tower, "overlaps"),
-        #     (red_trench_left, "overlaps"),
-        #     (red_trench_right, "overlaps")
-        # ]
+            self.sim_obstacles = [
+                (field_boundary, "within"),
+                (blue_hub, "overlaps"),
+                (blue_tower, "overlaps"),
+                (blue_trench_left, "overlaps"),
+                (blue_trench_right, "overlaps"),
+                (red_hub, "overlaps"),
+                (red_tower, "overlaps"),
+                (red_trench_left, "overlaps"),
+                (red_trench_right, "overlaps")
+            ]
+    def get_robot_shape(self):
+        cur_pose : Pose2d = self.robot.poseEstimator.curEstPose
+        half_length = inchesToMeters(26 + 7.25) / 2.0
+        half_width = inchesToMeters(28.5 + 7.25) / 2.0
+        p1 = (-half_length, -half_width)
+        p2 = (-half_length, half_width)
+        p3  = (half_length, half_width)
+        p4 = (half_length, -half_width)
 
+        base_robot = Polygon([p1, p2, p3, p4])
+        rotated_robot = rotate(base_robot, cur_pose.rotation().degrees())
+        final_robot = translate(rotated_robot, xoff=cur_pose.X(), yoff=cur_pose.Y())
+        return final_robot
+
+    def in_obstacle(self, pose : Translation2d):
+        robot = self.get_robot_shape()
+        for obstacle in self.sim_obstacles:
+            match obstacle[1]:
+                case "overlaps":
+                    if obstacle[0].overlaps(robot):
+                        return True
+                case "within":
+                    if not robot.within(obstacle[0]):
+                        return True
+        return False
+    
     def drive(self, translation: Translation2d, rotation, field_relative, is_open_loop):
         SmartDashboard.putNumber("Swerve/Translation X", translation.x)
         SmartDashboard.putNumber("Swerve/Translation Y", translation.y)
@@ -255,32 +285,6 @@ class Drivetrain(Subsystem):
             for idx, module in enumerate(self.robot.poseEstimator.modules):
                 SmartDashboard.putNumber("module state " + str(idx + 1), module_states[idx].speed)
                 module.set_desired_state(module_states[idx], is_open_loop)
-    
-    # def get_robot_shape(self):
-    #     cur_pose : Pose2d = self.robot.poseEstimator.curEstPose
-    #     half_length = inchesToMeters(26 + 7.25) / 2.0
-    #     half_width = inchesToMeters(28.5 + 7.25) / 2.0
-    #     p1 = (-half_length, -half_width)
-    #     p2 = (-half_length, half_width)
-    #     p3  = (half_length, half_width)
-    #     p4 = (half_length, -half_width)
-
-    #     base_robot = Polygon([p1, p2, p3, p4])
-    #     rotated_robot = rotate(base_robot, cur_pose.rotation().degrees())
-    #     final_robot = translate(rotated_robot, xoff=cur_pose.X(), yoff=cur_pose.Y())
-    #     return final_robot
-
-    # def in_obstacle(self, pose : Translation2d):
-    #     robot = self.get_robot_shape()
-    #     for obstacle in self.sim_obstacles:
-    #         match obstacle[1]:
-    #             case "overlaps":
-    #                 if obstacle[0].overlaps(robot):
-    #                     return True
-    #             case "within":
-    #                 if not robot.within(obstacle[0]):
-    #                     return True
-    #     return False
 
 
     def drive_with_pid(self, translation: Translation2d, target_angle):
