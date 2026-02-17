@@ -6,11 +6,11 @@ from typing import List, Callable, Optional
 
 from wpimath.geometry import Pose2d, Pose3d, Rotation2d, Rotation3d, Transform3d, Translation2d, Translation3d
 from wpimath.kinematics import ChassisSpeeds
-from wpimath.units import inchesToMeters
+from wpimath.units import inchesToMeters, degreesToRadians
 
 class FuelSim:
     PERIOD = 0.02 # sec
-    subticks = 5
+    subticks = 3
     GRAVITY = np.array([0, 0, -9.81])
     AIR_DENSITY = 1.2041
 
@@ -126,6 +126,7 @@ class FuelSim:
 
     def __init__(self, robot, can_intake, intake_callback):
         # We use a fixed-size buffer to avoid allocation during simulation
+        self.robot = robot
         self.positions = np.zeros((self.MAX_FUELS, 3))
         self.velocities = np.zeros((self.MAX_FUELS, 3))
         self.count = 0
@@ -147,6 +148,8 @@ class FuelSim:
         self.table = self.inst.getTable("FuelSimulation")
         self.fuel_pub = self.table.getStructArrayTopic("Fuels", Translation3d).publish()
         self.count_pub = self.table.getIntegerTopic("Count").publish()
+        self.blue_score_pub = self.table.getIntegerTopic("Blue Hub Score").publish()
+        self.red_score_pub = self.table.getIntegerTopic("Red Hub Score").publish()
 
         if robot:
             import const
@@ -157,10 +160,10 @@ class FuelSim:
             bumperHeight = 0.2 # meters
             poseSupplier = lambda: robot.poseEstimator.curEstPose
             def fieldSpeedsSupplier():
-                states = robot.poseEstimator.get_module_states()
+                states = self.robot.poseEstimator.get_module_states()
                 chassis_speeds = const.SWERVE_KINEMATICS.toChassisSpeeds(states)
                 # Rotate robot-relative speeds to field-relative
-                yaw = robot.poseEstimator.getYaw()
+                yaw = self.robot.poseEstimator.getYaw()
                 c = yaw.cos()
                 s = yaw.sin()
                 
@@ -229,6 +232,9 @@ class FuelSim:
         active_pos = self.positions[:count]
         objs = [Translation3d(p[0], p[1], p[2]) for p in active_pos]
         self.fuel_pub.set(objs)
+        
+        self.blue_score_pub.set(self.blueHub.getScore())
+        self.red_score_pub.set(self.redHub.getScore())
 
     def start(self):
         self.running = True
@@ -584,7 +590,9 @@ class FuelSim:
             if np.any(in_mask):
                 remove_mask |= in_mask
                 if intake.callback:
-                    intake.callback() 
+                    count = np.sum(in_mask)
+                    for _ in range(count):
+                        intake.callback() 
         
         if np.any(remove_mask):
             # Indices relative to active_idx
@@ -800,17 +808,15 @@ class FuelSim:
         self.velocities[i] += imp_vec
         self.velocities[j] -= imp_vec
 
-    def launchFuel(self, launchVelocity, hoodAngle, turretYaw, launchHeight):
+    def launchFuel(self, launchVelocity, hoodAngle, turretYaw, launch_pos):
         if self.robotPoseSupplier is None or self.robotFieldSpeedsSupplier is None:
             return
         
         robot_pose = self.robotPoseSupplier()
         field_speeds = self.robotFieldSpeedsSupplier()
 
-        launch_pos = Translation3d(robot_pose.X(), robot_pose.Y(), launchHeight)
-
         heading = robot_pose.rotation().radians()
-        total_yaw = heading + turretYaw 
+        total_yaw = heading + turretYaw + degreesToRadians(90)
         
         v_horiz = math.cos(hoodAngle) * launchVelocity
         v_vert  = math.sin(hoodAngle) * launchVelocity

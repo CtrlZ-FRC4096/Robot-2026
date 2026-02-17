@@ -225,11 +225,13 @@ class Robot(CoroutineRobot):
         self.in_teleop_mode = False
 
         ## SIMMING STUFF ##
-        self.max_fuel_in_hopper = 24
-        self.x_hopper_max = inchesToMeters(20)
-        self.y_hopper_max = inchesToMeters(25)
-        self.z_hopper_max = inchesToMeters(15)
-        self.fuel_in_hopper = 1
+        if self.isSimulation():
+            self.max_fuel_in_hopper = 24
+            self.x_hopper_max = inchesToMeters(25)
+            self.y_hopper_max = inchesToMeters(18)
+            self.z_hopper_max = inchesToMeters(15)
+            self.fuel_in_hopper = 0
+            self.tick_count = 0
 
         while True:
             yield
@@ -289,11 +291,6 @@ class Robot(CoroutineRobot):
 
         # if self.isSimulation():
         #     self.fuel_sim.start()
-
-        if self.fieldConstants.shouldFlip:
-            self.poseEstimator.set_yaw(90)
-        else:
-            self.poseEstimator.set_yaw(270)
 
         # self.scheduler.schedule(self.auto)
 
@@ -358,21 +355,40 @@ class Robot(CoroutineRobot):
             final_outer_trans = default_outer + inner_outer_transform
             SmartDashboard.putNumberArray("FinalComponentPoses/Pose2", [final_outer_trans.X(), final_outer_trans.Y(), final_outer_trans.Z(), final_outer_quat.W(), final_outer_quat.X(), final_outer_quat.Y(), final_outer_quat.Z()])
             
-            default_fuel_pose = Translation3d(-0.35, -0.43, 0.1)
+            default_fuel_pose = Translation3d(-0.26, -0.28, 0.28)
             for fuel_num in range(1,self.max_fuel_in_hopper + 1):
                 if fuel_num <= self.fuel_in_hopper:
                     #put the fuel in
-                    x_coord = (fuel_num % (self.x_hopper_max // self.fieldConstants.fuelDiameter)) * self.fieldConstants.fuelDiameter
-                    y_coord = (fuel_num % (self.y_hopper_max // self.fieldConstants.fuelDiameter)) * self.fieldConstants.fuelDiameter
-                    z_coord = (fuel_num % (self.z_hopper_max // self.fieldConstants.fuelDiameter)) * self.fieldConstants.fuelDiameter
+                    fuel_diam = self.fieldConstants.fuelDiameter
+                    per_x = int(self.x_hopper_max / fuel_diam)
+                    per_y = int(self.y_hopper_max / fuel_diam)
+                    if per_x < 1: per_x = 1
+                    if per_y < 1: per_y = 1
+
+                    idx = fuel_num - 1
+                    x_coord = (idx % per_x) * fuel_diam
+                    y_coord = ((idx // per_x) % per_y) * fuel_diam
+                    z_coord = (idx // (per_x * per_y)) * fuel_diam + 0.5
                     SmartDashboard.putNumberArray(f"Hopper/Sim Fuels/Fuel {fuel_num}", [default_fuel_pose.X() + x_coord, default_fuel_pose.Y() + y_coord, default_fuel_pose.Z() + z_coord, 1.0, 0.0, 0.0, 0.0])
                 else:
-                    SmartDashboard.putNumberArray(f"Hopper/Sim Fuels/Fuel {fuel_num}", [])
+                    SmartDashboard.putNumberArray(f"Hopper/Sim Fuels/Fuel {fuel_num}", [0, 0, 0, 1.0, 0.0, 0.0, 0.0])
 
+            fly_speed = self.shooter.get_fly_speed()
+            accel_speed = self.shooter.get_accelerator_speed()
+            if fly_speed >= 5 and accel_speed >= 5 and self.fuel_in_hopper > 0:
+                #we are shooting every 0.06 seconds
+                if self.tick_count % 3 == 0:
+                    launch_vel = self.shooter.fly_speed_to_launch_vel(fly_speed)
+
+                    trans = Translation3d(0, 0.27, 0.52) + Translation3d(0, -0.11, 0) + Translation3d(0, 0.11* math.cos(degreesToRadians(cur_hood_pos)), 0.11*math.sin(degreesToRadians(cur_hood_pos)))
+                    launch_pos = Translation3d(self.poseEstimator.curEstPose.translation()) + trans
+                    self.fuel_sim.launchFuel(launch_vel, cur_hood_pos, 0, launch_pos)
+                    self.fuel_in_hopper -= 1
 
             if self.in_teleop_mode:
                 self.fuel_sim.updateSim()
             SmartDashboard.putNumber("Sim/Fuel in Hopper", self.fuel_in_hopper)
+            self.tick_count += 1
         for s in self.subsystems:
             s.log()
 

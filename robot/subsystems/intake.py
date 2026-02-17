@@ -72,7 +72,7 @@ class Intake(Subsystem):
             return position
         
     def can_intake_sim(self):
-        return self.robot.is_intaking
+        return self.robot.is_intaking and self.robot.fuel_in_hopper < 24
     
     def intake_sim_callback(self):
         self.robot.fuel_in_hopper += 1
