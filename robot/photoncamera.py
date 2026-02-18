@@ -50,7 +50,8 @@ class WrapperedPhotonCameraTag:
 
         self.camName = camName
         self.timeoutSec = 1.0
-        self.poseEstimates = []
+        self.poseEstimates : list[Pose2d] = []
+        self.zEstimates = []
         self.robotToCam: Transform3d = robotToCam
         self.counter = 0
         self.tag_map = AprilTagFieldLayout.loadField(AprilTagField.k2026RebuiltWelded)
@@ -66,6 +67,7 @@ class WrapperedPhotonCameraTag:
     ):
         # self.counter += 1
         self.poseEstimates = []
+        self.zEstimates = []
         self.tagPositions = []
         self.tagAmbiguity = []
         self.poseSingleTag = []
@@ -105,10 +107,6 @@ class WrapperedPhotonCameraTag:
             tgtID = target.getFiducialId()
 
             tagFieldPose = self.tag_map.getTagPose(tgtID)
-
-            # tgt_to_camera = target.getBestCameraToTarget().inverse()
-            # camera_to_robot = self.robotToCam.inverse()
-            # robot_pose = tagFieldPose.transformBy(tgt_to_camera).transformBy(camera_to_robot).transformBy(Transform3d(Translation3d(), Rotation3d(gyro_rotation.X(), gyro_rotation.Y(), 0)))
 
             target_x_angle = math.radians(target.getYaw())
             target_y_angle = -1 * math.radians(target.getPitch())
@@ -159,7 +157,8 @@ class WrapperedPhotonCameraTag:
             robot_pose = Pose2d(
                 robot_pose.translation(), prevEstPoseSingleTag.rotation()
             )
-
+            zEst = tagFieldPose.Z() - self.robotToCam.Z() - math.sin(self.robotToCam.rotation().Y() +  target_y_angle) * distance_3d
+            self.zEstimates.append(zEst)
             self.poseSingleTag.append(robot_pose)
             self.singleTagIDs.append(tgtID)
 
@@ -167,6 +166,9 @@ class WrapperedPhotonCameraTag:
 
     def getObsTime(self):
         return self.obsTime
+    
+    def getZEstimates(self):
+        return self.zEstimates
 
     def getTagIds(self):
         return self.tag_ids
@@ -216,7 +218,19 @@ class WrapperedPhotonCameraFuel:
         self.poseEstimates = []
         self.robotToCam: Transform3d = robotToCam
     
-    def update(self, curPose : Pose2d):
+    def update(self, curPose : Pose2d, z : float):
         res = self.cam.getLatestResult()
         for target in res.getTargets():
-            pass
+            tgt_x_angle = target.getYaw()
+            tgt_y_angle = target.getPitch()
+
+            dist_3d = target.getBestCameraToTarget().translation().norm()
+
+            x_cam = dist_3d * math.cos(tgt_y_angle) * math.cos(tgt_x_angle)
+            y_cam = dist_3d * math.cos(tgt_y_angle) * math.sin(tgt_x_angle)
+            z_cam = dist_3d * math.sin(tgt_y_angle)
+            
+            fuel_in_cam = Translation3d(x_cam, y_cam, z_cam)
+            fuel_in_robot = fuel_in_cam.rotateBy(self.robotToCam.rotation()) + self.robotToCam.translation()
+
+            self.poseEstimates.append(fuel_in_robot)
