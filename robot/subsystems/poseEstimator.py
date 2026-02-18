@@ -155,6 +155,7 @@ class PoseEstimator(Subsystem):
 
 
         self.curEstPose = Pose2d(7, 5, 0)
+        self.estZ = 0
 
         self.poseEst = SwerveDrive4PoseEstimator(
             const.SWERVE_KINEMATICS, self.getYaw(), self.get_module_positions(), self.curEstPose # type: ignore
@@ -322,28 +323,36 @@ class PoseEstimator(Subsystem):
         self.single_tag_IDs = set()
         single_tag_poses = []
 
+        z_sum = 0
+        z_count = 0
         for cam in self.cams:
             cam.update(
                 self.curEstPose,
                 self.gyro.getRotation3d()
             )
-            single_tag_poses = cam.getPoseSingleTag()
+            single_tag_poses : list[Pose2d] = cam.getPoseSingleTag()
             self.single_tag_IDs.update(cam.getSingleTagIDs())
-
+            zEstimates = cam.getZEstimates()
+            z_sum += sum(zEstimates)
+            z_count += len(zEstimates)
+           
             for pose in single_tag_poses:
                 self.camera_X[cam.camName] = pose.X()
                 self.camera_Y[cam.camName] = pose.Y()
-                self.camera_theta[cam.camName] = pose.rotation().degrees()
-                # if abs(pose.rotation().degrees() - self.getYaw().degrees()) > 
-                self.poseEst.addVisionMeasurement(
-                    pose,
-                    cam.getObsTime(),
-                    (
-                        self.xystd_single_tag,  # * (min_ambiguity / 0.4),
-                        self.xystd_single_tag,  # * (min_ambiguity / 0.4),
-                        self.thetastd_single_tag,  # * (min_ambiguity / 0.4),
-                    ),
-                )
+                self.camera_theta[cam.camName] = pose.rotation()
+                if not(abs(self.gyro.get_pitch()) >= 10 or abs(self.gyro.get_roll()) >= 10):
+                    self.poseEst.addVisionMeasurement(
+                        pose,
+                        cam.getObsTime(),
+                        (
+                            self.xystd_single_tag,  # * (min_ambiguity / 0.4),
+                            self.xystd_single_tag,  # * (min_ambiguity / 0.4),
+                            self.thetastd_single_tag,  # * (min_ambiguity / 0.4),
+                        ),
+                    )
+        if z_count > 0:
+            self.estZ = z_sum / z_count
+            
 
         # Update poses with drivetrain information
         self.poseEst.update(self.getYaw(), self.get_module_positions())
