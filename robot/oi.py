@@ -265,6 +265,7 @@ class OI:
             self.robot.mechanisms_at_default = True
             self.robot.is_climbing = False
             self.robot.shooter.shoot_ready = False
+            self.robot.shooter.accel_good = False
 
         @self.driver2.RIGHT_BUMPER.whenPressed
         def _():

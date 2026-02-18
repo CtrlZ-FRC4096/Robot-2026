@@ -35,13 +35,13 @@ class Shooter(Subsystem):
 
         self.hood_motor = hardware.TalonFX(const.SHOOTER_HOOD_MOTOR_ID, "rio")
 
-        self.fly_motor_config = self.robot.get_motor_config(0, 4.0, 0.1, 0, 0, 0, 0, 0)
-        self.right_fly_motor_config = self.robot.get_motor_config(1, 4.0, 0.1, 0, 0, 0, 0, 0)
+        self.fly_motor_config = self.robot.get_motor_config(0, 12.0, 0.1, 0, 0, 0, 0, 0)
+        self.right_fly_motor_config = self.robot.get_motor_config(1, 12.0, 0.1, 0, 0, 0, 0, 0)
         self.right_fly_motor.configurator.apply(self.right_fly_motor_config)
         self.left_up_fly_motor.configurator.apply(self.fly_motor_config)
         self.left_down_fly_motor.configurator.apply(self.fly_motor_config)
 
-        self.accelerator_motor_config = self.robot.get_motor_config(1, 4.0, 0, 0, 0, 0, 0, 0)
+        self.accelerator_motor_config = self.robot.get_motor_config(1, 12.0, 0, 0, 0, 0, 0, 0)
         self.accelerator_motor.configurator.apply(self.accelerator_motor_config)
 
         self.hood_motor_config = self.robot.get_motor_config(0, 2.0, 0, 0, 0, 0, 0, 0)
@@ -50,11 +50,13 @@ class Shooter(Subsystem):
         self.left_up_fly_motor.set_control(controls.Follower(const.RIGHT_FLY_ID, signals.MotorAlignmentValue(0)))
         self.left_down_fly_motor.set_control(controls.Follower(const.RIGHT_FLY_ID, signals.MotorAlignmentValue(0)))
 
-        self.test_fly_speed = 45
+        self.test_fly_speed = 50
         self.test_accelerator_speed = 95
         self.test_hood_position = 0
 
         self.shoot_ready = False
+        self.accel_good = False
+
 
     def get_fly_speed(self):
         if self.robot.isSimulation():
@@ -137,7 +139,7 @@ class Shooter(Subsystem):
             return False
 
     def ready_to_shoot(self):
-        if abs(self.get_fly_speed()) - 10 >= self.commanded_fly_speed: #and pointed at hub   
+        if abs(self.get_fly_speed()) + 5 >= self.commanded_fly_speed: #and pointed at hub   
             self.shoot_ready = True
             return True
         else:
@@ -147,14 +149,15 @@ class Shooter(Subsystem):
     def periodic(self):
         if self.robot.mechanisms_at_default:
             # self.set_hood_position(0.0)
-            self.stop_accelerator()
-            self.stop_fly()
+            self.set_accelerator_speed(0.0)
+            self.set_fly_speed(0.0)
         elif self.robot.shoot_intent:
             self.set_fly_speed(self.test_fly_speed)
             # self.set_hood_position(self.test_hood_position)
             if self.robot.shoot_fuel or self.ready_to_shoot() or self.shoot_ready:
                 self.set_accelerator_speed(self.test_accelerator_speed)
-                if self.get_accelerator_speed() - 10 >= self.commanded_accelerator_speed:
+                if abs(self.get_accelerator_speed()) + 30 >= self.commanded_accelerator_speed or self.accel_good:
+                    self.accel_good = True
                     self.robot.hopper.set_speed(self.robot.hopper.test_indexer_speed) 
                 else:
                     self.robot.hopper.set_speed(-20)
