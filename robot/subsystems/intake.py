@@ -37,8 +37,8 @@ class Intake(Subsystem):
         self.inside_track_motor.configurator.apply(self.inside_track_motor_config)
         self.deploy_motor.configurator.apply(self.deploy_motor_config)
 
-        self.right_intake_motor.set_control(controls.Follower(const.LEFT_INTAKE_MOTOR_ID, False))
-        self.inside_track_motor.set_control(controls.Follower(const.LEFT_INTAKE_MOTOR_ID, False))
+        self.right_intake_motor.set_control(controls.Follower(const.LEFT_INTAKE_MOTOR_ID, signals.MotorAlignmentValue(0)))
+        self.inside_track_motor.set_control(controls.Follower(const.LEFT_INTAKE_MOTOR_ID, signals.MotorAlignmentValue(0)))
 
         self.commanded_intake_speed = 0.0
         self.commanded_position = 0.0

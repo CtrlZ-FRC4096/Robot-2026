@@ -157,12 +157,12 @@ class OI:
                             * const.SWERVE_MAX_SPEED,
                             self.robot.intake.get_snake_intake_angle(),
                         )
-                elif self.robot.shoot_intent:
-                    self.robot.drivetrain.drive_with_pid(
-                            Translation2d(forward_back, left_right)
-                            * const.SWERVE_MAX_SPEED,
-                            self.robot.drivetrain.get_hub_angle_distance()[0].degrees(),
-                        )
+                # elif self.robot.shoot_intent:
+                #     self.robot.drivetrain.drive_with_pid(
+                #             Translation2d(forward_back, left_right)
+                #             * const.SWERVE_MAX_SPEED,
+                #             self.robot.drivetrain.get_hub_angle_distance()[0].degrees(),
+                #         )
                 else:
                     if abs(rotate) >= 0.02:
                         self.cardinal_directing = False
@@ -262,7 +262,9 @@ class OI:
         def _():
             self.robot.shoot_intent = False
             self.robot.shoot_fuel = False
+            self.robot.mechanisms_at_default = True
             self.robot.is_climbing = False
+            self.robot.shooter.shoot_ready = False
 
         @self.driver2.RIGHT_BUMPER.whenPressed
         def _():
