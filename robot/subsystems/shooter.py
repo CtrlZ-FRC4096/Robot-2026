@@ -50,7 +50,7 @@ class Shooter(Subsystem):
         self.right_fly_motor.set_control(controls.Follower(const.LEFT_UP_FLY_ID, signals.MotorAlignmentValue(1)))
         self.left_down_fly_motor.set_control(controls.Follower(const.LEFT_UP_FLY_ID, signals.MotorAlignmentValue(0)))
 
-        self.test_fly_speed = 60
+        self.test_fly_speed = 70
         self.test_accelerator_speed = 80
         self.test_hood_position = 0
 
@@ -158,7 +158,8 @@ class Shooter(Subsystem):
                 self.set_accelerator_speed(self.test_accelerator_speed)
                 if abs(self.get_accelerator_speed()) + 30 >= self.commanded_accelerator_speed or self.accel_good:
                     self.accel_good = True
-                    self.robot.hopper.set_speed(self.robot.hopper.test_indexer_speed) 
+                    self.robot.hopper.indexer_motor.set_control(controls.DutyCycleOut(0.95))
+                    # self.robot.hopper.set_speed(self.robot.hopper.test_indexer_speed) 
                 else:
                     self.robot.hopper.set_speed(-20)
         elif self.robot.is_climbing:
