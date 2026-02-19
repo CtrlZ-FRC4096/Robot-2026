@@ -221,7 +221,12 @@ class OI:
         
         @self.driver1.A.whenPressed
         def _():
-            self.robot.is_intaking = not self.robot.is_intaking
+            self.robot.is_intaking = True
+            self.robot.mechanisms_at_default = False
+        
+        @self.driver1.B.whenPressed
+        def _():
+            self.robot.is_intaking = False
         
         @self.driver1.START.whenPressed
         def _():

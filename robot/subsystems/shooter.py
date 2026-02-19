@@ -35,23 +35,23 @@ class Shooter(Subsystem):
 
         self.hood_motor = hardware.TalonFX(const.SHOOTER_HOOD_MOTOR_ID, "rio")
 
-        self.fly_motor_config = self.robot.get_motor_config(0, 12.0, 0.1, 0, 0, 0, 0, 0)
-        self.right_fly_motor_config = self.robot.get_motor_config(1, 12.0, 0.1, 0, 0, 0, 0, 0)
-        self.right_fly_motor.configurator.apply(self.right_fly_motor_config)
+        self.fly_motor_config = self.robot.get_motor_config(0, 10.0, 0, 0, 0.03, 0, 0, 3.5)
+        # self.right_fly_motor_config = self.robot.get_motor_config(0, 12.0, 0.1, 0, 0, 0, 0, 0)
+        self.right_fly_motor.configurator.apply(self.fly_motor_config)
         self.left_up_fly_motor.configurator.apply(self.fly_motor_config)
         self.left_down_fly_motor.configurator.apply(self.fly_motor_config)
 
-        self.accelerator_motor_config = self.robot.get_motor_config(1, 12.0, 0, 0, 0, 0, 0, 0)
+        self.accelerator_motor_config = self.robot.get_motor_config(1, 7.0, 0, 0.025, 0, 0, 0, 9) # retune when we have metal plates
         self.accelerator_motor.configurator.apply(self.accelerator_motor_config)
 
         self.hood_motor_config = self.robot.get_motor_config(0, 2.0, 0, 0, 0, 0, 0, 0)
         self.hood_motor.configurator.apply(self.hood_motor_config)
 
-        self.left_up_fly_motor.set_control(controls.Follower(const.RIGHT_FLY_ID, signals.MotorAlignmentValue(0)))
-        self.left_down_fly_motor.set_control(controls.Follower(const.RIGHT_FLY_ID, signals.MotorAlignmentValue(0)))
+        self.right_fly_motor.set_control(controls.Follower(const.LEFT_UP_FLY_ID, signals.MotorAlignmentValue(1)))
+        self.left_down_fly_motor.set_control(controls.Follower(const.LEFT_UP_FLY_ID, signals.MotorAlignmentValue(0)))
 
-        self.test_fly_speed = 50
-        self.test_accelerator_speed = 95
+        self.test_fly_speed = 70
+        self.test_accelerator_speed = 80
         self.test_hood_position = 0
 
         self.shoot_ready = False
@@ -62,14 +62,14 @@ class Shooter(Subsystem):
         if self.robot.isSimulation():
             return self.commanded_fly_speed
         else:
-            return self.right_fly_motor.get_velocity().value
+            return self.left_up_fly_motor.get_velocity().value
                     
     def set_fly_speed(self, speed):
         self.commanded_fly_speed = speed
         # if self.get_fly_speed() <= self.commanded_fly_speed * 0.85:
         #     self.right_fly_motor.set_control(controls.DutyCycleOut(0.97))
         # else:
-        self.right_fly_motor.set_control(controls.VelocityTorqueCurrentFOC(speed))
+        self.left_up_fly_motor.set_control(controls.VelocityTorqueCurrentFOC(-1 * speed))
 
     def get_accelerator_speed(self):
         if self.robot.isSimulation():
@@ -107,7 +107,7 @@ class Shooter(Subsystem):
     
     def stop_fly(self):
         self.commanded_fly_speed = 0.0
-        self.right_fly_motor.set_control(controls.VelocityTorqueCurrentFOC(0.0))
+        self.left_up_fly_motor.set_control(controls.VelocityTorqueCurrentFOC(0.0))
 
     def stop_accelerator(self):
         self.commanded_accelerator_speed = 0.0
@@ -158,7 +158,8 @@ class Shooter(Subsystem):
                 self.set_accelerator_speed(self.test_accelerator_speed)
                 if abs(self.get_accelerator_speed()) + 30 >= self.commanded_accelerator_speed or self.accel_good:
                     self.accel_good = True
-                    self.robot.hopper.set_speed(self.robot.hopper.test_indexer_speed) 
+                    self.robot.hopper.indexer_motor.set_control(controls.DutyCycleOut(0.95))
+                    # self.robot.hopper.set_speed(self.robot.hopper.test_indexer_speed) 
                 else:
                     self.robot.hopper.set_speed(-20)
         elif self.robot.is_climbing:

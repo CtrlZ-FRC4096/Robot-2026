@@ -25,16 +25,16 @@ class Hopper(Subsystem):
 
         # Flywheel motors
         self.indexer_motor = hardware.TalonFX(const.INDEXER_MOTOR_ID, "rio")  
-        self.indexer_motor_config = self.robot.get_motor_config(1, 2.0, 0.0, 0.0, 0.24, 0, 0, 3.5)
+        self.indexer_motor_config = self.robot.get_motor_config(1, 15.0, 0.0, 0.0, 0.55, 0, 0, 26.5)
         self.indexer_motor.configurator.apply(self.indexer_motor_config)
-
-        self.test_indexer_speed = 95
+        self.test_indexer_speed = 80
 
         # pulsing indexer
         self.hz = 4
         self.amp = 3
 
         self.time = Timer()
+
 
     def get_speed(self):
         if self.robot.isSimulation():

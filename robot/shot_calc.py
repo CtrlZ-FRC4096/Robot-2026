@@ -6,7 +6,7 @@ from matplotlib.animation import FuncAnimation
 from mpl_toolkits.mplot3d import Axes3D
 from sleipnir.optimization import Problem
 import sleipnir.autodiff as ad
-
+import pandas as pd
 class SleipnirRobustOptimizer:
     def __init__(self, shooter_pos=np.array([0.0, 0.0, 0.0]), shooter_vel=np.array([0.0, 0.0, 0.0]), min_v=0.0, max_v=25.0, min_angle_deg=0.0, max_angle_deg=85.0):
         
@@ -258,7 +258,7 @@ class SleipnirRobustOptimizer:
                 vx, vy, vz
             ]
             
-            # Simulate
+                    # Simulate
             for _ in range(self.steps):
                 if use_rk2:
                     state = self.run_rk2(state, dt, spin_axis)
@@ -306,3 +306,65 @@ class SleipnirRobustOptimizer:
             "solve_time": solve_end - solve_start
         }
 
+# Configuration
+MIN_DIST = 1.0
+MAX_DIST = 5.0
+NUM_POINTS = 100  # How many rows in the table
+SHOOTER_HEIGHT = 0.56 # Meters (approximate robot shooter height)
+
+# Use the target from the optimizer class logic
+TARGET_POS = np.array([4.625594, 4.034536, 1.83])
+
+def generate_table():
+    distances = np.linspace(MIN_DIST, MAX_DIST, NUM_POINTS)
+    results = []
+    
+    print(f"\n{'Dist (m)':<10} | {'Vel (m/s)':<10} | {'Angle (deg)':<10} | {'Time (s)':<10} | {'Status'}")
+    print("-" * 75)
+
+    for dist in distances:
+        # Create a shooter position 'dist' away from target
+        # We assume the shooter is straight in line on X axis relative to target for generation
+        shooter_pos = np.array([
+            TARGET_POS[0] - dist, 
+            TARGET_POS[1], 
+            SHOOTER_HEIGHT
+        ])
+        
+        # Static Optimization (Robot Velocity = 0)
+        shooter_vel = np.array([0.0, 0.0, 0.0])
+        
+        optimizer = SleipnirRobustOptimizer(
+            shooter_pos=shooter_pos,
+            shooter_vel=shooter_vel,
+            min_v=5.0,
+            max_v=12.0,
+            min_angle_deg=60,
+            max_angle_deg=87.0
+        )
+        
+        res = optimizer.optimize()
+        
+        if "SUCCESS" in str(res['status']):
+            # Clean data
+            row = {
+                "Distance": round(dist, 3),
+                "Velocity": round(res['v'], 3),
+                "Angle": round(res['angle_deg'], 3),
+                "Time": round(res['T'], 4)
+            }
+            results.append(row)
+            print(f"{dist:<10.2f} | {res['v']:<10.4f} | {res['angle_deg']:<10.4f} | {res['T']:<10.4f} | OK")
+        else:
+            print(f"{dist:<10.2f} | {'---':<10} | {'---':<10} | {'---':<10} | FAIL")
+
+    # Export
+    df = pd.DataFrame(results)
+    csv_name = "shot_lookup_table.csv"
+    df.to_csv(csv_name, index=False)
+    print("\n" + "="*30)
+    print(f"saved to {csv_name}")
+    print("="*30)
+    
+if __name__ == "__main__":
+    generate_table()
