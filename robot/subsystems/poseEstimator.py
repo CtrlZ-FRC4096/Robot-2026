@@ -73,7 +73,7 @@ from wpimath.filter import LinearFilter
 from pathplannerlib.path import PathPlannerTrajectory
 from pathplannerlib.path import PathPlannerPath, PathConstraints
 from wpimath.estimator import SwerveDrive4PoseEstimator
-from photoncamera import WrapperedPhotonCameraTag
+from photoncamera import WrapperedPhotonCameraTag, WrapperedPhotonCameraFuel
 from wpimath.units import degreesToRadians, inchesToMeters
 from robotpy_apriltag import AprilTagField, AprilTagFieldLayout
 
@@ -169,10 +169,17 @@ class PoseEstimator(Subsystem):
             Translation3d(-0.317, -0.292, 0.193),
             Rotation3d.fromDegrees(0.0, -10.0, 0.0)
         )
+        ROBOT_TO_COLOR_1 = Transform3d()
+        ROBOT_TO_COLOR_2 = Transform3d()
 
         self.cams = [
             WrapperedPhotonCameraTag("camera2", ROBOT_TO_CAM1),
         ]
+        self.intake_cam = WrapperedPhotonCameraFuel("color1", ROBOT_TO_COLOR_1) # WRONG NAME MAYBE
+        self.hopper_cam = WrapperedPhotonCameraFuel("color2", ROBOT_TO_COLOR_2)
+        self.fuel_field_map : list[Translation3d] = []
+
+
 
         self.poseConverge = True
 
@@ -327,8 +334,7 @@ class PoseEstimator(Subsystem):
         z_count = 0
         for cam in self.cams:
             cam.update(
-                self.curEstPose,
-                self.gyro.getRotation3d()
+                self.curEstPose
             )
             single_tag_poses : list[Pose2d] = cam.getPoseSingleTag()
             self.single_tag_IDs.update(cam.getSingleTagIDs())
@@ -352,7 +358,16 @@ class PoseEstimator(Subsystem):
                     )
         if z_count > 0:
             self.estZ = z_sum / z_count
-            
+        
+        ## UPDATING OBJECT DETECTION CAMERAS
+        self.intake_cam.update(self.curEstPose, self.estZ, self.gyro.getRotation3d())
+        fuels = self.intake_cam.getFuelSeen()
+        for fuel in fuels:
+            if abs(fuel.Z()) >= :
+                pass
+
+
+
 
         # Update poses with drivetrain information
         self.poseEst.update(self.getYaw(), self.get_module_positions())

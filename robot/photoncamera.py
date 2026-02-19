@@ -63,7 +63,6 @@ class WrapperedPhotonCameraTag:
     def update(
         self,
         prevEstPoseSingleTag: Pose2d,
-        gyro_rotation : Rotation3d
     ):
         # self.counter += 1
         self.poseEstimates = []
@@ -215,11 +214,12 @@ class WrapperedPhotonCameraFuel:
         self.cameraIntrinsMatrix = const.CAM_DICT[camName][1]
 
         self.camName = camName
-        self.poseEstimates = []
+        self.fuel_seen = []
         self.robotToCam: Transform3d = robotToCam
     
-    def update(self, curPose : Pose2d, z : float):
+    def update(self, curPose : Pose2d, zCoord : float, gyro : Rotation3d):
         res = self.cam.getLatestResult()
+        self.fuel_seen = []
         for target in res.getTargets():
             tgt_x_angle = target.getYaw()
             tgt_y_angle = target.getPitch()
@@ -231,6 +231,10 @@ class WrapperedPhotonCameraFuel:
             z_cam = dist_3d * math.sin(tgt_y_angle)
             
             fuel_in_cam = Translation3d(x_cam, y_cam, z_cam)
-            fuel_in_robot = fuel_in_cam.rotateBy(self.robotToCam.rotation()) + self.robotToCam.translation()
-
-            self.poseEstimates.append(fuel_in_robot)
+            fuel_in_robot = fuel_in_cam.rotateBy(self.robotToCam.inverse().rotation()) + self.robotToCam.inverse().translation()
+            
+            fuel_in_field = fuel_in_robot.rotateBy(Rotation3d(gyro.X(), gyro.Y(), gyro.Z())) + Translation3d(curPose.X(), curPose.Y(), zCoord)
+            self.fuel_seen.append(fuel_in_field)
+    
+    def getFuelSeen(self) -> list[Translation3d] :
+        return self.fuel_seen
