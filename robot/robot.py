@@ -381,7 +381,7 @@ class Robot(CoroutineRobot):
                     launch_vel = self.shooter.fly_speed_to_launch_vel(fly_speed)
 
                     trans = Translation3d(0, 0.27, 0.52) + Translation3d(0, -0.11, 0) + Translation3d(0, 0.11* math.cos(degreesToRadians(cur_hood_pos)), 0.11*math.sin(degreesToRadians(cur_hood_pos)))
-                    launch_pos = Translation3d(self.poseEstimator.curEstPose.translation()) + trans
+                    launch_pos = Translation3d(self.poseEstimator.curEstPose.translation()) + trans.rotateBy(Rotation3d(0, 0, self.poseEstimator.curEstPose.rotation().radians()))
                     self.fuel_sim.launchFuel(launch_vel, cur_hood_pos, 0, launch_pos)
                     self.fuel_in_hopper -= 1
 

@@ -363,7 +363,7 @@ class PoseEstimator(Subsystem):
         self.intake_cam.update(self.curEstPose, self.estZ, self.gyro.getRotation3d())
         fuels = self.intake_cam.getFuelSeen()
         for fuel in fuels:
-            if abs(fuel.Z()) >= :
+            if abs(fuel.Z()) >= 5:
                 pass
 
 

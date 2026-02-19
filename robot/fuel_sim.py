@@ -6,7 +6,7 @@ from typing import List, Callable, Optional
 
 from wpimath.geometry import Pose2d, Pose3d, Rotation2d, Rotation3d, Transform3d, Translation2d, Translation3d
 from wpimath.kinematics import ChassisSpeeds
-from wpimath.units import inchesToMeters, degreesToRadians
+from wpimath.units import inchesToMeters, degreesToRadians, radiansToDegrees
 
 class FuelSim:
     PERIOD = 0.02 # sec
@@ -437,77 +437,119 @@ class FuelSim:
              vel[mask_z & mask_vz, 2] *= -self.FIELD_COR
 
     def _handle_hub_collisions(self, pos, vel):
-        self._hub_tick(self.blueHub, pos, vel)
-        self._hub_tick(self.redHub, pos, vel)
+        # Track which balls have already been scored by a hub this tick
+        handled_mask = np.zeros(pos.shape[0], dtype=bool)
 
-    def _hub_tick(self, hub, pos, vel):
-        dx = pos[:, 0] - hub.center[0]
-        dy = pos[:, 1] - hub.center[1]
+        # Process blue hub first
+        scored_blue = self._hub_tick(self.blueHub, pos, vel, return_scored_mask=True)
+        if scored_blue is not None:
+            handled_mask |= scored_blue
+
+        # Only process red hub for balls not already handled
+        if np.any(~handled_mask):
+            scored_red = self._hub_tick(self.redHub, pos, vel, mask=~handled_mask, return_scored_mask=True)
+            if scored_red is not None:
+                handled_mask |= scored_red
+
+        # If not using masks, fallback to old behavior (for backward compatibility)
+        # self._hub_tick(self.redHub, pos, vel)
+        # self._hub_tick(self.blueHub, pos, vel)
+        
+    def _hub_tick(self, hub, pos, vel, mask=None, return_scored_mask=False):
+        # mask: Only process balls where mask is True (or all if None)
+        # return_scored_mask: If True, return a boolean mask of which balls were scored this tick
+        global_size = pos.shape[0] if mask is None else mask.shape[0]
+        if mask is not None:
+            idxs = np.where(mask)[0]
+            if len(idxs) == 0:
+                if return_scored_mask:
+                    return np.zeros(global_size, dtype=bool)
+                return
+            pos_sub = pos[idxs]
+            vel_sub = vel[idxs]
+        else:
+            idxs = np.arange(pos.shape[0])
+            pos_sub = pos
+            vel_sub = vel
+
+        scored_mask = np.zeros(global_size, dtype=bool)
+        dx = pos_sub[:, 0] - hub.center[0]
+        dy = pos_sub[:, 1] - hub.center[1]
         dist_sq_xy = dx*dx + dy*dy
-        
+
         dt = self.PERIOD / self.subticks
-        z_prev = pos[:, 2] - vel[:, 2] * dt
-        
+        z_prev = pos_sub[:, 2] - vel_sub[:, 2] * dt
+
         score_mask = (dist_sq_xy <= hub.ENTRY_RADIUS**2) & \
-                     (pos[:, 2] <= hub.ENTRY_HEIGHT) & \
-                     (pos[:, 2] > 1.0)
-                     
+                     (pos_sub[:, 2] <= hub.ENTRY_HEIGHT) & \
+                     (pos_sub[:, 2] > 1.0)
+
         if np.any(score_mask):
             z_prev_sub = z_prev[score_mask]
             true_score_mask_sub = z_prev_sub > hub.ENTRY_HEIGHT
-            
+
             if np.any(true_score_mask_sub):
                 candidates = np.where(score_mask)[0]
                 scorers = candidates[true_score_mask_sub]
-                
+
                 count = len(scorers)
                 hub.score += count
-                
-                pos[scorers] = hub.exit
+
+                # Map scorers back to global indices if using mask
+                global_scorers = idxs[scorers]
+
+                # Teleport scored balls to exit and set velocity
+                # Use global indices to update original arrays
+                pos_sub[scorers] = hub.exit
                 rand = np.random.rand(count)
                 vx = hub.exitVelXMult * (rand + 0.1) * 1.5
                 vy = np.random.rand(count) * 2 - 1
-                
-                vel[scorers, 0] = vx
-                vel[scorers, 1] = vy
-                vel[scorers, 2] = 0
 
-        self._collide_rectangle(pos, vel, 
+                vel_sub[scorers, 0] = vx
+                vel_sub[scorers, 1] = vy
+                vel_sub[scorers, 2] = 0
+
+                scored_mask[global_scorers] = True
+
+        self._collide_rectangle(pos_sub, vel_sub, 
             np.array([hub.center[0] - hub.SIDE/2, hub.center[1] - hub.SIDE/2, 0]),
             np.array([hub.center[0] + hub.SIDE/2, hub.center[1] + hub.SIDE/2, hub.ENTRY_HEIGHT - 0.1])
         )
 
-        net_mask = (pos[:, 2] >= hub.NET_HEIGHT_MIN) & (pos[:, 2] <= hub.NET_HEIGHT_MAX) & \
-                   (pos[:, 1] >= hub.center[1] - hub.NET_WIDTH/2) & (pos[:, 1] <= hub.center[1] + hub.NET_WIDTH/2)
-        
+        net_mask = (pos_sub[:, 2] >= hub.NET_HEIGHT_MIN) & (pos_sub[:, 2] <= hub.NET_HEIGHT_MAX) & \
+                   (pos_sub[:, 1] >= hub.center[1] - hub.NET_WIDTH/2) & (pos_sub[:, 1] <= hub.center[1] + hub.NET_WIDTH/2)
+
         if np.any(net_mask):
             limit_x = hub.center[0] + hub.NET_OFFSET * hub.exitVelXMult
-            
+
             colliders = np.where(net_mask)[0]
-            p_sub = pos[colliders]
-            
+            p_sub = pos_sub[colliders]
+
             if hub.exitVelXMult > 0: # Blue
                 penetrations = p_sub[:, 0] + self.FUEL_RADIUS - limit_x
                 hits = penetrations > 0
                 if np.any(hits):
                     hit_idx = colliders[hits]
                     pen = penetrations[hits]
-                    pos[hit_idx, 0] -= pen 
-                    moving_in = vel[hit_idx, 0] > 0
+                    pos_sub[hit_idx, 0] -= pen 
+                    moving_in = vel_sub[hit_idx, 0] > 0
                     if np.any(moving_in):
                         idx_m = hit_idx[moving_in]
-                        vel[idx_m, 0] *= -hub.sim.NET_COR
+                        vel_sub[idx_m, 0] *= -hub.sim.NET_COR
             else: # Red
-                 penetrations = limit_x - (p_sub[:, 0] - self.FUEL_RADIUS)
-                 hits = penetrations > 0
-                 if np.any(hits):
+                penetrations = limit_x - (p_sub[:, 0] - self.FUEL_RADIUS)
+                hits = penetrations > 0
+                if np.any(hits):
                     hit_idx = colliders[hits]
                     pen = penetrations[hits]
-                    pos[hit_idx, 0] += pen 
-                    moving_in = vel[hit_idx, 0] < 0
+                    pos_sub[hit_idx, 0] += pen 
+                    moving_in = vel_sub[hit_idx, 0] < 0
                     if np.any(moving_in):
-                         idx_m = hit_idx[moving_in]
-                         vel[idx_m, 0] *= -hub.sim.NET_COR
+                        idx_m = hit_idx[moving_in]
+                        vel_sub[idx_m, 0] *= -hub.sim.NET_COR
+
+        if return_scored_mask:
+            return scored_mask
 
     def _collide_rectangle(self, pos, vel, start, end):
         min_b = start - self.FUEL_RADIUS
@@ -817,12 +859,15 @@ class FuelSim:
 
         heading = robot_pose.rotation().radians()
         total_yaw = heading + turretYaw + degreesToRadians(90)
+        # print(radiansToDegrees(total_yaw))
         
-        v_horiz = math.cos(hoodAngle) * launchVelocity
-        v_vert  = math.sin(hoodAngle) * launchVelocity
+        v_horiz = math.sin(hoodAngle) * launchVelocity
+        v_vert  = math.cos(hoodAngle) * launchVelocity
         
         vx = v_horiz * math.cos(total_yaw) + field_speeds.vx
         vy = v_horiz * math.sin(total_yaw) + field_speeds.vy
+        # print("vx: ", vx)
+        # print("vy: ", vy)
         vz = v_vert
         
         self.spawnFuel(launch_pos, Translation3d(vx, vy, vz))

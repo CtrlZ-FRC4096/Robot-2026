@@ -9,13 +9,16 @@ from phoenix6 import controls, configs, hardware, signals
 import wpilib
 import wpimath
 import wpimath.controller
-from wpimath.geometry import Rotation2d, Translation2d
+from wpimath.geometry import Rotation2d, Translation2d, Translation3d, Rotation3d
 from wpimath.trajectory import TrapezoidProfile
-from wpimath.units import inchesToMeters
+from wpimath.units import inchesToMeters, degreesToRadians
 from wpilib import Timer
 import math
 import const
 from wpilib import SmartDashboard
+import shot_calc
+import numpy as np
+from lookup_table import LookupTableAll, LookupTableAngle, LookupTableVel
 
 class Shooter(Subsystem):
     def __init__(self, robot: "Robot"):
@@ -47,15 +50,17 @@ class Shooter(Subsystem):
         self.hood_motor_config = self.robot.get_motor_config(0, 2.0, 0, 0, 0, 0, 0, 0)
         self.hood_motor.configurator.apply(self.hood_motor_config)
 
-        self.right_fly_motor.set_control(controls.Follower(const.LEFT_UP_FLY_ID, signals.MotorAlignmentValue(1)))
-        self.left_down_fly_motor.set_control(controls.Follower(const.LEFT_UP_FLY_ID, signals.MotorAlignmentValue(0)))
+        self.right_fly_motor.set_control(controls.Follower(const.LEFT_UP_FLY_ID, True))
+        self.left_down_fly_motor.set_control(controls.Follower(const.LEFT_UP_FLY_ID, False))
 
         self.test_fly_speed = 70
         self.test_accelerator_speed = 80
-        self.test_hood_position = 0
+        self.test_hood_position = 50
 
         self.shoot_ready = False
         self.accel_good = False
+
+        self.dist_lookup_table = LookupTableAll()
 
 
     def get_fly_speed(self):
@@ -145,15 +150,46 @@ class Shooter(Subsystem):
         else:
             self.shoot_ready = False
             return False
+    
+    def fly_speed_to_launch_vel(self, fly_speed):
+        return fly_speed / 4
+    
+    def create_lookup_table(self):
+        min_dist = 0.7
+        max_dist = 8
+        num_points = 150
+        shooter_height = 0.52 + self.robot.poseEstimator.estZ
+        hub_pos = np.array([4.625594, 4.034536, 1.83])
+        distances = np.linspace(min_dist, max_dist, num_points)
+        results = []
+        for dist in distances:
+            shooter_pos = np.array([
+                hub_pos[0] - dist, 
+                hub_pos[1], 
+                shooter_height])
+            shooter_vel = np.array([0.0, 0.0, 0.0])
+            optimizer = shot_calc.SleipnirRobustOptimizer(
+            shooter_pos=shooter_pos,
+            shooter_vel=shooter_vel,
+            min_v=5.0,
+            max_v=12.0,
+            min_angle_deg=60,
+            max_angle_deg=87.0
+        )
+            res = optimizer.optimize()
+
+            if "SUCCESS" in str(res['status']):
+                self.dist_lookup_table.add_entry(round(dist, 3), round(res['v'], 3), round(res['angle_deg']), round(res['T'], 4))
         
+
     def periodic(self):
         if self.robot.mechanisms_at_default:
-            # self.set_hood_position(0.0)
+            self.set_hood_position(0.0)
             self.set_accelerator_speed(0.0)
             self.set_fly_speed(0.0)
         elif self.robot.shoot_intent:
-            self.set_fly_speed(self.test_fly_speed)
-            # self.set_hood_position(self.test_hood_position)
+            self.set_fly_speed(40)
+            self.set_hood_position(self.test_hood_position)
             if self.robot.shoot_fuel or self.ready_to_shoot() or self.shoot_ready:
                 self.set_accelerator_speed(self.test_accelerator_speed)
                 if abs(self.get_accelerator_speed()) + 30 >= self.commanded_accelerator_speed or self.accel_good:
@@ -163,7 +199,7 @@ class Shooter(Subsystem):
                 else:
                     self.robot.hopper.set_speed(-20)
         elif self.robot.is_climbing:
-            # self.set_hood_position(0.0)
+            self.set_hood_position(0.0)
             self.stop_fly()
             self.stop_accelerator()
 

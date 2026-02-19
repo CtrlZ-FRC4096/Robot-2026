@@ -37,7 +37,7 @@ class Intake(Subsystem):
         # self.inside_track_motor.configurator.apply(self.inside_track_motor_config)
         self.deploy_motor.configurator.apply(self.deploy_motor_config)
 
-        self.right_intake_motor.set_control(controls.Follower(const.LEFT_INTAKE_MOTOR_ID, signals.MotorAlignmentValue(1)))
+        self.right_intake_motor.set_control(controls.Follower(const.LEFT_INTAKE_MOTOR_ID, True))
         # self.inside_track_motor.set_control(controls.Follower(const.LEFT_INTAKE_MOTOR_ID, signals.MotorAlignmentValue(0)))
 
         self.deploy_encoder = wpilib.DutyCycleEncoder(0)
@@ -100,13 +100,13 @@ class Intake(Subsystem):
         if self.robot.is_intaking:
             # if self.robot.fieldConstants.LinesVertical.starting < self.robot.poseEstimator.curEstPose.X() < self.robot.fieldConstants.fieldLength - self.robot.fieldConstants.LinesVertical.starting: # neutral zone
                 self.set_intake_speed(self.test_intake_speed) # TUNE
-                # self.set_position(45) # TUNE
+                self.set_position(45) # TUNE
         elif self.robot.is_climbing:
             self.stop_intake()
-            # self.set_position(0.0)
+            self.set_position(0.0)
         elif self.robot.mechanisms_at_default:
             self.stop_intake()
-            # self.set_position(0.0)
+            self.set_position(0.0)
         
 
     def log(self):
