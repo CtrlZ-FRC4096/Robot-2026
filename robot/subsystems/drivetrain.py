@@ -288,7 +288,7 @@ class Drivetrain(Subsystem):
 
 
     def drive_with_pid(self, translation: Translation2d, target_angle):
-        pid_output = self.angle_pid.calculate(self.robot.poseEstimator.getYaw().degrees(), target_angle)  # type: ignore
+        pid_output = self.angle_pid.calculate(self.robot.poseEstimator.curEstPose.rotation().degrees(), target_angle)  # type: ignore
 
         if self.angle_pid.atSetpoint():
             pid_output = 0
