@@ -169,11 +169,15 @@ class PoseEstimator(Subsystem):
             Translation3d(-0.317, -0.292, 0.193),
             Rotation3d.fromDegrees(0.0, -10.0, 0.0)
         )
+        ROBOT_TO_CAM3 = Transform3d(
+            Translation3d(0.0254, -0.387, 0.2179),
+            Rotation3d.fromDegrees(0, -15, -90)
+        )
         ROBOT_TO_COLOR_1 = Transform3d()
         ROBOT_TO_COLOR_2 = Transform3d()
 
         self.cams = [
-            WrapperedPhotonCameraTag("camera2", ROBOT_TO_CAM1),
+            WrapperedPhotonCameraTag("camera3", ROBOT_TO_CAM3),
         ]
         self.intake_cam = WrapperedPhotonCameraFuel("color1", ROBOT_TO_COLOR_1) # WRONG NAME MAYBE
         self.hopper_cam = WrapperedPhotonCameraFuel("color2", ROBOT_TO_COLOR_2)
@@ -346,25 +350,25 @@ class PoseEstimator(Subsystem):
                 self.camera_X[cam.camName] = pose.X()
                 self.camera_Y[cam.camName] = pose.Y()
                 self.camera_theta[cam.camName] = pose.rotation()
-                if not(abs(self.gyro.get_pitch()) >= 10 or abs(self.gyro.get_roll()) >= 10):
-                    self.poseEst.addVisionMeasurement(
-                        pose,
-                        cam.getObsTime(),
-                        (
-                            self.xystd_single_tag,  # * (min_ambiguity / 0.4),
-                            self.xystd_single_tag,  # * (min_ambiguity / 0.4),
-                            self.thetastd_single_tag,  # * (min_ambiguity / 0.4),
-                        ),
-                    )
+                # if not(abs(self.gyro.get_pitch()) >= 10 or abs(self.gyro.get_roll()) >= 10):
+                self.poseEst.addVisionMeasurement(
+                    pose,
+                    cam.getObsTime(),
+                    (
+                        self.xystd_single_tag,  # * (min_ambiguity / 0.4),
+                        self.xystd_single_tag,  # * (min_ambiguity / 0.4),
+                        self.thetastd_single_tag,  # * (min_ambiguity / 0.4),
+                    ),
+                )
         if z_count > 0:
             self.estZ = z_sum / z_count
         
         ## UPDATING OBJECT DETECTION CAMERAS
-        self.intake_cam.update(self.curEstPose, self.estZ, self.gyro.getRotation3d())
-        fuels = self.intake_cam.getFuelSeen()
-        for fuel in fuels:
-            if abs(fuel.Z()) >= 5:
-                pass
+        # self.intake_cam.update(self.curEstPose, self.estZ, self.gyro.getRotation3d())
+        # fuels = self.intake_cam.getFuelSeen()
+        # for fuel in fuels:
+        #     if abs(fuel.Z()) >= 5:
+        #         pass
 
 
 

@@ -54,15 +54,15 @@ from photoncamera import WrapperedPhotonCameraTag
 from wpimath.units import degreesToRadians, inchesToMeters, radiansToDegrees
 from collections import deque
 
-from shapely import Polygon, Point
-from shapely.affinity import translate, rotate
+# from shapely import Polygon, Point
+# from shapely.affinity import translate, rotate
 
 class Drivetrain(Subsystem):
     def __init__(self, robot: "Robot"):
         super().__init__()
         self.robot = robot
 
-        self.angle_pid = PIDController((0.3 if self.robot.isSimulation() else 0.075), 0.0, 0.001)
+        self.angle_pid = PIDController(0.075, 0.0, 0.001)
         self.angle_pid.enableContinuousInput(0, 360)
         self.angle_pid.setTolerance(1 if self.robot.isSimulation() else 0.5)  # Set position tolerance to 0.5 degrees
 
@@ -162,55 +162,55 @@ class Drivetrain(Subsystem):
         ]
         
         
-        if self.robot.isSimulation():    
-            field_boundary = Polygon(field_boundary_points)
+    #     if self.robot.isSimulation():    
+    #         field_boundary = Polygon(field_boundary_points)
 
-            blue_hub = Polygon(blue_hub_pts)
-            blue_tower = Polygon(blue_tower_pts)
-            blue_trench_left = Polygon(blue_trench_left_pts)
-            blue_trench_right = Polygon(blue_trench_right_pts)
+    #         blue_hub = Polygon(blue_hub_pts)
+    #         blue_tower = Polygon(blue_tower_pts)
+    #         blue_trench_left = Polygon(blue_trench_left_pts)
+    #         blue_trench_right = Polygon(blue_trench_right_pts)
 
-            red_hub = Polygon(red_hub_pts)
-            red_tower = Polygon(red_tower_pts)
-            red_trench_left = Polygon(red_trench_left_pts)
-            red_trench_right = Polygon(red_trench_right_pts)
+    #         red_hub = Polygon(red_hub_pts)
+    #         red_tower = Polygon(red_tower_pts)
+    #         red_trench_left = Polygon(red_trench_left_pts)
+    #         red_trench_right = Polygon(red_trench_right_pts)
 
-            self.sim_obstacles = [
-                (field_boundary, "within"),
-                (blue_hub, "overlaps"),
-                (blue_tower, "overlaps"),
-                (blue_trench_left, "overlaps"),
-                (blue_trench_right, "overlaps"),
-                (red_hub, "overlaps"),
-                (red_tower, "overlaps"),
-                (red_trench_left, "overlaps"),
-                (red_trench_right, "overlaps")
-            ]
-    def get_robot_shape(self):
-        cur_pose : Pose2d = self.robot.poseEstimator.curEstPose
-        half_length = inchesToMeters(26 + 7.25) / 2.0
-        half_width = inchesToMeters(28.5 + 7.25) / 2.0
-        p1 = (-half_length, -half_width)
-        p2 = (-half_length, half_width)
-        p3  = (half_length, half_width)
-        p4 = (half_length, -half_width)
+    #         self.sim_obstacles = [
+    #             (field_boundary, "within"),
+    #             (blue_hub, "overlaps"),
+    #             (blue_tower, "overlaps"),
+    #             (blue_trench_left, "overlaps"),
+    #             (blue_trench_right, "overlaps"),
+    #             (red_hub, "overlaps"),
+    #             (red_tower, "overlaps"),
+    #             (red_trench_left, "overlaps"),
+    #             (red_trench_right, "overlaps")
+    #         ]
+    # def get_robot_shape(self):
+    #     cur_pose : Pose2d = self.robot.poseEstimator.curEstPose
+    #     half_length = inchesToMeters(26 + 7.25) / 2.0
+    #     half_width = inchesToMeters(28.5 + 7.25) / 2.0
+    #     p1 = (-half_length, -half_width)
+    #     p2 = (-half_length, half_width)
+    #     p3  = (half_length, half_width)
+    #     p4 = (half_length, -half_width)
 
-        base_robot = Polygon([p1, p2, p3, p4])
-        rotated_robot = rotate(base_robot, cur_pose.rotation().degrees())
-        final_robot = translate(rotated_robot, xoff=cur_pose.X(), yoff=cur_pose.Y())
-        return final_robot
+    #     base_robot = Polygon([p1, p2, p3, p4])
+    #     rotated_robot = rotate(base_robot, cur_pose.rotation().degrees())
+    #     final_robot = translate(rotated_robot, xoff=cur_pose.X(), yoff=cur_pose.Y())
+    #     return final_robot
 
-    def in_obstacle(self, pose : Translation2d):
-        robot = self.get_robot_shape()
-        for obstacle in self.sim_obstacles:
-            match obstacle[1]:
-                case "overlaps":
-                    if obstacle[0].overlaps(robot):
-                        return True
-                case "within":
-                    if not robot.within(obstacle[0]):
-                        return True
-        return False
+    # def in_obstacle(self, pose : Translation2d):
+    #     robot = self.get_robot_shape()
+    #     for obstacle in self.sim_obstacles:
+    #         match obstacle[1]:
+    #             case "overlaps":
+    #                 if obstacle[0].overlaps(robot):
+    #                     return True
+    #             case "within":
+    #                 if not robot.within(obstacle[0]):
+    #                     return True
+    #     return False
     
     def drive(self, translation: Translation2d, rotation, field_relative, is_open_loop):
         SmartDashboard.putNumber("Swerve/Translation X", translation.x)
@@ -386,36 +386,29 @@ class Drivetrain(Subsystem):
     def shouldFlipPath(self):
         return DriverStation.getAlliance() == DriverStation.Alliance.kRed
     
-    def get_hub_angle_distance(self):
+    def get_hub_angle(self, tof):
         target_goal = self.robot.fieldConstants.flip_Translation2d(self.robot.fieldConstants.Hub.topCenterPoint.toTranslation2d())
         field_relative_speeds = self.get_field_relative_speeds()
-        field_relative_accel = self.chassis_accel
 
-        time_from_hub = 1# TODO: update to longer flight times
-
-        virtual_goal_x = target_goal.x - time_from_hub * (
-            field_relative_speeds.vx + field_relative_accel.vx * 0.1 # TODO: update to longer flight times
-        )
-        virtual_goal_y = target_goal.y - time_from_hub * (
-            field_relative_speeds.vy + field_relative_accel.vy * 0.1 # TODO: update to longer flight times
-        )
+        virtual_goal_x = target_goal.x - tof * (field_relative_speeds.vx)
+        virtual_goal_y = target_goal.y - tof * (field_relative_speeds.vy)
 
         moving_goal_location = Translation2d(virtual_goal_x, virtual_goal_y)
-        robot_to_target = (
-            moving_goal_location - self.robot.poseEstimator.curEstPose.translation()
-        )
+        robot_to_target = (moving_goal_location - self.robot.poseEstimator.curEstPose.translation())
         self.robot.virtual_target.setPose(Pose2d(virtual_goal_x, virtual_goal_y, 0))
-        x = robot_to_target.X()
-        y = robot_to_target.Y()
-        distance = math.sqrt(x**2 + y**2)
 
-        return (Rotation2d.fromDegrees(Rotation2d((-1 * robot_to_target.X()), (-1 * robot_to_target.Y())).degrees() - 90), distance)
+        return Rotation2d.fromDegrees(Rotation2d((-1 * robot_to_target.X()), (-1 * robot_to_target.Y())).degrees() - 90)
+
+    def get_hub_distance(self):
+        pos = self.robot.poseEstimator.curEstPose.translation()
+        hub_pos = self.robot.fieldConstants.Hub.innerCenterPoint.toTranslation2d()
+        return (pos - hub_pos).norm()
 
     def _get_final_lineup_pose(self, pose : Pose2d):
         if not self.robot.shoot_intent:
             return pose
         else:
-            return Pose2d(pose.translation(), self.get_hub_angle_distance()[0])
+            return Pose2d(pose.translation(), self.get_hub_angle())
     def periodic(self):
         self.chassis_accel = (
             self.get_robot_relative_speeds() - self.previous_chassisspeeds

@@ -180,7 +180,8 @@ THETA_KP = 0.2  # 1.9 #0.232  # * 2.866 * 5.0
 THETA_KI = 0.0  # 0.07  # 0.0625  # * 2.866 * 5.0
 THETA_KD = 0.001  # 0.01
 
-LEFT_INTAKE_MOTOR_ID = 14
+INTAKE_DEPLOY_CANCODER_ID = 14 #The reference cancoder needs to be on an ID under 16 apparently
+LEFT_INTAKE_MOTOR_ID = 25
 RIGHT_INTAKE_MOTOR_ID = 15
 INSIDE_TRACK_MOTOR_ID = 16
 INTAKE_DEPLOY_MOTOR_ID = 17
@@ -212,10 +213,10 @@ CAM_DICT = {
 			[0.0, 915.77, 396.59],
 			[0.0, 0.0, 1.0]], dtype=np.float64),
     ),
-	"camera_3": (
-        np.array([0.05, -0.07, 0.0, -0.001, 0.002, -0.002, 0.005, 0.0], dtype=np.float64),
-        np.array([[909.0, 0.0, 678.48],
-			[0.0, 908.51, 428.25],
+	"camera3": (
+        np.array([0.046, -0.056, 0, 0, -0.043, -0.002, 0.002, 0.002], dtype=np.float64),
+        np.array([[909.78, 0.0, 642.31],
+			[0.0, 908.78, 394.73],
 			[0.0, 0.0, 1.0]], dtype=np.float64),
     ),
 	"camera_4": (

@@ -157,12 +157,15 @@ class OI:
                             * const.SWERVE_MAX_SPEED,
                             self.robot.intake.get_snake_intake_angle(),
                         )
-                elif self.robot.shoot_intent:
-                    self.robot.drivetrain.drive_with_pid(
-                            Translation2d(forward_back, left_right)
-                            * const.SWERVE_MAX_SPEED,
-                            self.robot.drivetrain.get_hub_angle_distance()[0].degrees(),
-                        )
+                # elif self.robot.shoot_intent:
+                #     hub_distance = self.robot.drivetrain.get_hub_distance()
+                #     tof = self.robot.shooter.dist_lookup_table.interpolate(hub_distance)[2]
+                #     rotation = self.robot.drivetrain.get_hub_angle(tof).degrees()
+                #     self.robot.drivetrain.drive_with_pid(
+                #             Translation2d(forward_back, left_right)
+                #             * const.SWERVE_MAX_SPEED,
+                #             rotation,
+                #         )
                 else:
                     if abs(rotate) >= 0.02:
                         self.cardinal_directing = False

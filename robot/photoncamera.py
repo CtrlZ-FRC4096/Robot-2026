@@ -45,8 +45,8 @@ class WrapperedPhotonCameraTag:
 
         self.cam = PhotonCamera(camName)
         # TODO is this really the name of the camera or is this just as a reminder? Camera1,2,3,or 4??
-        self.cameraDistortVector = const.CAM_DICT[camName][0]
-        self.cameraIntrinsMatrix = const.CAM_DICT[camName][1]
+        # self.cameraDistortVector = const.CAM_DICT[camName][0]
+        # self.cameraIntrinsMatrix = const.CAM_DICT[camName][1]
 
         self.camName = camName
         self.timeoutSec = 1.0

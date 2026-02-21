@@ -325,6 +325,8 @@ class Robot(CoroutineRobot):
         SmartDashboard.putNumberArray("Empty Pose", [0,0,0,1,0,0,0])
         wpilib.SmartDashboard.putBoolean("Connected to FMS", self.driverstation.isFMSAttached())
         SmartDashboard.putBoolean("States/Running Pid Lineup", self.running_pid_lineup)
+        SmartDashboard.putBoolean("States/Mechanisms at Default", self.mechanisms_at_default)
+
 
         if self.isSimulation():
             wpilib.SmartDashboard.putNumberArray("RobotPose", [self.poseEstimator.curEstPose.X(), self.poseEstimator.curEstPose.Y(), self.poseEstimator.curEstPose.rotation().degrees()])
@@ -371,7 +373,7 @@ class Robot(CoroutineRobot):
                     z_coord = (idx // (per_x * per_y)) * fuel_diam + 0.5
                     SmartDashboard.putNumberArray(f"Hopper/Sim Fuels/Fuel {fuel_num}", [default_fuel_pose.X() + x_coord, default_fuel_pose.Y() + y_coord, default_fuel_pose.Z() + z_coord, 1.0, 0.0, 0.0, 0.0])
                 else:
-                    SmartDashboard.putNumberArray(f"Hopper/Sim Fuels/Fuel {fuel_num}", [0, 0, 0, 1.0, 0.0, 0.0, 0.0])
+                    SmartDashboard.putNumberArray(f"Hopper/Sim Fuels/Fuel {fuel_num}", [0, 0, -0.5, 1.0, 0.0, 0.0, 0.0])
 
             fly_speed = self.shooter.get_fly_speed()
             accel_speed = self.shooter.get_accelerator_speed()
