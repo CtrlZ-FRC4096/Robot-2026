@@ -17,7 +17,7 @@ class LookupTableAll:
 
                 return vel, angle, tof
         
-        return self.data[-1][1], self.data[-1][2], self.data[-1][3]
+        return (self.data[-1][1], self.data[-1][2], self.data[-1][3])
 
 
 

@@ -48,7 +48,7 @@ class Hopper(Subsystem):
 
     def stop(self):
         self.commanded_speed = 0.0
-        self.indexer_motor.set_control(controls.VelocityTorqueCurrentFOC(0.0))
+        self.indexer_motor.set_control(controls.DutyCycleOut(0.0))
 
     def periodic(self):
         if self.robot.shoot_fuel:
@@ -57,7 +57,7 @@ class Hopper(Subsystem):
         #     self.set_speed(abs(sin(self.time.get()*pi*self.hz)*self.amp)) # moves fuel towards shooter
         elif self.robot.is_climbing:
             self.stop()
-        elif self.robot.mechanisms_at_default:
+        elif self.robot.shooter_at_default:
             self.stop()
 
     def log(self):

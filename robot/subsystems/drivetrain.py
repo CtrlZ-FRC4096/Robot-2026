@@ -425,6 +425,7 @@ class Drivetrain(Subsystem):
         SmartDashboard.putData(
             "PID Controller for going to reef, theta", self.theta_controller
         )
+        SmartDashboard.putNumber("Distance to Hub", self.get_hub_distance())
 
         SmartDashboard.putData("PID Controller (Drivetrain)", self.angle_pid)
         SmartDashboard.putBoolean("Angle at Setpoint", self.angle_pid.atSetpoint())

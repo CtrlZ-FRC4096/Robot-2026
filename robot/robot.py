@@ -194,7 +194,8 @@ class Robot(CoroutineRobot):
         ### STATE MACHINE VARIABLES ###
         self.running_pid_lineup = False
         self.final_lineup_pose = Pose2d()
-        self.mechanisms_at_default = True 
+        self.intake_at_default = True
+        self.shooter_at_default = True
         self.trench = True
 
         self.shoot_fuel = False
@@ -205,6 +206,9 @@ class Robot(CoroutineRobot):
         self.pulse_indexer = False
 
         self.snake_intake = False
+
+        #TESTING
+        self.should_hub_track = False
 
         self.virtual_target = self.poseEstimator.field.getObject("Virtual Target")
 
@@ -325,8 +329,9 @@ class Robot(CoroutineRobot):
         SmartDashboard.putNumberArray("Empty Pose", [0,0,0,1,0,0,0])
         wpilib.SmartDashboard.putBoolean("Connected to FMS", self.driverstation.isFMSAttached())
         SmartDashboard.putBoolean("States/Running Pid Lineup", self.running_pid_lineup)
-        SmartDashboard.putBoolean("States/Mechanisms at Default", self.mechanisms_at_default)
-
+        SmartDashboard.putBoolean("States/Intake at Default", self.intake_at_default)
+        SmartDashboard.putBoolean("States/Shooter at Default", self.shooter_at_default)
+        SmartDashboard.putBoolean("States/Should Hub Track", self.should_hub_track)
 
         if self.isSimulation():
             wpilib.SmartDashboard.putNumberArray("RobotPose", [self.poseEstimator.curEstPose.X(), self.poseEstimator.curEstPose.Y(), self.poseEstimator.curEstPose.rotation().degrees()])

@@ -63,8 +63,11 @@ class Shooter(Subsystem):
         self.accel_good = False
 
         self.dist_lookup_table = LookupTableAll()
-        # self.create_lookup_table()
+        self.create_lookup_table()
         self.vel_lookup_table = LookupTableVel()
+        self.create_launch_vel_table()
+        self.angle_lookup_table = LookupTableAngle()
+        self.create_launch_angle_table()
 
 
 
@@ -95,12 +98,13 @@ class Shooter(Subsystem):
         self.accelerator_motor.set_control(controls.VelocityTorqueCurrentFOC(speed))
     
     def set_hood_position(self, position):
-        if abs(self.get_hood_position() - position) <= 0.02:
+        self.commanded_hood_position = position
+        if abs(self.get_hood_position() - position) <= 0.5:
+            self.stop_hood()
             return
         # if self.pose_in_trench():
         #     self.hood_motor.set_control(self.request.with_position(0))
         # else:
-        self.commanded_hood_position = position
         rotations = position # ADD GEAR RATIOS STUFF
         self.hood_motor.set_control(self.request.with_position(rotations)) # USING MOTION MAGIC
     
@@ -113,15 +117,15 @@ class Shooter(Subsystem):
             return position
 
     def stop_hood(self):
-        self.hood_motor.set_control(controls.VelocityTorqueCurrentFOC(0.0))
+        self.hood_motor.set_control(controls.DutyCycleOut(0.0))
     
     def stop_fly(self):
         self.commanded_fly_speed = 0.0
-        self.left_up_fly_motor.set_control(controls.VelocityTorqueCurrentFOC(0.0))
+        self.left_up_fly_motor.set_control(controls.DutyCycleOut(0.0))
 
     def stop_accelerator(self):
         self.commanded_accelerator_speed = 0.0
-        self.accelerator_motor.set_control(controls.VelocityTorqueCurrentFOC(0.0))
+        self.accelerator_motor.set_control(controls.DutyCycleOut(0.0))
 
     def stop(self):
         self.stop_hood()
@@ -159,47 +163,78 @@ class Shooter(Subsystem):
     def fly_speed_to_launch_vel(self, fly_speed):
         return fly_speed / 4
     
-    # def create_lookup_table(self):
-    #     min_dist = 0.7
-    #     max_dist = 8
-    #     num_points = 150
-    #     shooter_height = 0.52 + self.robot.poseEstimator.estZ
-    #     hub_pos = np.array([4.625594, 4.034536, 1.83])
-    #     distances = np.linspace(min_dist, max_dist, num_points)
-    #     results = []
-    #     for dist in distances:
-    #         shooter_pos = np.array([
-    #             hub_pos[0] - dist, 
-    #             hub_pos[1], 
-    #             shooter_height])
-    #         shooter_vel = np.array([0.0, 0.0, 0.0])
-    #         optimizer = shot_calc.SleipnirRobustOptimizer(
-    #         shooter_pos=shooter_pos,
-    #         shooter_vel=shooter_vel,
-    #         min_v=5.0,
-    #         max_v=12.0,
-    #         min_angle_deg=60,
-    #         max_angle_deg=87.0
-    #     )
-    #         res = optimizer.optimize()
+    def create_lookup_table(self):
+        self.dist_lookup_table.add_entry(0.7, 5.404, 79.295, 0.655)
+        self.dist_lookup_table.add_entry(0.952, 5.543, 76.074, 0.688)
+        self.dist_lookup_table.add_entry(1.203, 5.698, 73.252, 0.719)
+        self.dist_lookup_table.add_entry(1.455, 5.864, 70.78, 0.749)
+        self.dist_lookup_table.add_entry(1.707, 6.038, 68.611, 0.778)
+        self.dist_lookup_table.add_entry(1.959, 6.217, 66.703, 0.806)
+        self.dist_lookup_table.add_entry(2.21, 6.399, 65.019, 0.834)
+        self.dist_lookup_table.add_entry(2.462, 6.647, 65.0, 0.9)
+        self.dist_lookup_table.add_entry(2.714, 6.902, 65.0, 0.963)
+        self.dist_lookup_table.add_entry(2.966, 7.158, 65.0, 1.022)
+        self.dist_lookup_table.add_entry(3.217, 7.413, 65.0, 1.079)
+        self.dist_lookup_table.add_entry(3.469, 7.665, 65.0, 1.134)
+        self.dist_lookup_table.add_entry(3.721, 7.916, 65.0, 1.186)
+        self.dist_lookup_table.add_entry(3.972, 8.163, 65.0, 1.236)
+        self.dist_lookup_table.add_entry(4.224, 8.409, 65.0, 1.285)
+        self.dist_lookup_table.add_entry(4.476, 8.651, 65.0, 1.333)
+        self.dist_lookup_table.add_entry(4.728, 8.892, 65.0, 1.379)
+        self.dist_lookup_table.add_entry(4.979, 9.13, 65.0, 1.424)
+        self.dist_lookup_table.add_entry(5.231, 9.366, 65.0, 1.467)
+        self.dist_lookup_table.add_entry(5.483, 9.6, 65.0, 1.51)
+        self.dist_lookup_table.add_entry(5.734, 9.833, 65.0, 1.552)
+        self.dist_lookup_table.add_entry(5.986, 10.064, 65.0, 1.593)
+        self.dist_lookup_table.add_entry(6.238, 10.294, 65.0, 1.634)
+        self.dist_lookup_table.add_entry(6.49, 10.522, 65.0, 1.674)
+        self.dist_lookup_table.add_entry(6.741, 10.75, 65.0, 1.713)
+        self.dist_lookup_table.add_entry(6.993, 10.976, 65.0, 1.751)
+        self.dist_lookup_table.add_entry(7.245, 11.202, 65.0, 1.789)
+        self.dist_lookup_table.add_entry(7.497, 11.427, 65.0, 1.827)
+        self.dist_lookup_table.add_entry(7.748, 11.651, 65.0, 1.864)
+        self.dist_lookup_table.add_entry(8.0, 11.875, 65.0, 1.9)
 
-    #         if "SUCCESS" in str(res['status']):
-    #             self.dist_lookup_table.add_entry(round(dist, 3), round(res['v'], 3), round(res['angle_deg']), round(res['T'], 4))
+    def create_launch_vel_table(self):
+        self.vel_lookup_table.add_entry(4.4, 50)
+        self.vel_lookup_table.add_entry(5.9, 70)
+        self.vel_lookup_table.add_entry(5.5, 60)
+        self.vel_lookup_table.add_entry(7.3, 80)
+        
+
+    def create_launch_angle_table(self):
+        self.angle_lookup_table.add_entry(65, 40)
+        self.angle_lookup_table.add_entry(71, 30)
+        self.angle_lookup_table.add_entry(73, 20)
+        self.angle_lookup_table.add_entry(80, 10)
+        self.angle_lookup_table.add_entry(85, 0)
         
 
     def periodic(self):
-        if self.robot.mechanisms_at_default:
-            # self.set_hood_position(0.0)
-            self.set_accelerator_speed(0.0)
-            self.set_fly_speed(0.0)
+        if self.robot.shooter_at_default:
+            self.set_hood_position(0.0)
+            self.stop_accelerator()
+            self.stop_fly()
         elif self.robot.shoot_intent:
-            # distance = self.robot.drivetrain.get_hub_distance()
-            # launch_vel = self.dist_lookup_table.interpolate(distance)
-            # fly_speed = 14.212 * launch_vel
-            if True:
+            distance = self.robot.drivetrain.get_hub_distance()
+            vals  = self.dist_lookup_table.interpolate(distance)
+            fly_speed = self.vel_lookup_table.interpolate(vals[0])
+            if fly_speed >= 85:
+                fly_speed = 85
+            SmartDashboard.putNumber("putting fly speed", fly_speed)
+            if False:
                 fly_speed = self.test_fly_speed
             self.set_fly_speed(fly_speed)
-            # self.set_hood_position(self.test_hood_position)
+
+            hood_position = self.angle_lookup_table.interpolate(vals[1])
+            if False:
+                hood_position = self.test_hood_position
+            if hood_position >= 39:
+                hood_position = 39
+            elif hood_position <= 0:
+                hood_position = 0
+            SmartDashboard.putNumber("putting hood position", hood_position)
+            self.set_hood_position(hood_position)
             if self.robot.shoot_fuel or self.ready_to_shoot() or self.shoot_ready:
                 self.set_accelerator_speed(self.test_accelerator_speed)
                 if abs(self.get_accelerator_speed()) + 30 >= self.commanded_accelerator_speed or self.accel_good:
@@ -209,7 +244,7 @@ class Shooter(Subsystem):
                 else:
                     self.robot.hopper.set_speed(-20)
         elif self.robot.is_climbing:
-            # self.set_hood_position(0.0)
+            self.set_hood_position(0.0)
             self.stop_fly()
             self.stop_accelerator()
 

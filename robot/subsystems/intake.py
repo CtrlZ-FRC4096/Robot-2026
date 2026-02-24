@@ -48,7 +48,6 @@ class Intake(Subsystem):
         self.deploy_motor_config.feedback.feedback_sensor_source = signals.FeedbackSensorSourceValue.REMOTE_CANCODER
 
 
-
         self.left_intake_motor.configurator.apply(self.intake_motor_config)
         self.right_intake_motor.configurator.apply(self.intake_motor_config)
         # self.inside_track_motor.configurator.apply(self.inside_track_motor_config)
@@ -63,6 +62,7 @@ class Intake(Subsystem):
         self.test_intake_speed = 80
 
         self.deploy_pid_controller = PIDController(0.01, 0, 0)
+        self.intake_reverse_count = 0
 
     def stop(self):
         self.stop_deploy()
@@ -70,10 +70,10 @@ class Intake(Subsystem):
 
     def stop_intake(self):
         self.commanded_intake_speed = 0.0
-        self.left_intake_motor.set_control(controls.VelocityTorqueCurrentFOC(0.0))
+        self.left_intake_motor.set_control(controls.DutyCycleOut(0.0))
 
     def stop_deploy(self):
-        self.deploy_motor.set_control(controls.VelocityTorqueCurrentFOC(0.0))
+        self.deploy_motor.set_control(controls.DutyCycleOut(0.0))
 
     def set_position(self, position):
         '''
@@ -84,9 +84,11 @@ class Intake(Subsystem):
 
         # if abs(self.get_position() - position) <= 0.02:
         #     return
-        # self.commanded_position = position
+        self.commanded_position = position
         # rotations = position * 25.0 # ADD GEAR RATIOS STUFF
         # #self.deploy_motor.set_control(controls.PositionTorqueCurrentFOC(rotations)) # USE MOTION MAGIC
+        if abs(self.get_position() - self.commanded_position) <= 0.02:
+            return 
         self.deploy_motor.set_control(self.request.with_position(position)) # USING MOTION MAGIC
 
     def get_position(self):
@@ -122,16 +124,20 @@ class Intake(Subsystem):
         return radiansToDegrees(angle)
 
     def periodic(self):
-        if self.robot.is_intaking:
+        if self.robot.intake_at_default:
+            if abs(self.get_position() - (-0.23)) >= 0.04:
+                self.set_intake_speed(80)
+            else:
+                self.stop_intake()
+            self.set_position(-0.23)
+        elif self.robot.is_intaking:
             # if self.robot.fieldConstants.LinesVertical.starting < self.robot.poseEstimator.curEstPose.X() < self.robot.fieldConstants.fieldLength - self.robot.fieldConstants.LinesVertical.starting: # neutral zone
             self.set_intake_speed(self.test_intake_speed) # TUNE
             self.set_position(-0.105) # TUNE
         elif self.robot.is_climbing:
             self.stop_intake()
             self.set_position(-0.23)
-        elif self.robot.mechanisms_at_default:
-            self.stop_intake()
-            self.set_position(-0.23)
+        
 
 
     def log(self):

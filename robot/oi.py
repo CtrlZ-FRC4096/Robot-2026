@@ -157,15 +157,14 @@ class OI:
                             * const.SWERVE_MAX_SPEED,
                             self.robot.intake.get_snake_intake_angle(),
                         )
-                # elif self.robot.shoot_intent:
-                #     hub_distance = self.robot.drivetrain.get_hub_distance()
-                #     tof = self.robot.shooter.dist_lookup_table.interpolate(hub_distance)[2]
-                #     rotation = self.robot.drivetrain.get_hub_angle(tof).degrees()
-                #     self.robot.drivetrain.drive_with_pid(
-                #             Translation2d(forward_back, left_right)
-                #             * const.SWERVE_MAX_SPEED,
-                #             rotation,
-                #         )
+                elif self.robot.shoot_intent and self.robot.should_hub_track:
+                    hub_distance = self.robot.drivetrain.get_hub_distance()
+                    tof = self.robot.shooter.dist_lookup_table.interpolate(hub_distance)[2]
+                    rotation = self.robot.drivetrain.get_hub_angle(tof).degrees()
+                    self.robot.drivetrain.drive_with_pid(
+                            Translation2d(forward_back, left_right)
+                            * const.SWERVE_MAX_SPEED,
+                            rotation)
                 else:
                     if abs(rotate) >= 0.02:
                         self.cardinal_directing = False
@@ -225,12 +224,12 @@ class OI:
         @self.driver1.A.whenPressed
         def _():
             self.robot.is_intaking = True
-            self.robot.mechanisms_at_default = False
+            self.robot.intake_at_default = False
         
         @self.driver1.B.whenPressed
         def _():
             self.robot.is_intaking = False
-            self.robot.mechanisms_at_default = True
+            self.robot.intake_at_default = True
         
         @self.driver1.START.whenPressed
         def _():
@@ -239,7 +238,8 @@ class OI:
         
         @self.driver1.Y.whenPressed
         def _():
-            self.robot.mechanisms_at_default = True
+            self.robot.shooter_at_default = True
+            self.robot.intake_at_default = True
             self.robot.is_intaking = False
             self.robot.shoot_fuel = False
             self.robot.shoot_intent = False
@@ -247,7 +247,7 @@ class OI:
         @self.driver1.X.whenHeld
         def _():
             self.robot.shoot_fuel = True
-            self.robot.mechanisms_at_default = False
+            self.robot.shooter_at_default = False
             self.robot.shoot_intent = False
             self.robot.is_climbing = False
         @self.driver1.X.whenReleased
@@ -263,7 +263,7 @@ class OI:
 
         @self.driver1.RIGHT_TRIGGER_AS_BUTTON.whenHeld #shoot
         def _():
-            self.robot.mechanisms_at_default = False
+            self.robot.shooter_at_default = False
             self.robot.shoot_intent = True
             self.robot.shoot_fuel = False
             self.robot.is_climbing = False
@@ -271,7 +271,7 @@ class OI:
         def _():
             self.robot.shoot_intent = False
             self.robot.shoot_fuel = False
-            self.robot.mechanisms_at_default = True
+            self.robot.shooter_at_default = True
             self.robot.is_climbing = False
             self.robot.shooter.shoot_ready = False
             self.robot.shooter.accel_good = False
@@ -306,3 +306,7 @@ class OI:
         @self.driver2.POV.LEFT.whenPressed
         def _():
             self.robot.intake.test_intake_speed -= 1
+
+        @self.driver2.LEFT_TRIGGER_AS_BUTTON.whenPressed
+        def _():
+            self.robot.should_hub_track = not self.robot.should_hub_track
