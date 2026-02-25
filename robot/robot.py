@@ -210,6 +210,13 @@ class Robot(CoroutineRobot):
         #TESTING
         self.should_hub_track = False
 
+        # SHOOTING VALUES
+        self.time_of_flight = 1
+        self.distance = 1
+        self.fly_speed = 50
+        self.hood_angle = 35
+        self.virtual_goal = Translation2d()
+
         self.virtual_target = self.poseEstimator.field.getObject("Virtual Target")
 
         self.timer = Timer()
@@ -332,6 +339,11 @@ class Robot(CoroutineRobot):
         SmartDashboard.putBoolean("States/Intake at Default", self.intake_at_default)
         SmartDashboard.putBoolean("States/Shooter at Default", self.shooter_at_default)
         SmartDashboard.putBoolean("States/Should Hub Track", self.should_hub_track)
+
+        SmartDashboard.putNumber("Shooting Values/Distance to Hub", self.distance)
+        SmartDashboard.putNumber("Shooting Values/Time of Flight", self.time_of_flight)
+        SmartDashboard.putNumber("Shooting Values/Hood Angle", self.hood_angle)
+        SmartDashboard.putNumber("Shooting Values/Fly Speed", self.fly_speed)
 
         if self.isSimulation():
             wpilib.SmartDashboard.putNumberArray("RobotPose", [self.poseEstimator.curEstPose.X(), self.poseEstimator.curEstPose.Y(), self.poseEstimator.curEstPose.rotation().degrees()])

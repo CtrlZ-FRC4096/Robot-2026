@@ -388,8 +388,8 @@
 #             optimizer = SleipnirRobustOptimizer(
 #             shooter_pos=shooter_pos,
 #             shooter_vel=shooter_vel,
-#             min_v=2.0,
-#             max_v=14.6,
+#             min_v=1.5,
+#             max_v=9.2,
 #             min_angle_deg=65,
 #             max_angle_deg=87.0
 #         )

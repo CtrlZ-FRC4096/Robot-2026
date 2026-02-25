@@ -53,6 +53,7 @@ from wpimath.estimator import SwerveDrive4PoseEstimator
 from photoncamera import WrapperedPhotonCameraTag
 from wpimath.units import degreesToRadians, inchesToMeters, radiansToDegrees
 from collections import deque
+from lookup_table import LookupTableAll, LookupTableAngle, LookupTableVel
 
 # from shapely import Polygon, Point
 # from shapely.affinity import translate, rotate
@@ -82,6 +83,13 @@ class Drivetrain(Subsystem):
         self.previous_chassisspeeds = ChassisSpeeds()
         self.two_previous_sim_speeds = ChassisSpeeds()
         self.damping_accel = False
+
+        self.dist_lookup_table = LookupTableAll()
+        self.create_lookup_table()
+        self.vel_lookup_table = LookupTableVel()
+        self.create_launch_vel_table()
+        self.angle_lookup_table = LookupTableAngle()
+        self.create_launch_angle_table()
 
 
         ## Need to check these tolerances
@@ -409,7 +417,86 @@ class Drivetrain(Subsystem):
             return pose
         else:
             return Pose2d(pose.translation(), self.get_hub_angle())
+        
+    def create_lookup_table(self):
+        self.dist_lookup_table.add_entry(0.7, 5.404, 79.295, 0.655)
+        self.dist_lookup_table.add_entry(0.952, 5.543, 76.074, 0.688)
+        self.dist_lookup_table.add_entry(1.203, 5.698, 73.252, 0.719)
+        self.dist_lookup_table.add_entry(1.455, 5.864, 70.78, 0.749)
+        self.dist_lookup_table.add_entry(1.707, 6.038, 68.611, 0.778)
+        self.dist_lookup_table.add_entry(1.959, 6.217, 66.703, 0.806)
+        self.dist_lookup_table.add_entry(2.21, 6.399, 65.019, 0.834)
+        self.dist_lookup_table.add_entry(2.462, 6.647, 65.0, 0.9)
+        self.dist_lookup_table.add_entry(2.714, 6.902, 65.0, 0.963)
+        self.dist_lookup_table.add_entry(2.966, 7.158, 65.0, 1.022)
+        self.dist_lookup_table.add_entry(3.217, 7.413, 65.0, 1.079)
+        self.dist_lookup_table.add_entry(3.469, 7.665, 65.0, 1.134)
+        self.dist_lookup_table.add_entry(3.721, 7.916, 65.0, 1.186)
+        self.dist_lookup_table.add_entry(3.972, 8.163, 65.0, 1.236)
+        self.dist_lookup_table.add_entry(4.224, 8.409, 65.0, 1.285)
+        self.dist_lookup_table.add_entry(4.476, 8.651, 65.0, 1.333)
+        self.dist_lookup_table.add_entry(4.728, 8.892, 65.0, 1.379)
+        self.dist_lookup_table.add_entry(4.979, 9.13, 65.0, 1.424)
+        self.dist_lookup_table.add_entry(5.231, 9.2, 65.0, 1.437)
+        self.dist_lookup_table.add_entry(5.483, 9.2, 65.0, 1.437)
+        self.dist_lookup_table.add_entry(5.734, 9.2, 65.0, 1.437)
+        self.dist_lookup_table.add_entry(5.986, 9.2, 65.0, 1.437)
+        self.dist_lookup_table.add_entry(6.238, 9.2, 65.0, 1.437)
+        self.dist_lookup_table.add_entry(6.49, 9.2, 65.0, 1.437)
+        self.dist_lookup_table.add_entry(6.741, 9.2, 65.0, 1.437)
+        self.dist_lookup_table.add_entry(6.993, 9.2, 65.0, 1.437)
+        self.dist_lookup_table.add_entry(7.245, 9.2, 65.0, 1.437)
+        self.dist_lookup_table.add_entry(7.497, 9.2, 65.0, 1.437)
+        self.dist_lookup_table.add_entry(7.748, 9.2, 65.0, 1.437)
+        self.dist_lookup_table.add_entry(8.0, 9.2, 65.0, 1.437)
+
+    def create_launch_vel_table(self):
+        self.vel_lookup_table.add_entry(5.6, 50)
+        self.vel_lookup_table.add_entry(8.3, 70)
+        self.vel_lookup_table.add_entry(9, 80)
+        
+    def create_launch_angle_table(self):
+        self.angle_lookup_table.add_entry(65, 40)
+        self.angle_lookup_table.add_entry(71, 30)
+        self.angle_lookup_table.add_entry(73, 20)
+        self.angle_lookup_table.add_entry(80, 10)
+        self.angle_lookup_table.add_entry(85, 0)
+
     def periodic(self):
+        self.robot.distance = self.get_hub_distance()
+        if self.robot.shoot_intent:
+            temp_time_of_flight = self.dist_lookup_table.interpolate(self.robot.distance)[2]
+            temp_virtual_goal = Translation2d()
+            field_relative_speeds = self.get_field_relative_speeds()
+            virtual_robot_distance = self.robot.distance
+            for _ in range(10):
+                if True: # CHANGE TO CASES ON ALLIANCE ZONE AND NEUTRAL ZONE
+                    static_target = self.robot.fieldConstants.flip_Translation2d(self.robot.fieldConstants.Hub.topCenterPoint.toTranslation2d())
+                    temp_virtual_goal = Translation2d(
+                        static_target.X() - temp_time_of_flight * field_relative_speeds.vx, static_target.Y() - temp_time_of_flight * field_relative_speeds.vy 
+                    )
+                virtual_robot_distance = (self.robot.poseEstimator.curEstPose.translation() - temp_virtual_goal).norm()
+                temp_time_of_flight = self.dist_lookup_table.interpolate(virtual_robot_distance)[2]
+
+            SmartDashboard.putNumber("Virtual Goal Distance", virtual_robot_distance)
+            self.robot.virtual_target.setPose(Pose2d(temp_virtual_goal, Rotation2d()))
+            self.robot.virtual_goal = temp_virtual_goal
+            self.robot.time_of_flight = temp_time_of_flight
+
+            vals = self.dist_lookup_table.interpolate(virtual_robot_distance)
+
+            self.robot.fly_speed = self.vel_lookup_table.interpolate(vals[0])
+            self.robot.hood_angle = self.angle_lookup_table.interpolate(vals[1])
+            if self.robot.fly_speed >= 85:
+                self.robot.fly_speed = 85
+
+            if self.robot.hood_angle >= 39:
+                self.robot.hood_angle = 39
+            elif self.robot.hood_angle <= 0:
+                self.robot.hood_angle = 0
+        
+        
+        
         self.chassis_accel = (
             self.get_robot_relative_speeds() - self.previous_chassisspeeds
         ) / 0.05

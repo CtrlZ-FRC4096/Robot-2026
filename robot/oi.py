@@ -158,11 +158,9 @@ class OI:
                             self.robot.intake.get_snake_intake_angle(),
                         )
                 elif self.robot.shoot_intent and self.robot.should_hub_track:
-                    hub_distance = self.robot.drivetrain.get_hub_distance()
-                    tof = self.robot.shooter.dist_lookup_table.interpolate(hub_distance)[2]
-                    rotation = self.robot.drivetrain.get_hub_angle(tof).degrees()
+                    rotation = self.robot.drivetrain.get_hub_angle(self.robot.time_of_flight).degrees()
                     self.robot.drivetrain.drive_with_pid(
-                            Translation2d(forward_back, left_right)
+                            Translation2d(forward_back * 0.17, left_right * 0.17)
                             * const.SWERVE_MAX_SPEED,
                             rotation)
                 else:
