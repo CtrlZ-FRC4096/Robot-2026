@@ -407,8 +407,7 @@ class Drivetrain(Subsystem):
 
         return Rotation2d.fromDegrees(Rotation2d((-1 * robot_to_target.X()), (-1 * robot_to_target.Y())).degrees() - 90)
 
-    def get_hub_distance(self):
-        pos = self.robot.poseEstimator.curEstPose.translation()
+    def get_hub_distance(self, pos : Translation2d):
         hub_pos = self.robot.fieldConstants.Hub.innerCenterPoint.toTranslation2d()
         return (pos - hub_pos).norm()
 
@@ -452,8 +451,8 @@ class Drivetrain(Subsystem):
 
     def create_launch_vel_table(self):
         self.vel_lookup_table.add_entry(5.6, 50)
-        self.vel_lookup_table.add_entry(8.3, 70)
-        self.vel_lookup_table.add_entry(9, 80)
+        self.vel_lookup_table.add_entry(8.2, 70)
+        self.vel_lookup_table.add_entry(8.85, 80)
         
     def create_launch_angle_table(self):
         self.angle_lookup_table.add_entry(65, 40)
@@ -463,22 +462,27 @@ class Drivetrain(Subsystem):
         self.angle_lookup_table.add_entry(85, 0)
 
     def periodic(self):
-        self.robot.distance = self.get_hub_distance()
+        cur_pos = self.robot.poseEstimator.curEstPose
+        self.robot.distance = self.get_hub_distance(cur_pos.translation())
         if self.robot.shoot_intent:
-            temp_time_of_flight = self.dist_lookup_table.interpolate(self.robot.distance)[2]
+            cur_rot = cur_pos.rotation().radians()
+            shooter_pos = cur_pos.translation() + Translation2d(0, 0.196).rotateBy(Rotation2d(cur_rot))
+            dist_from_shooter = self.get_hub_distance(shooter_pos)
+            temp_time_of_flight = self.dist_lookup_table.interpolate(dist_from_shooter)[2]
             temp_virtual_goal = Translation2d()
             field_relative_speeds = self.get_field_relative_speeds()
-            virtual_robot_distance = self.robot.distance
-            for _ in range(10):
+            SmartDashboard.putNumber("Test/ Field Rel X", field_relative_speeds.vx)
+            SmartDashboard.putNumber("Test/ Field Rel Y", field_relative_speeds.vy)
+            for _ in range(5):
                 if True: # CHANGE TO CASES ON ALLIANCE ZONE AND NEUTRAL ZONE
                     static_target = self.robot.fieldConstants.flip_Translation2d(self.robot.fieldConstants.Hub.topCenterPoint.toTranslation2d())
                     temp_virtual_goal = Translation2d(
                         static_target.X() - temp_time_of_flight * field_relative_speeds.vx, static_target.Y() - temp_time_of_flight * field_relative_speeds.vy 
                     )
-                virtual_robot_distance = (self.robot.poseEstimator.curEstPose.translation() - temp_virtual_goal).norm()
+                virtual_robot_distance = (shooter_pos - temp_virtual_goal).norm()
                 temp_time_of_flight = self.dist_lookup_table.interpolate(virtual_robot_distance)[2]
 
-            SmartDashboard.putNumber("Virtual Goal Distance", virtual_robot_distance)
+            SmartDashboard.putNumber("Virtual Goal Dist (shooter)", virtual_robot_distance)
             self.robot.virtual_target.setPose(Pose2d(temp_virtual_goal, Rotation2d()))
             self.robot.virtual_goal = temp_virtual_goal
             self.robot.time_of_flight = temp_time_of_flight
@@ -512,7 +516,7 @@ class Drivetrain(Subsystem):
         SmartDashboard.putData(
             "PID Controller for going to reef, theta", self.theta_controller
         )
-        SmartDashboard.putNumber("Distance to Hub", self.get_hub_distance())
+        SmartDashboard.putNumber("Distance to Hub", self.get_hub_distance(self.robot.poseEstimator.curEstPose.translation()))
 
         SmartDashboard.putData("PID Controller (Drivetrain)", self.angle_pid)
         SmartDashboard.putBoolean("Angle at Setpoint", self.angle_pid.atSetpoint())

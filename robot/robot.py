@@ -269,9 +269,9 @@ class Robot(CoroutineRobot):
         motor_config.closed_loop_ramps.voltage_closed_loop_ramp_period = 0.02
         motor_config.open_loop_ramps.voltage_open_loop_ramp_period = 0.02
 
-        motor_config.current_limits.supply_current_limit = 80
-        motor_config.torque_current.peak_forward_torque_current = 80
-        motor_config.torque_current.peak_reverse_torque_current = -80
+        motor_config.current_limits.supply_current_limit = 40
+        motor_config.torque_current.peak_forward_torque_current = 40
+        motor_config.torque_current.peak_reverse_torque_current = -40
 
         return motor_config
 

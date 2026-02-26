@@ -159,8 +159,15 @@ class OI:
                         )
                 elif self.robot.shoot_intent and self.robot.should_hub_track:
                     rotation = self.robot.drivetrain.get_hub_angle(self.robot.time_of_flight).degrees()
+                    mag_vel = Translation2d(forward_back, left_right).norm()
+                    if mag_vel >= 0.1:
+                        forward_back /= mag_vel
+                        left_right /= mag_vel
+
+                        forward_back *= 0.1
+                        left_right *= 0.1
                     self.robot.drivetrain.drive_with_pid(
-                            Translation2d(forward_back * 0.17, left_right * 0.17)
+                            Translation2d(forward_back, left_right)
                             * const.SWERVE_MAX_SPEED,
                             rotation)
                 else:

@@ -373,7 +373,7 @@
 # def create_lookup_table():
 #         min_dist = 0.7
 #         max_dist = 8
-#         num_points = 30
+#         num_points = 100
 #         shooter_height = 0.52
 #         hub_pos = np.array([4.625594, 4.034536, 1.83])
 #         distances = np.linspace(min_dist, max_dist, num_points)
