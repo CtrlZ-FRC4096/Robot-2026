@@ -41,7 +41,7 @@ class Intake(Subsystem):
 
         self.intake_motor_config = self.robot.get_motor_config(0, 5, 0, 0, 0.21, 0, 0, 11)
         self.inside_track_motor_config = self.robot.get_motor_config(0, 1, 0, 0, 0, 0, 0, 0)
-        self.deploy_motor_config = self.robot.get_motor_config(0, 375, 0, 30, 0, 0, -14, -4)
+        self.deploy_motor_config = self.robot.get_motor_config(0, 350, 0, 30, 0, 0, -14, 127)
         self.deploy_motor_config.motion_magic.motion_magic_cruise_velocity = 20
         self.deploy_motor_config.motion_magic.motion_magic_acceleration = 50
         self.deploy_motor_config.feedback.feedback_remote_sensor_id = const.INTAKE_DEPLOY_CANCODER_ID
@@ -116,12 +116,13 @@ class Intake(Subsystem):
             return self.left_intake_motor.get_velocity().value
 
     def get_snake_intake_angle(self):
-        cur_speeds = self.robot.drivetrain.get_robot_relative_speeds()
+        cur_speeds = self.robot.drivetrain.get_field_relative_speeds()
         cur_rotation = self.robot.poseEstimator.curEstPose.rotation().degrees()
-        angle = math.atan2(cur_speeds.vy, cur_speeds.vx)
-        if abs(cur_speeds.vx) <= 0.01 and abs(cur_speeds.vy) <= 0.01:
+        # angle = math.atan2(cur_speeds.vx, cur_speeds.vy)
+        angle = Translation2d(cur_speeds.vx, cur_speeds.vy).angle().degrees()
+        if abs(cur_speeds.vx) <= 0.1 and abs(cur_speeds.vy) <= 0.1 or (abs(angle-cur_rotation) <= 5):
             return cur_rotation
-        return radiansToDegrees(angle)
+        return angle
 
     def periodic(self):
         if self.robot.intake_at_default:
@@ -133,7 +134,7 @@ class Intake(Subsystem):
         elif self.robot.is_intaking:
             # if self.robot.fieldConstants.LinesVertical.starting < self.robot.poseEstimator.curEstPose.X() < self.robot.fieldConstants.fieldLength - self.robot.fieldConstants.LinesVertical.starting: # neutral zone
             self.set_intake_speed(self.test_intake_speed) # TUNE
-            self.set_position(-0.105) # TUNE
+            self.set_position(-0.06) # TUNE
         elif self.robot.is_climbing:
             self.stop_intake()
             self.set_position(-0.23)
@@ -152,4 +153,4 @@ class Intake(Subsystem):
         SmartDashboard.putData("Intake/Deploy PID Controller", self.deploy_pid_controller)
 
         SmartDashboard.putNumber("Test/Test intake speed", self.test_intake_speed)
-
+        SmartDashboard.putNumber("Intake/Snake Angle", self.get_snake_intake_angle())

@@ -151,12 +151,13 @@ class OI:
                 #       abs(const.SWERVE_KINEMATICS.toChassisSpeeds(self.robot.poseEstimator.get_module_states()).vy) <= 0.005 and 
                 #       abs(const.SWERVE_KINEMATICS.toChassisSpeeds(self.robot.poseEstimator.get_module_states()).omega_dps) <= 1):
                 #     self.robot.drivetrain.turn_wheels_to_x()
-                elif self.robot.is_intaking and not self.robot.shoot_intent and self.robot.snake_intake:
-                    self.robot.drivetrain.drive_with_pid(
-                            Translation2d(forward_back, left_right)
-                            * const.SWERVE_MAX_SPEED,
-                            self.robot.intake.get_snake_intake_angle(),
-                        )
+                # elif self.robot.is_intaking and not self.robot.shoot_intent and (abs(rotate) <= 0.02):
+                #     self.robot.drivetrain.drive_with_pid(
+                #             Translation2d(forward_back, left_right)
+                #             * const.SWERVE_MAX_SPEED,
+                #             self.robot.intake.get_snake_intake_angle()
+                #         )
+                #     self.robot_oriented_angle = self.robot.intake.get_snake_intake_angle()
                 elif self.robot.shoot_intent and self.robot.should_hub_track:
                     rotation = self.robot.drivetrain.get_hub_angle(self.robot.time_of_flight).degrees()
                     mag_vel = Translation2d(forward_back, left_right).norm()
