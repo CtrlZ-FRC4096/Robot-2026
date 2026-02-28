@@ -58,8 +58,8 @@ class Shooter(Subsystem):
         self.hood_motor_config.motion_magic.motion_magic_cruise_velocity = 400
         self.hood_motor.configurator.apply(self.hood_motor_config)
 
-        self.right_fly_motor.set_control(controls.Follower(const.LEFT_UP_FLY_ID, signals.MotorAlignmentValue(1)))
-        self.left_down_fly_motor.set_control(controls.Follower(const.LEFT_UP_FLY_ID, signals.MotorAlignmentValue(0)))
+        self.right_fly_motor.set_control(controls.Follower(const.LEFT_UP_FLY_ID, True))
+        self.left_down_fly_motor.set_control(controls.Follower(const.LEFT_UP_FLY_ID, False))
 
         self.test_fly_speed = 60
         self.test_accelerator_speed = 80
@@ -156,10 +156,7 @@ class Shooter(Subsystem):
             return True
         else:
             self.shoot_ready = False
-            return False
-    def fly_speed_to_launch_vel(self, fly_speed):
-        return fly_speed / 4
-        
+            return False     
 
     def periodic(self):
         if self.robot.shooter_at_default:

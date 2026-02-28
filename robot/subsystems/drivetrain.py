@@ -55,8 +55,8 @@ from wpimath.units import degreesToRadians, inchesToMeters, radiansToDegrees
 from collections import deque
 from lookup_table import LookupTableAll, LookupTableAngle, LookupTableVel
 
-# from shapely import Polygon, Point
-# from shapely.affinity import translate, rotate
+from shapely import Polygon, Point
+from shapely.affinity import translate, rotate
 
 class Drivetrain(Subsystem):
     def __init__(self, robot: "Robot"):
@@ -170,55 +170,55 @@ class Drivetrain(Subsystem):
         ]
         
         
-    #     if self.robot.isSimulation():    
-    #         field_boundary = Polygon(field_boundary_points)
+        if self.robot.isSimulation():    
+            field_boundary = Polygon(field_boundary_points)
 
-    #         blue_hub = Polygon(blue_hub_pts)
-    #         blue_tower = Polygon(blue_tower_pts)
-    #         blue_trench_left = Polygon(blue_trench_left_pts)
-    #         blue_trench_right = Polygon(blue_trench_right_pts)
+            blue_hub = Polygon(blue_hub_pts)
+            blue_tower = Polygon(blue_tower_pts)
+            blue_trench_left = Polygon(blue_trench_left_pts)
+            blue_trench_right = Polygon(blue_trench_right_pts)
 
-    #         red_hub = Polygon(red_hub_pts)
-    #         red_tower = Polygon(red_tower_pts)
-    #         red_trench_left = Polygon(red_trench_left_pts)
-    #         red_trench_right = Polygon(red_trench_right_pts)
+            red_hub = Polygon(red_hub_pts)
+            red_tower = Polygon(red_tower_pts)
+            red_trench_left = Polygon(red_trench_left_pts)
+            red_trench_right = Polygon(red_trench_right_pts)
 
-    #         self.sim_obstacles = [
-    #             (field_boundary, "within"),
-    #             (blue_hub, "overlaps"),
-    #             (blue_tower, "overlaps"),
-    #             (blue_trench_left, "overlaps"),
-    #             (blue_trench_right, "overlaps"),
-    #             (red_hub, "overlaps"),
-    #             (red_tower, "overlaps"),
-    #             (red_trench_left, "overlaps"),
-    #             (red_trench_right, "overlaps")
-    #         ]
-    # def get_robot_shape(self):
-    #     cur_pose : Pose2d = self.robot.poseEstimator.curEstPose
-    #     half_length = inchesToMeters(26 + 7.25) / 2.0
-    #     half_width = inchesToMeters(28.5 + 7.25) / 2.0
-    #     p1 = (-half_length, -half_width)
-    #     p2 = (-half_length, half_width)
-    #     p3  = (half_length, half_width)
-    #     p4 = (half_length, -half_width)
+            self.sim_obstacles = [
+                (field_boundary, "within"),
+                (blue_hub, "overlaps"),
+                (blue_tower, "overlaps"),
+                (blue_trench_left, "overlaps"),
+                (blue_trench_right, "overlaps"),
+                (red_hub, "overlaps"),
+                (red_tower, "overlaps"),
+                (red_trench_left, "overlaps"),
+                (red_trench_right, "overlaps")
+            ]
+    def get_robot_shape(self):
+        cur_pose : Pose2d = self.robot.poseEstimator.curEstPose
+        half_length = inchesToMeters(26 + 7.25) / 2.0
+        half_width = inchesToMeters(28.5 + 7.25) / 2.0
+        p1 = (-half_length, -half_width)
+        p2 = (-half_length, half_width)
+        p3  = (half_length, half_width)
+        p4 = (half_length, -half_width)
 
-    #     base_robot = Polygon([p1, p2, p3, p4])
-    #     rotated_robot = rotate(base_robot, cur_pose.rotation().degrees())
-    #     final_robot = translate(rotated_robot, xoff=cur_pose.X(), yoff=cur_pose.Y())
-    #     return final_robot
+        base_robot = Polygon([p1, p2, p3, p4])
+        rotated_robot = rotate(base_robot, cur_pose.rotation().degrees())
+        final_robot = translate(rotated_robot, xoff=cur_pose.X(), yoff=cur_pose.Y())
+        return final_robot
 
-    # def in_obstacle(self, pose : Translation2d):
-    #     robot = self.get_robot_shape()
-    #     for obstacle in self.sim_obstacles:
-    #         match obstacle[1]:
-    #             case "overlaps":
-    #                 if obstacle[0].overlaps(robot):
-    #                     return True
-    #             case "within":
-    #                 if not robot.within(obstacle[0]):
-    #                     return True
-    #     return False
+    def in_obstacle(self, pose : Translation2d):
+        robot = self.get_robot_shape()
+        for obstacle in self.sim_obstacles:
+            match obstacle[1]:
+                case "overlaps":
+                    if obstacle[0].overlaps(robot):
+                        return True
+                case "within":
+                    if not robot.within(obstacle[0]):
+                        return True
+        return False
     
     def drive(self, translation: Translation2d, rotation, field_relative, is_open_loop):
         SmartDashboard.putNumber("Swerve/Translation X", translation.x)
@@ -312,16 +312,29 @@ class Drivetrain(Subsystem):
     def drive_robot_relative(
         self, chassis_speeds: ChassisSpeeds, feedfoward=None
     ):  # only use for pathplannerlib
-        chassis_speeds.omega = -chassis_speeds.omega
+        # PathPlanner returns robot-relative chassis speeds with +ω = CCW.
+        # Our kinematics/modules expect the opposite sign, so flip it here.
+        # chassis_speeds.omega = -chassis_speeds.omega
         module_states = const.SWERVE_KINEMATICS.toSwerveModuleStates(chassis_speeds)
 
-        SwerveDrive4Kinematics.desaturateWheelSpeeds(
+        module_states = SwerveDrive4Kinematics.desaturateWheelSpeeds(
             module_states, const.SWERVE_MAX_SPEED
         )
+        SmartDashboard.putNumber("pathplanner omega", chassis_speeds.omega_dps)
+        SmartDashboard.putNumber("pose yaw", self.robot.poseEstimator.curEstPose.rotation().degrees())
 
-        for idx, module in enumerate(self.robot.poseEstimator.modules):
-            # print(module_states[idx].speed)
-            module.set_desired_state(module_states[idx], is_open_loop=False)
+        if self.robot.isSimulation():
+            new_chassis_speeds = ChassisSpeeds.fromRobotRelativeSpeeds(chassis_speeds.vx, chassis_speeds.vy, chassis_speeds.omega, self.robot.poseEstimator.curEstPose.rotation())
+            curPose = self.robot.poseEstimator.curEstPose
+            self.robot.poseEstimator.curEstPose = Pose2d(
+                curPose.X() + new_chassis_speeds.vx / 20, curPose.Y() + new_chassis_speeds.vy / 20, Rotation2d(curPose.rotation().radians() + new_chassis_speeds.omega / 20)
+            )
+            if self.robot.poseEstimator.poseIsOffField(self.robot.poseEstimator.curEstPose) or self.in_obstacle(self.robot.poseEstimator.curEstPose.translation()):
+                self.robot.poseEstimator.curEstPose = curPose 
+        else:
+            for idx, module in enumerate(self.robot.poseEstimator.modules):
+                # print(module_states[idx].speed)
+                module.set_desired_state(module_states[idx], is_open_loop=False)
 
     def go_to_pose_profiled_pid(self, target_pose : Translation2d, feedforward_x=0.0, feedforward_y=0.0, feedfoward_theta=0.0):
 

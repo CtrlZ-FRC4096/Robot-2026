@@ -78,8 +78,9 @@ from commands2 import (
 import time
 from wpilibextra.coroutine import CoroutineCommand
 from wpilib import SmartDashboard
+from pathplannerlib.controller import PathFollowingController, PPHolonomicDriveController
 
-
+from fuel_sim import FuelSim
 
 log = logging.getLogger("robot")
 
@@ -235,6 +236,11 @@ class Robot(CoroutineRobot):
         self.in_autonomous_mode = False
         self.in_teleop_mode = False
 
+
+
+        self.auto = self.autoroutines.test_trench_auto()
+
+
         ## SIMMING STUFF ##
         if self.isSimulation():
             self.max_fuel_in_hopper = 24
@@ -244,9 +250,36 @@ class Robot(CoroutineRobot):
             self.fuel_in_hopper = 0
             self.tick_count = 0
 
+            self.fuel_sim = FuelSim(self, self.intake.can_intake_sim, self.intake.intake_sim_callback)
+            # self.fuel_sim.stop()
+            # self.fuel_sim.clearFuel()
+            self.fuel_sim.start()
+            print("start")
+
         while True:
             yield
             self.scheduler.run()
+    
+    def getPathCommand(self, path : PathPlannerPath):
+        return FollowPathCommand(
+            path,
+            lambda : self.poseEstimator.curEstPose,
+            self.drivetrain.get_robot_relative_speeds,
+            self.drivetrain.drive_robot_relative,
+            PPHolonomicDriveController(
+                PIDConstants(
+                    const.X_KP, const.X_KI, const.X_KD
+                ),  # Translation PID constants
+                PIDConstants(
+                    const.THETA_KP, const.THETA_KI, const.THETA_KD
+                ),  # Rotation PID constants)
+            ),
+            RobotConfig.fromGUISettings(),
+            lambda : self.fieldConstants.shouldFlip,
+            self.drivetrain
+        )   
+
+
 
     def get_motor_config(self, inverted=0, k_p=0.0, k_i=0.0, k_d=0.0, k_v=0.0, k_a=0.0, k_g=0.0, k_s=0.0):
         motor_config = configs.TalonFXConfiguration()
@@ -298,12 +331,11 @@ class Robot(CoroutineRobot):
 
         self.has_coral = True # Start with preloaded coral
         self.scheduler.cancelAll()
+        self.in_teleop_mode = False
         self.in_autonomous_mode = True
+        self.fuel_sim.running = True
 
-        # if self.isSimulation():
-        #     self.fuel_sim.start()
-
-        # self.scheduler.schedule(self.auto)
+        self.scheduler.schedule(self.auto)
 
     ### TELEOPERATED ###
     def teleop_mode(self):
@@ -312,10 +344,6 @@ class Robot(CoroutineRobot):
         self.in_autonomous_mode = False
         self.oi.robot_oriented_angle = self.poseEstimator.getYaw().degrees()
         self.in_teleop_mode = True
-        if self.isSimulation():
-            from fuel_sim import FuelSim
-            self.fuel_sim = FuelSim(self, self.intake.can_intake_sim, self.intake.intake_sim_callback)
-            self.fuel_sim.start()
         self.timer.start()
 
         while True:
@@ -344,6 +372,8 @@ class Robot(CoroutineRobot):
         SmartDashboard.putNumber("Shooting Values/Time of Flight", self.time_of_flight)
         SmartDashboard.putNumber("Shooting Values/Hood Angle", self.hood_angle)
         SmartDashboard.putNumber("Shooting Values/Fly Speed", self.fly_speed)
+
+        SmartDashboard.putBoolean("Should Flip", self.fieldConstants.shouldFlip)
 
         if self.isSimulation():
             wpilib.SmartDashboard.putNumberArray("RobotPose", [self.poseEstimator.curEstPose.X(), self.poseEstimator.curEstPose.Y(), self.poseEstimator.curEstPose.rotation().degrees()])
@@ -397,11 +427,13 @@ class Robot(CoroutineRobot):
             if fly_speed >= 5 and accel_speed >= 5 and self.fuel_in_hopper > 0:
                 #we are shooting every 0.06 seconds
                 if self.tick_count % 3 == 0:
-                    launch_vel = self.shooter.fly_speed_to_launch_vel(fly_speed)
+                    vals = self.drivetrain.dist_lookup_table.interpolate((self.virtual_goal - self.poseEstimator.curEstPose.translation()).norm())[0]
+                    launch_vel = vals[0]
+                    launch_angle = vals[1]
 
                     trans = Translation3d(0, 0.27, 0.52) + Translation3d(0, -0.11, 0) + Translation3d(0, 0.11* math.cos(degreesToRadians(cur_hood_pos)), 0.11*math.sin(degreesToRadians(cur_hood_pos)))
                     launch_pos = Translation3d(self.poseEstimator.curEstPose.translation()) + trans.rotateBy(Rotation3d(0, 0, self.poseEstimator.curEstPose.rotation().radians()))
-                    self.fuel_sim.launchFuel(launch_vel, cur_hood_pos, 0, launch_pos)
+                    self.fuel_sim.launchFuel(launch_vel, launch_angle, 0, launch_pos)
                     self.fuel_in_hopper -= 1
 
             if self.in_teleop_mode:

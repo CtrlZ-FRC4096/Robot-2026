@@ -32,3 +32,8 @@ class AutoRoutines:
 
     def __init__(self, robot: "Robot"):
         self.robot = robot
+
+    def test_trench_auto(self):
+        return SequentialCommandGroup(
+            self.robot.getPathCommand(PathPlannerPath.fromPathFile("Sprint"))
+        )

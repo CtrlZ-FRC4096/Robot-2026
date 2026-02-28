@@ -18,6 +18,8 @@ from wpilibextra.coroutine import commandify
 import oi
 # from robot_scoring_positions import RobotScoringPositions
 from field_const import FieldConstants
+from pathplannerlib.path import PathPlannerPath
+from pathplannerlib.commands import FollowPathCommand 
 
 
 class Coroutines:
@@ -26,4 +28,7 @@ class Coroutines:
     """
 
     def __init__(self, robot: "Robot"):
-        pass
+        
+        @commandify
+        def sprint_out():
+            pass

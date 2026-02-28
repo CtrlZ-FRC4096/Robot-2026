@@ -154,7 +154,7 @@ class PoseEstimator(Subsystem):
         )
 
 
-        self.curEstPose = Pose2d(7, 5, 0)
+        self.curEstPose = Pose2d(4.44, 0.641, math.pi)
         self.estZ = 0
 
         self.poseEst = SwerveDrive4PoseEstimator(
@@ -307,7 +307,7 @@ class PoseEstimator(Subsystem):
             return total / count
         else:
             return 0 # make empty (no fuel) weight profile
-
+    
     def poseIsOffField(self, pose: Pose2d):
         trans = pose.translation()
         x = trans.X()

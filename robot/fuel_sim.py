@@ -160,7 +160,7 @@ class FuelSim:
             bumperHeight = 0.2 # meters
             poseSupplier = lambda: robot.poseEstimator.curEstPose
             def fieldSpeedsSupplier():
-                states = self.robot.poseEstimator.get_module_states()
+                states = robot.poseEstimator.get_module_states()
                 chassis_speeds = const.SWERVE_KINEMATICS.toChassisSpeeds(states)
                 # Rotate robot-relative speeds to field-relative
                 yaw = self.robot.poseEstimator.getYaw()
@@ -171,12 +171,13 @@ class FuelSim:
                 vy = chassis_speeds.vx * s + chassis_speeds.vy * c
                 return ChassisSpeeds(vx, vy, chassis_speeds.omega)
 
-            self.registerRobot(width, length, bumperHeight, poseSupplier, fieldSpeedsSupplier)
+            self.registerRobot(width, length, bumperHeight, poseSupplier, robot.drivetrain.get_field_relative_speeds)
 
     def clearFuel(self):
         self.count = 0
 
     def spawnStartingFuel(self):
+        print("spawning")
         self.clearFuel()
         
         new_fuels_pos = []
@@ -238,6 +239,7 @@ class FuelSim:
 
     def start(self):
         self.running = True
+        print("starting\n\n\n\n\n\n\n\n\n\n\n")
         self.spawnStartingFuel()
 
     def stop(self):
