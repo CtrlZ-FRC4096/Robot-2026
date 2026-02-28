@@ -154,7 +154,8 @@ class PoseEstimator(Subsystem):
         )
 
 
-        self.curEstPose = Pose2d(4.44, 0.641, math.pi)
+        # self.curEstPose = Pose2d(4.44, 8.1-0.641, math.pi)
+        self.curEstPose = Pose2d()
         self.estZ = 0
 
         self.poseEst = SwerveDrive4PoseEstimator(

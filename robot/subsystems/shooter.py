@@ -58,8 +58,8 @@ class Shooter(Subsystem):
         self.hood_motor_config.motion_magic.motion_magic_cruise_velocity = 400
         self.hood_motor.configurator.apply(self.hood_motor_config)
 
-        self.right_fly_motor.set_control(controls.Follower(const.LEFT_UP_FLY_ID, True))
-        self.left_down_fly_motor.set_control(controls.Follower(const.LEFT_UP_FLY_ID, False))
+        self.right_fly_motor.set_control(controls.Follower(const.LEFT_UP_FLY_ID, signals.MotorAlignmentValue(1)))
+        self.left_down_fly_motor.set_control(controls.Follower(const.LEFT_UP_FLY_ID, signals.MotorAlignmentValue(0)))
 
         self.test_fly_speed = 60
         self.test_accelerator_speed = 80
@@ -154,7 +154,8 @@ class Shooter(Subsystem):
             return False
 
     def ready_to_shoot(self):
-        if abs(self.get_fly_speed()) + 5 >= self.commanded_fly_speed: #and pointed at hub   
+        rotation = self.robot.drivetrain.get_hub_angle(self.robot.time_of_flight)
+        if (abs(abs(self.get_fly_speed()) - self.commanded_fly_speed <= 3)) and (abs(abs(self.get_hood_position()) - self.commanded_hood_position) < 2) and (abs((self.robot.poseEstimator.curEstPose.rotation() - rotation).degrees()) <= 3): #and pointed at hub   
             self.shoot_ready = True
             return True
         else:
@@ -174,7 +175,7 @@ class Shooter(Subsystem):
                 SmartDashboard.putNumber("rotation lock error", (self.robot.poseEstimator.curEstPose.rotation() - rotation).degrees())
                 if self.robot.shoot_fuel or self.ready_to_shoot() or self.shoot_ready:
                     self.set_accelerator_speed(self.test_accelerator_speed)
-                    if (abs(self.get_accelerator_speed()) + 30 >= self.commanded_accelerator_speed or self.accel_good) and (abs((self.robot.poseEstimator.curEstPose.rotation() - rotation).degrees()) <= 5):
+                    if (abs(abs(self.get_accelerator_speed()) - self.commanded_accelerator_speed) <= 3 or self.accel_good):
                         self.accel_good = True
                         self.robot.hopper.indexer_motor.set_control(controls.DutyCycleOut(0.95))
                         # self.robot.hopper.set_speed(self.robot.hopper.test_indexer_speed) 

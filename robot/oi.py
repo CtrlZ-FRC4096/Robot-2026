@@ -163,7 +163,7 @@ class OI:
                 #             self.robot.intake.get_snake_intake_angle()
                 #         )
                 #     self.robot_oriented_angle = self.robot.intake.get_snake_intake_angle()
-                elif self.robot.shoot_intent and self.robot.should_hub_track:
+                elif self.robot.shoot_intent: #and self.robot.should_hub_track:
                     rotation = self.robot.drivetrain.get_hub_angle(self.robot.time_of_flight).degrees()
                     mag_vel = Translation2d(forward_back, left_right).norm()
                     if mag_vel >= 0.1:

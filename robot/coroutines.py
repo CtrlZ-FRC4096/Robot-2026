@@ -45,7 +45,7 @@ class Coroutines:
         def drive_to_zone_no_intake():
             robot.is_intaking = False
             robot.intake_at_default = True
-            robot.final_lineup_pose = Pose2d(3.368, 0.709, Rotation2d(math.pi))
+            robot.final_lineup_pose = Pose2d(3.368, 8.1-0.709, Rotation2d(math.pi))
             robot.running_pid_lineup = True
             robot.shoot_intent = True
             robot.shooter_at_default = False

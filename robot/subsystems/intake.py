@@ -53,13 +53,13 @@ class Intake(Subsystem):
         # self.inside_track_motor.configurator.apply(self.inside_track_motor_config)
         self.deploy_motor.configurator.apply(self.deploy_motor_config)
 
-        self.right_intake_motor.set_control(controls.Follower(const.LEFT_INTAKE_MOTOR_ID, True))
-        # self.inside_track_motor.set_control(controls.Follower(const.LEFT_INTAKE_MOTOR_ID, signals.False))
+        self.right_intake_motor.set_control(controls.Follower(const.LEFT_INTAKE_MOTOR_ID, signals.MotorAlignmentValue(1)))
+        # self.inside_track_motor.set_control(controls.Follower(const.LEFT_INTAKE_MOTOR_ID, signals.motoral))
 
         # self.deploy_encoder = wpilib.DutyCycleEncoder(6)
         self.commanded_intake_speed = 0.0
         self.commanded_position = 0.0
-        self.test_intake_speed = 80
+        self.test_intake_speed = 50
 
         self.deploy_pid_controller = PIDController(0.01, 0, 0)
         self.intake_reverse_count = 0
@@ -127,7 +127,7 @@ class Intake(Subsystem):
     def periodic(self):
         if self.robot.intake_at_default:
             if abs(self.get_position() - (-0.23)) >= 0.04:
-                self.set_intake_speed(80)
+                self.set_intake_speed(50)
             else:
                 self.stop_intake()
             self.set_position(-0.23)

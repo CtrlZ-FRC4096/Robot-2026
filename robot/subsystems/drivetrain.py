@@ -55,8 +55,8 @@ from wpimath.units import degreesToRadians, inchesToMeters, radiansToDegrees
 from collections import deque
 from lookup_table import LookupTableAll, LookupTableAngle, LookupTableVel
 
-from shapely import Polygon, Point
-from shapely.affinity import translate, rotate
+# from shapely import Polygon, Point
+# from shapely.affinity import translate, rotate
 
 class Drivetrain(Subsystem):
     def __init__(self, robot: "Robot"):
@@ -170,55 +170,55 @@ class Drivetrain(Subsystem):
         ]
         
         
-        if self.robot.isSimulation():    
-            field_boundary = Polygon(field_boundary_points)
+    #     if self.robot.isSimulation():    
+    #         field_boundary = Polygon(field_boundary_points)
 
-            blue_hub = Polygon(blue_hub_pts)
-            blue_tower = Polygon(blue_tower_pts)
-            blue_trench_left = Polygon(blue_trench_left_pts)
-            blue_trench_right = Polygon(blue_trench_right_pts)
+    #         blue_hub = Polygon(blue_hub_pts)
+    #         blue_tower = Polygon(blue_tower_pts)
+    #         blue_trench_left = Polygon(blue_trench_left_pts)
+    #         blue_trench_right = Polygon(blue_trench_right_pts)
 
-            red_hub = Polygon(red_hub_pts)
-            red_tower = Polygon(red_tower_pts)
-            red_trench_left = Polygon(red_trench_left_pts)
-            red_trench_right = Polygon(red_trench_right_pts)
+    #         red_hub = Polygon(red_hub_pts)
+    #         red_tower = Polygon(red_tower_pts)
+    #         red_trench_left = Polygon(red_trench_left_pts)
+    #         red_trench_right = Polygon(red_trench_right_pts)
 
-            self.sim_obstacles = [
-                (field_boundary, "within"),
-                (blue_hub, "overlaps"),
-                (blue_tower, "overlaps"),
-                (blue_trench_left, "overlaps"),
-                (blue_trench_right, "overlaps"),
-                (red_hub, "overlaps"),
-                (red_tower, "overlaps"),
-                (red_trench_left, "overlaps"),
-                (red_trench_right, "overlaps")
-            ]
-    def get_robot_shape(self):
-        cur_pose : Pose2d = self.robot.poseEstimator.curEstPose
-        half_length = inchesToMeters(26 + 7.25) / 2.0
-        half_width = inchesToMeters(28.5 + 7.25) / 2.0
-        p1 = (-half_length, -half_width)
-        p2 = (-half_length, half_width)
-        p3  = (half_length, half_width)
-        p4 = (half_length, -half_width)
+    #         self.sim_obstacles = [
+    #             (field_boundary, "within"),
+    #             (blue_hub, "overlaps"),
+    #             (blue_tower, "overlaps"),
+    #             (blue_trench_left, "overlaps"),
+    #             (blue_trench_right, "overlaps"),
+    #             (red_hub, "overlaps"),
+    #             (red_tower, "overlaps"),
+    #             (red_trench_left, "overlaps"),
+    #             (red_trench_right, "overlaps")
+    #         ]
+    # def get_robot_shape(self):
+    #     cur_pose : Pose2d = self.robot.poseEstimator.curEstPose
+    #     half_length = inchesToMeters(26 + 7.25) / 2.0
+    #     half_width = inchesToMeters(28.5 + 7.25) / 2.0
+    #     p1 = (-half_length, -half_width)
+    #     p2 = (-half_length, half_width)
+    #     p3  = (half_length, half_width)
+    #     p4 = (half_length, -half_width)
 
-        base_robot = Polygon([p1, p2, p3, p4])
-        rotated_robot = rotate(base_robot, cur_pose.rotation().degrees())
-        final_robot = translate(rotated_robot, xoff=cur_pose.X(), yoff=cur_pose.Y())
-        return final_robot
+    #     base_robot = Polygon([p1, p2, p3, p4])
+    #     rotated_robot = rotate(base_robot, cur_pose.rotation().degrees())
+    #     final_robot = translate(rotated_robot, xoff=cur_pose.X(), yoff=cur_pose.Y())
+    #     return final_robot
 
-    def in_obstacle(self, pose : Translation2d):
-        robot = self.get_robot_shape()
-        for obstacle in self.sim_obstacles:
-            match obstacle[1]:
-                case "overlaps":
-                    if obstacle[0].overlaps(robot):
-                        return True
-                case "within":
-                    if not robot.within(obstacle[0]):
-                        return True
-        return False
+    # def in_obstacle(self, pose : Translation2d):
+    #     robot = self.get_robot_shape()
+    #     for obstacle in self.sim_obstacles:
+    #         match obstacle[1]:
+    #             case "overlaps":
+    #                 if obstacle[0].overlaps(robot):
+    #                     return True
+    #             case "within":
+    #                 if not robot.within(obstacle[0]):
+    #                     return True
+    #     return False
     
     def drive(self, translation: Translation2d, rotation, field_relative, is_open_loop):
         SmartDashboard.putNumber("Swerve/Translation X", translation.x)
@@ -431,6 +431,39 @@ class Drivetrain(Subsystem):
             return Pose2d(pose.translation(), self.get_hub_angle())
         
     def create_lookup_table(self):
+        # self.dist_lookup_table.add_entry(0.7, 5.404, 79.295, 0.655)
+        # self.dist_lookup_table.add_entry(0.952, 5.543, 76.074, 0.688)
+        # self.dist_lookup_table.add_entry(1.203, 5.698, 73.252, 0.719)
+        # self.dist_lookup_table.add_entry(1.455, 5.864, 70.78, 0.749)
+        # self.dist_lookup_table.add_entry(1.707, 6.038, 68.611, 0.778)
+        # self.dist_lookup_table.add_entry(1.959, 6.217, 66.703, 0.806)
+        # self.dist_lookup_table.add_entry(2.21, 6.399, 65.019, 0.834)
+        # self.dist_lookup_table.add_entry(2.462, 6.647, 65.0, 0.9)
+        # self.dist_lookup_table.add_entry(2.714, 6.902, 65.0, 0.963)
+        # self.dist_lookup_table.add_entry(2.966, 7.158, 65.0, 1.022)
+        # self.dist_lookup_table.add_entry(3.217, 7.413, 65.0, 1.079)
+        # self.dist_lookup_table.add_entry(3.469, 7.665, 65.0, 1.134)
+        # self.dist_lookup_table.add_entry(3.721, 7.916, 65.0, 1.186)
+        # self.dist_lookup_table.add_entry(3.972, 8.163, 65.0, 1.236)
+        # self.dist_lookup_table.add_entry(4.224, 8.409, 65.0, 1.285)
+        # self.dist_lookup_table.add_entry(4.476, 8.651, 65.0, 1.333)
+        # self.dist_lookup_table.add_entry(4.728, 8.892, 65.0, 1.379)
+        # self.dist_lookup_table.add_entry(4.979, 9.13, 65.0, 1.424)
+        # self.dist_lookup_table.add_entry(5.231, 9.2, 65.0, 1.437)
+        # self.dist_lookup_table.add_entry(5.483, 9.2, 65.0, 1.437)
+        # self.dist_lookup_table.add_entry(5.734, 9.2, 65.0, 1.437)
+        # self.dist_lookup_table.add_entry(5.986, 9.2, 65.0, 1.437)
+        # self.dist_lookup_table.add_entry(6.238, 9.2, 65.0, 1.437)
+        # self.dist_lookup_table.add_entry(6.49, 9.2, 65.0, 1.437)
+        # self.dist_lookup_table.add_entry(6.741, 9.2, 65.0, 1.437)
+        # self.dist_lookup_table.add_entry(6.993, 9.2, 65.0, 1.437)
+        # self.dist_lookup_table.add_entry(7.245, 9.2, 65.0, 1.437)
+        # self.dist_lookup_table.add_entry(7.497, 9.2, 65.0, 1.437)
+        # self.dist_lookup_table.add_entry(7.748, 9.2, 65.0, 1.437)
+        # self.dist_lookup_table.add_entry(8.0, 9.2, 65.0, 1.437)
+
+        # Safe Lookup Table
+                # Good table
         self.dist_lookup_table.add_entry(0.7, 5.404, 79.295, 0.655)
         self.dist_lookup_table.add_entry(0.952, 5.543, 76.074, 0.688)
         self.dist_lookup_table.add_entry(1.203, 5.698, 73.252, 0.719)
@@ -440,27 +473,6 @@ class Drivetrain(Subsystem):
         self.dist_lookup_table.add_entry(2.21, 6.399, 65.019, 0.834)
         self.dist_lookup_table.add_entry(2.462, 6.647, 65.0, 0.9)
         self.dist_lookup_table.add_entry(2.714, 6.902, 65.0, 0.963)
-        self.dist_lookup_table.add_entry(2.966, 7.158, 65.0, 1.022)
-        self.dist_lookup_table.add_entry(3.217, 7.413, 65.0, 1.079)
-        self.dist_lookup_table.add_entry(3.469, 7.665, 65.0, 1.134)
-        self.dist_lookup_table.add_entry(3.721, 7.916, 65.0, 1.186)
-        self.dist_lookup_table.add_entry(3.972, 8.163, 65.0, 1.236)
-        self.dist_lookup_table.add_entry(4.224, 8.409, 65.0, 1.285)
-        self.dist_lookup_table.add_entry(4.476, 8.651, 65.0, 1.333)
-        self.dist_lookup_table.add_entry(4.728, 8.892, 65.0, 1.379)
-        self.dist_lookup_table.add_entry(4.979, 9.13, 65.0, 1.424)
-        self.dist_lookup_table.add_entry(5.231, 9.2, 65.0, 1.437)
-        self.dist_lookup_table.add_entry(5.483, 9.2, 65.0, 1.437)
-        self.dist_lookup_table.add_entry(5.734, 9.2, 65.0, 1.437)
-        self.dist_lookup_table.add_entry(5.986, 9.2, 65.0, 1.437)
-        self.dist_lookup_table.add_entry(6.238, 9.2, 65.0, 1.437)
-        self.dist_lookup_table.add_entry(6.49, 9.2, 65.0, 1.437)
-        self.dist_lookup_table.add_entry(6.741, 9.2, 65.0, 1.437)
-        self.dist_lookup_table.add_entry(6.993, 9.2, 65.0, 1.437)
-        self.dist_lookup_table.add_entry(7.245, 9.2, 65.0, 1.437)
-        self.dist_lookup_table.add_entry(7.497, 9.2, 65.0, 1.437)
-        self.dist_lookup_table.add_entry(7.748, 9.2, 65.0, 1.437)
-        self.dist_lookup_table.add_entry(8.0, 9.2, 65.0, 1.437)
 
     def create_launch_vel_table(self):
         self.vel_lookup_table.add_entry(5.6, 50)
@@ -523,8 +535,8 @@ class Drivetrain(Subsystem):
             if self.robot.poseEstimator.curEstPose.X() >= 5.172:
                 self.robot.is_intaking = True
                 self.robot.intake_at_default = False
-            if self.robot.fuel_in_hopper >= 9 and self:
-                pass
+            # if self.robot.fuel_in_hopper >= 9 and self:
+            #     pass
 
             if self.robot.running_pid_lineup:
                 if self.robot.shoot_intent and self.robot.poseEstimator.curEstPose.X() <= 4.4:

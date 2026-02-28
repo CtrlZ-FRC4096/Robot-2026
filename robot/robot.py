@@ -333,7 +333,8 @@ class Robot(CoroutineRobot):
         self.scheduler.cancelAll()
         self.in_teleop_mode = False
         self.in_autonomous_mode = True
-        self.fuel_sim.running = True
+        if self.isSimulation():
+            self.fuel_sim.running = True
 
         self.scheduler.schedule(self.auto)
 
