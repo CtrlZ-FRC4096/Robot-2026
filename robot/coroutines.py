@@ -28,7 +28,28 @@ class Coroutines:
     """
 
     def __init__(self, robot: "Robot"):
-        
+
         @commandify
         def sprint_out():
             pass
+
+        @commandify
+        def intake():
+            robot.intake_at_default = False
+            robot.is_intaking = True
+            yield
+
+        
+
+        @commandify
+        def drive_to_zone_no_intake():
+            robot.is_intaking = False
+            robot.intake_at_default = True
+            robot.final_lineup_pose = Pose2d(3.368, 0.709, Rotation2d(math.pi))
+            robot.running_pid_lineup = True
+            robot.shoot_intent = True
+            robot.shooter_at_default = False
+            yield
+
+        self.drive_to_zone_no_intake = (drive_to_zone_no_intake)
+        self.intake = (intake)

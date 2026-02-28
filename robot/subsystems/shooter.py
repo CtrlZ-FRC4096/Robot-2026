@@ -103,8 +103,11 @@ class Shooter(Subsystem):
         # if self.pose_in_trench():
         #     self.hood_motor.set_control(self.request.with_position(0))
         # else:
-        rotations = position # ADD GEAR RATIOS STUFF
-        self.hood_motor.set_control(self.request.with_position(rotations)) # USING MOTION MAGIC
+        if self.pose_in_trench():
+            self.hood_motor.set_control(self.request.with_position(0))
+        else:
+            rotations = position # ADD GEAR RATIOS STUFF
+            self.hood_motor.set_control(self.request.with_position(rotations)) # USING MOTION MAGIC
     
     def get_hood_position(self):
         if self.robot.isSimulation():
@@ -164,18 +167,19 @@ class Shooter(Subsystem):
             self.stop_accelerator()
             self.stop_fly()
         elif self.robot.shoot_intent:
-            self.set_fly_speed(self.robot.fly_speed)
-            self.set_hood_position(self.robot.hood_angle)
-            rotation = self.robot.drivetrain.get_hub_angle(self.robot.time_of_flight)
-            SmartDashboard.putNumber("rotation lock error", (self.robot.poseEstimator.curEstPose.rotation() - rotation).degrees())
-            if self.robot.shoot_fuel or self.ready_to_shoot() or self.shoot_ready:
-                self.set_accelerator_speed(self.test_accelerator_speed)
-                if (abs(self.get_accelerator_speed()) + 30 >= self.commanded_accelerator_speed or self.accel_good) and (abs((self.robot.poseEstimator.curEstPose.rotation() - rotation).degrees()) <= 5):
-                    self.accel_good = True
-                    self.robot.hopper.indexer_motor.set_control(controls.DutyCycleOut(0.95))
-                    # self.robot.hopper.set_speed(self.robot.hopper.test_indexer_speed) 
-                else:
-                    self.robot.hopper.set_speed(-20)
+            if self.robot.poseEstimator.curEstPose.X() <= 4.4:
+                self.set_fly_speed(self.robot.fly_speed)
+                self.set_hood_position(self.robot.hood_angle)
+                rotation = self.robot.drivetrain.get_hub_angle(self.robot.time_of_flight)
+                SmartDashboard.putNumber("rotation lock error", (self.robot.poseEstimator.curEstPose.rotation() - rotation).degrees())
+                if self.robot.shoot_fuel or self.ready_to_shoot() or self.shoot_ready:
+                    self.set_accelerator_speed(self.test_accelerator_speed)
+                    if (abs(self.get_accelerator_speed()) + 30 >= self.commanded_accelerator_speed or self.accel_good) and (abs((self.robot.poseEstimator.curEstPose.rotation() - rotation).degrees()) <= 5):
+                        self.accel_good = True
+                        self.robot.hopper.indexer_motor.set_control(controls.DutyCycleOut(0.95))
+                        # self.robot.hopper.set_speed(self.robot.hopper.test_indexer_speed) 
+                    else:
+                        self.robot.hopper.set_speed(-20)
         elif self.robot.is_climbing:
             self.set_hood_position(0.0)
             self.stop_fly()

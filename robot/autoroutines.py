@@ -17,6 +17,7 @@ from pathplannerlib.path import PathConstraints, PathPlannerPath
 
 # from commands import autonomous
 # from commands.autonomous import DriveTrajectory
+from coroutines import Coroutines
 from commands2 import (
     Command,
     ParallelCommandGroup,
@@ -35,5 +36,8 @@ class AutoRoutines:
 
     def test_trench_auto(self):
         return SequentialCommandGroup(
-            self.robot.getPathCommand(PathPlannerPath.fromPathFile("Sprint"))
-        )
+            ParallelCommandGroup(self.robot.getPathCommand(PathPlannerPath.fromPathFile("Sprint")),
+                                 self.robot.coroutines.intake),
+            self.robot.coroutines.drive_to_zone_no_intake
+                                 )
+        

@@ -146,7 +146,12 @@ class OI:
                         forward_back = 0.0
                         left_right = 0.0
                         rotate = 0
-                    self.robot.drivetrain.go_to_pose_profiled_pid(self.robot.final_lineup_pose, forward_back, left_right, rotate)
+                    if self.robot.shoot_intent:
+                        rotation = self.robot.drivetrain.get_hub_angle(self.robot.time_of_flight)
+                        lineup  = Pose2d(self.robot.final_lineup_pose.X(), self.robot.final_lineup_pose.Y(), rotation)
+                    else:
+                        lineup = self.robot.final_lineup_pose
+                    self.robot.drivetrain.go_to_pose_profiled_pid(lineup, forward_back, left_right, rotate)
                 # elif (abs(const.SWERVE_KINEMATICS.toChassisSpeeds(self.robot.poseEstimator.get_module_states()).vx) <= 0.005 and
                 #       abs(const.SWERVE_KINEMATICS.toChassisSpeeds(self.robot.poseEstimator.get_module_states()).vy) <= 0.005 and 
                 #       abs(const.SWERVE_KINEMATICS.toChassisSpeeds(self.robot.poseEstimator.get_module_states()).omega_dps) <= 1):

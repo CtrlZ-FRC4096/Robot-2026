@@ -390,7 +390,11 @@ class Robot(CoroutineRobot):
             
 
             default_inner = Translation3d(0.3, 0.355, 0.2)
-            cur_inner_pos = self.intake.get_position()
+            if abs(self.intake.get_position() + 0.06) <= 0.01:
+                cur_inner_pos = 30
+            else:
+                cur_inner_pos = 0
+            # cur_inner_pos = self.intake.get_position()
             final_inner_quat = Rotation3d(0, degreesToRadians(cur_inner_pos), 0).getQuaternion()
             final_inner_trans = default_inner
             SmartDashboard.putNumberArray("FinalComponentPoses/Pose1", [final_inner_trans.X(), final_inner_trans.Y(), final_inner_trans.Z(), final_inner_quat.W(), final_inner_quat.X(), final_inner_quat.Y(), final_inner_quat.Z()])
@@ -427,7 +431,7 @@ class Robot(CoroutineRobot):
             if fly_speed >= 5 and accel_speed >= 5 and self.fuel_in_hopper > 0:
                 #we are shooting every 0.06 seconds
                 if self.tick_count % 3 == 0:
-                    vals = self.drivetrain.dist_lookup_table.interpolate((self.virtual_goal - self.poseEstimator.curEstPose.translation()).norm())[0]
+                    vals = self.drivetrain.dist_lookup_table.interpolate((self.virtual_goal - self.poseEstimator.curEstPose.translation()).norm())
                     launch_vel = vals[0]
                     launch_angle = vals[1]
 
@@ -436,7 +440,7 @@ class Robot(CoroutineRobot):
                     self.fuel_sim.launchFuel(launch_vel, launch_angle, 0, launch_pos)
                     self.fuel_in_hopper -= 1
 
-            if self.in_teleop_mode:
+            if self.fuel_sim.running:
                 self.fuel_sim.updateSim()
             SmartDashboard.putNumber("Sim/Fuel in Hopper", self.fuel_in_hopper)
             self.tick_count += 1

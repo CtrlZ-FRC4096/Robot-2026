@@ -519,8 +519,21 @@ class Drivetrain(Subsystem):
         ) / 0.05
         self.previous_chassisspeeds = self.get_robot_relative_speeds()
 
-        if self.robot.in_autonomous_mode and self.robot.running_pid_lineup:
-            self.go_to_pose_profiled_pid(self.robot.final_lineup_pose)
+        if self.robot.in_autonomous_mode:
+            if self.robot.poseEstimator.curEstPose.X() >= 5.172:
+                self.robot.is_intaking = True
+                self.robot.intake_at_default = False
+            if self.robot.fuel_in_hopper >= 9 and self:
+                pass
+
+            if self.robot.running_pid_lineup:
+                if self.robot.shoot_intent and self.robot.poseEstimator.curEstPose.X() <= 4.4:
+                        rotation = self.robot.drivetrain.get_hub_angle(self.robot.time_of_flight)
+                        lineup  = Pose2d(self.robot.final_lineup_pose.X(), self.robot.final_lineup_pose.Y(), rotation)
+                else:
+                    lineup = self.robot.final_lineup_pose
+                self.go_to_pose_profiled_pid(lineup)
+            # self.go_to_pose_profiled_pid(self.robot.final_lineup_pose)
 
     def log(self):
         SmartDashboard.putData("PID Controller Reef XY", self.xy_controller)
