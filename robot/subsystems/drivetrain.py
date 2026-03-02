@@ -282,7 +282,7 @@ class Drivetrain(Subsystem):
             self.final_velo = final_vel.translation()
 
             self.robot.poseEstimator.curEstPose = Pose2d(curPose.X() + final_vel.X() / 30, curPose.Y() + final_vel.Y() / 30, Rotation2d.fromDegrees(curPose.rotation().degrees() + final_vel.rotation().degrees() / 20))
-            if self.robot.poseEstimator.poseIsOffField(self.robot.poseEstimator.curEstPose) or self.in_obstacle(self.robot.poseEstimator.curEstPose.translation()):
+            if self.robot.poseEstimator.poseIsOffField(self.robot.poseEstimator.curEstPose):# or self.in_obstacle(self.robot.poseEstimator.curEstPose.translation()):
                 self.robot.poseEstimator.curEstPose = curPose
             self.robot.poseEstimator.set_yaw(self.robot.poseEstimator.curEstPose.rotation().degrees())
             
@@ -327,10 +327,10 @@ class Drivetrain(Subsystem):
             new_chassis_speeds = ChassisSpeeds.fromRobotRelativeSpeeds(chassis_speeds.vx, chassis_speeds.vy, chassis_speeds.omega, self.robot.poseEstimator.curEstPose.rotation())
             curPose = self.robot.poseEstimator.curEstPose
             self.robot.poseEstimator.curEstPose = Pose2d(
-                curPose.X() + new_chassis_speeds.vx / 20, curPose.Y() + new_chassis_speeds.vy / 20, Rotation2d(curPose.rotation().radians() + new_chassis_speeds.omega / 20)
+                curPose.X() + new_chassis_speeds.vx / 15, curPose.Y() + new_chassis_speeds.vy / 15, Rotation2d(curPose.rotation().radians() + new_chassis_speeds.omega / 10)
             )
-            if self.robot.poseEstimator.poseIsOffField(self.robot.poseEstimator.curEstPose) or self.in_obstacle(self.robot.poseEstimator.curEstPose.translation()):
-                self.robot.poseEstimator.curEstPose = curPose 
+            # if self.robot.poseEstimator.poseIsOffField(self.robot.poseEstimator.curEstPose):# or self.in_obstacle(self.robot.poseEstimator.curEstPose.translation()):
+            #     self.robot.poseEstimator.curEstPose = curPose 
         else:
             for idx, module in enumerate(self.robot.poseEstimator.modules):
                 # print(module_states[idx].speed)
@@ -533,8 +533,9 @@ class Drivetrain(Subsystem):
 
         if self.robot.in_autonomous_mode:
             if self.robot.poseEstimator.curEstPose.X() >= 5.172:
-                self.robot.is_intaking = True
-                self.robot.intake_at_default = False
+                # self.robot.is_intaking = True
+                # self.robot.intake_at_default = False
+                pass
             # if self.robot.fuel_in_hopper >= 9 and self:
             #     pass
 
@@ -542,6 +543,7 @@ class Drivetrain(Subsystem):
                 if self.robot.shoot_intent and self.robot.poseEstimator.curEstPose.X() <= 4.4:
                         rotation = self.robot.drivetrain.get_hub_angle(self.robot.time_of_flight)
                         lineup  = Pose2d(self.robot.final_lineup_pose.X(), self.robot.final_lineup_pose.Y(), rotation)
+                        SmartDashboard.putNumber("Shooter/Rotation to Hub", rotation.degrees())
                 else:
                     lineup = self.robot.final_lineup_pose
                 self.go_to_pose_profiled_pid(lineup)

@@ -204,19 +204,34 @@ class WrapperedPhotonCameraTag:
         inX = -0.5 < x < FieldConstants.fieldLength + 0.5
         return inX and inY
 
-class WrapperedPhotonCameraFuel:
-    def __init__(self, camName, robotToCam):
+class WrapperedPhotonCameraIntakeFuel:
+    def __init__(self, camName, robotToCam, intakeCam=True):
         # setVersionCheckEnabled(False)
 
         self.cam = PhotonCamera(camName)
         # TODO is this really the name of the camera or is this just as a reminder? Camera1,2,3,or 4??
         self.camName = camName
-        self.fuel_seen = []
+        self.fuel_seen_field_relative : list[Translation3d] = []
+        self.new_observations : list[Translation2d] = []
         self.robotToCam: Transform3d = robotToCam
+
+        self.memory_duration = 0.25
+        self.merge_radius = 0.2
+
+        self.fuel_memory : list[tuple[Translation2d, float]]= []
     
     def update(self, curPose : Pose2d, zCoord : float, gyro : Rotation3d):
         res = self.cam.getLatestResult()
-        self.fuel_seen = []
+        self.fuel_seen_field_relative = []
+        self.new_observations = []
+        curTrans = curPose.translation()
+        cur_time = res.getTimestampSeconds()
+
+
+        robot_to_field = Transform3d(
+            Translation3d(curPose.X(), curPose.Y(), zCoord),
+            gyro
+        )
         for target in res.getTargets():
             tgt_x_angle = target.getYaw()
             tgt_y_angle = target.getPitch()
@@ -230,8 +245,65 @@ class WrapperedPhotonCameraFuel:
             fuel_in_cam = Translation3d(x_cam, y_cam, z_cam)
             fuel_in_robot = fuel_in_cam.rotateBy(self.robotToCam.inverse().rotation()) + self.robotToCam.inverse().translation()
             
-            fuel_in_field = fuel_in_robot.rotateBy(Rotation3d(gyro.X(), gyro.Y(), gyro.Z())) + Translation3d(curPose.X(), curPose.Y(), zCoord)
-            self.fuel_seen.append(fuel_in_field)
+            fuel_in_field = fuel_in_robot.rotateBy(robot_to_field.rotation()) + robot_to_field.translation()
+            
+            self.fuel_seen_field_relative.append(fuel_in_field)
+            
+            if fuel_in_field.Z() <= 0.15:
+                self.new_observations.append(fuel_in_field.toTranslation2d())
+         
+        for fuel in self.new_observations:
+            matched = False # flag if it has already been seen
+            for i, (mem_pos, mem_time) in enumerate(self.fuel_memory):
+                if fuel.distance(mem_pos) < self.merge_radius:
+                    self.fuel_memory[i] = (fuel, cur_time)
+                    matched = True
+                    break
+                
+            if not matched:
+                self.fuel_memory.append((fuel, cur_time))
+
+        self.fuel_memory = [
+            (pos, timestamp) for (pos, timestamp) in self.fuel_memory
+            if (cur_time - timestamp < self.memory_duration)
+        ]
+
+    def getBestPtIntake(self, curPose : Pose2d):
+        if not self.fuel_memory:
+            return None
+        
+        pts = np.array([[pos.X(), pos.Y()] for pos, time in self.fuel_memory])
+        trans = curPose.translation()
+
+        diffs = pts[:, np.newaxis, :] - pts[np.newaxis, :, :]
+        distance_matrix = np.sum(diffs**2, axis=-1)
+
+        nearby_counts = np.sum(distance_matrix < 0.5625, axis=1)
+
+        dists_to_robot = np.linalg.norm(pts - trans, axis=1)
+
+        scores = (nearby_counts ** 2) / (dists_to_robot + 1.0)
+
+        best_idx = np.argmax(scores)
+
+        return self.fuel_memory[best_idx][0], scores[best_idx]
     
-    def getFuelSeen(self) -> list[Translation3d] :
-        return self.fuel_seen
+    def calculate_single_score(self, fuel : Translation2d, curPose: Pose2d):
+        nearby_count = 0
+        for other_pos, timestamp in self.fuel_memory:
+            if fuel.distance(other_pos) < 0.75:
+                nearby_count += 1
+        
+        dist_to_robot = curPose.translation().distance(fuel)
+
+        return (nearby_count ** 2) / (dist_to_robot + 1.0)
+
+    def getAllFuelSeen(self) -> list[Translation3d]:
+        return self.fuel_seen_field_relative
+    
+    def getFuelFlat(self) -> list[Translation2d]:
+        return self.new_observations
+    
+    def getFuelMemory(self):
+        return self.fuel_memory
+    

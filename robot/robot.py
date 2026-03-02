@@ -45,7 +45,7 @@ import subsystems.leds
 import subsystems.limelight
 import subsystems.poseEstimator
 import subsystems.intake
-from subsystems import shooter, hopper
+from subsystems import shooter, hopper, climber
 
 from wpilibextra.coroutine.coroutine_robot import CoroutineRobot
 from wpilibextra.remote_shell import RemoteShell
@@ -149,6 +149,7 @@ class Robot(CoroutineRobot):
         self.intake = subsystems.intake.Intake(self)
         self.shooter = shooter.Shooter(self)
         self.hopper = hopper.Hopper(self)
+        self.climber = climber.Climber(self)
 
         self.subsystems = [
             self.drivetrain,
@@ -157,6 +158,7 @@ class Robot(CoroutineRobot):
             self.intake,
             self.shooter,
             self.hopper,
+            self.climber
         ]
 
         # If everything in self.subsystems is a Subsystem object, then
@@ -205,8 +207,10 @@ class Robot(CoroutineRobot):
         self.is_climbing = False
         self.is_intaking = False
         self.pulse_indexer = False
+        self.pulse_pivot = False
 
         self.snake_intake = False
+        self.track_fuel = False
 
         #TESTING
         self.should_hub_track = False
@@ -247,7 +251,7 @@ class Robot(CoroutineRobot):
             self.x_hopper_max = inchesToMeters(25)
             self.y_hopper_max = inchesToMeters(18)
             self.z_hopper_max = inchesToMeters(15)
-            self.fuel_in_hopper = 0
+            self.fuel_in_hopper = 8
             self.tick_count = 0
 
             self.fuel_sim = FuelSim(self, self.intake.can_intake_sim, self.intake.intake_sim_callback)
@@ -333,6 +337,7 @@ class Robot(CoroutineRobot):
         self.scheduler.cancelAll()
         self.in_teleop_mode = False
         self.in_autonomous_mode = True
+
         if self.isSimulation():
             self.fuel_sim.running = True
 
@@ -368,6 +373,8 @@ class Robot(CoroutineRobot):
         SmartDashboard.putBoolean("States/Intake at Default", self.intake_at_default)
         SmartDashboard.putBoolean("States/Shooter at Default", self.shooter_at_default)
         SmartDashboard.putBoolean("States/Should Hub Track", self.should_hub_track)
+        SmartDashboard.putBoolean("States/Pulse Pivot", self.pulse_pivot)
+        SmartDashboard.putBoolean("States/Is Climbing", self.is_climbing)
 
         SmartDashboard.putNumber("Shooting Values/Distance to Hub", self.distance)
         SmartDashboard.putNumber("Shooting Values/Time of Flight", self.time_of_flight)
@@ -381,7 +388,7 @@ class Robot(CoroutineRobot):
             # SmartDashboard.putNumberArray("ZeroedComponentPoses/Pose0", [0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0])
             # SmartDashboard.putNumberArray("ZeroedComponentPoses/Pose1", [0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0])
             # SmartDashboard.putNumberArray("ZeroedComponentPoses/Pose2", [0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0])
-            
+
 
             default_shooter_hood = Translation3d(-0.23, 0.15, 0.5)
             cur_hood_pos = self.shooter.get_hood_position()
@@ -391,7 +398,7 @@ class Robot(CoroutineRobot):
             
 
             default_inner = Translation3d(0.3, 0.355, 0.2)
-            if abs(self.intake.get_position() + 0.06) <= 0.01:
+            if self.intake.get_position() ==  -0.06:
                 cur_inner_pos = 30
             else:
                 cur_inner_pos = 0
@@ -409,6 +416,10 @@ class Robot(CoroutineRobot):
             final_outer_trans = default_outer + inner_outer_transform
             SmartDashboard.putNumberArray("FinalComponentPoses/Pose2", [final_outer_trans.X(), final_outer_trans.Y(), final_outer_trans.Z(), final_outer_quat.W(), final_outer_quat.X(), final_outer_quat.Y(), final_outer_quat.Z()])
             
+            cur_climber_pos = self.climber.get_position()
+            SmartDashboard.putNumberArray("FinalComponentPoses/Pose3", [0, 0, cur_climber_pos / 5, 0, 0, 0, 0])
+
+
             default_fuel_pose = Translation3d(-0.26, -0.28, 0.28)
             for fuel_num in range(1,self.max_fuel_in_hopper + 1):
                 if fuel_num <= self.fuel_in_hopper:
@@ -431,7 +442,7 @@ class Robot(CoroutineRobot):
             accel_speed = self.shooter.get_accelerator_speed()
             if fly_speed >= 5 and accel_speed >= 5 and self.fuel_in_hopper > 0:
                 #we are shooting every 0.06 seconds
-                if self.tick_count % 3 == 0:
+                if self.tick_count % 2 == 0:
                     vals = self.drivetrain.dist_lookup_table.interpolate((self.virtual_goal - self.poseEstimator.curEstPose.translation()).norm())
                     launch_vel = vals[0]
                     launch_angle = vals[1]

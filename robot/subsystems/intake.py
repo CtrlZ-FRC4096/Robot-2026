@@ -64,6 +64,8 @@ class Intake(Subsystem):
         self.deploy_pid_controller = PIDController(0.01, 0, 0)
         self.intake_reverse_count = 0
 
+        self.tick_count = 0
+
     def stop(self):
         self.stop_deploy()
         self.stop_intake()
@@ -135,11 +137,22 @@ class Intake(Subsystem):
             # if self.robot.fieldConstants.LinesVertical.starting < self.robot.poseEstimator.curEstPose.X() < self.robot.fieldConstants.fieldLength - self.robot.fieldConstants.LinesVertical.starting: # neutral zone
             self.set_intake_speed(self.test_intake_speed) # TUNE
             self.set_position(-0.06) # TUNE
+        elif self.robot.pulse_pivot:
+            if self.tick_count % 20 < 10:
+                print("switch to out")
+                self.set_position(-0.06)
+            else:
+                print("switch to in")
+                self.set_position(-0.23)
+            self.set_intake_speed(self.test_intake_speed)
         elif self.robot.is_climbing:
             self.stop_intake()
             self.set_position(-0.23)
+        else:
+            self.stop_intake()
+            self.stop_deploy()
         
-
+        self.tick_count += 1
 
     def log(self):
         SmartDashboard.putBoolean("States/Is Intaking", self.robot.is_intaking)

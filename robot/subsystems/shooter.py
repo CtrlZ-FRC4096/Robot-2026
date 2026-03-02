@@ -96,7 +96,7 @@ class Shooter(Subsystem):
         self.accelerator_motor.set_control(controls.VelocityTorqueCurrentFOC(speed))
     
     def set_hood_position(self, position):
-        self.commanded_hood_position = position
+        
         if abs(self.get_hood_position() - position) <= 0.5:
             self.stop_hood()
             return
@@ -104,8 +104,10 @@ class Shooter(Subsystem):
         #     self.hood_motor.set_control(self.request.with_position(0))
         # else:
         if self.pose_in_trench():
+            self.commanded_hood_position = 0
             self.hood_motor.set_control(self.request.with_position(0))
         else:
+            self.commanded_hood_position = position
             rotations = position # ADD GEAR RATIOS STUFF
             self.hood_motor.set_control(self.request.with_position(rotations)) # USING MOTION MAGIC
     
@@ -176,8 +178,12 @@ class Shooter(Subsystem):
                 if self.robot.shoot_fuel or self.ready_to_shoot() or self.shoot_ready:
                     self.set_accelerator_speed(self.test_accelerator_speed)
                     if (abs(abs(self.get_accelerator_speed()) - self.commanded_accelerator_speed) <= 3 or self.accel_good):
+                        if not self.accel_good:
+                            self.robot.intake.tick_count = 0
                         self.accel_good = True
                         self.robot.hopper.indexer_motor.set_control(controls.DutyCycleOut(0.95))
+                        self.robot.pulse_pivot = True 
+
                         # self.robot.hopper.set_speed(self.robot.hopper.test_indexer_speed) 
                     else:
                         self.robot.hopper.set_speed(-20)

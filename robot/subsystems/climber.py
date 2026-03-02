@@ -22,11 +22,17 @@ class Climber(Subsystem):
         self.robot = robot
         self.climber_motor = hardware.TalonFX(const.CLIMBER_MOTOR_ID, "rio")
         self.climber_motor_config = self.robot.get_motor_config(0, 0, 0, 0, 0, 0, 0, 0)
-        self.climber_motor_config.motion_magic.motion_magic_cruise_velocity = 0
-        self.climber_motor_config.motion_magic.motion_magic_acceleration = 0 
+        self.climber_motor_config.motion_magic.motion_magic_cruise_velocity = 100
+        self.climber_motor_config.motion_magic.motion_magic_acceleration = 100
         self.climber_motor.configurator.apply(self.climber_motor_config) 
 
         self.commanded_climber_position = 0.0
+
+        self.request = controls.MotionMagicTorqueCurrentFOC(0.0)
+
+        self.test_climber_up_position = 2
+        self.test_climber_down_position = 1
+        self.climber_is_up = False
 
     def get_position(self):
         if self.robot.isSimulation():
@@ -37,18 +43,27 @@ class Climber(Subsystem):
     def set_position(self, position):
         self.commanded_climber_position = position
         rotations = position # DO INVERSE GEAR RATIOS AND stuff
-        self.climber_motor.set_control(controls.MotionMagicVoltage(rotations, enable_foc=True))
+        self.climber_motor.set_control(self.request.with_position(rotations))
 
     def stop(self):
-        self.climber_motor.set_control(controls.MotionMagicVoltage(0.0))
+        # self.climber_motor.set_control(controls.MotionMagicTorqueCurrentFOC(0.0))
         self.climber_motor.set_control(controls.StaticBrake())
 
     def periodic(self):
         if self.robot.is_climbing:
-            pass
+            if abs(self.get_position() - self.test_climber_up_position) >= 0.05 and not self.climber_is_up: #change values
+                self.set_position(self.test_climber_up_position)
+            else:
+                self.climber_is_up = True
+                if abs(self.get_position() - self.test_climber_down_position) >= 0.05:
+                    self.set_position(self.test_climber_down_position)
+                    pass
+                else:
+                    self.stop()
         else:
-            self.climber_motor.set_control(controls.StaticBrake())  
+            self.stop()
 
     def log(self):
         wpilib.SmartDashboard.putNumber("Climber/Actual Position", self.climber_motor.get_position().value)
         wpilib.SmartDashboard.putNumber("Climber/Commanded Position", self.commanded_climber_position)
+        wpilib.SmartDashboard.putBoolean("Climber/Climber is up", self.climber_is_up)

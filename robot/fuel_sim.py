@@ -863,8 +863,8 @@ class FuelSim:
         total_yaw = heading + turretYaw + degreesToRadians(90)
         # print(radiansToDegrees(total_yaw))
         
-        v_horiz = math.sin(hoodAngle) * launchVelocity
-        v_vert  = math.cos(hoodAngle) * launchVelocity
+        v_horiz = math.cos(hoodAngle) * launchVelocity
+        v_vert  = math.sin(hoodAngle) * launchVelocity
         
         vx = v_horiz * math.cos(total_yaw) + field_speeds.vx
         vy = v_horiz * math.sin(total_yaw) + field_speeds.vy

@@ -73,7 +73,7 @@ from wpimath.filter import LinearFilter
 from pathplannerlib.path import PathPlannerTrajectory
 from pathplannerlib.path import PathPlannerPath, PathConstraints
 from wpimath.estimator import SwerveDrive4PoseEstimator
-from photoncamera import WrapperedPhotonCameraTag, WrapperedPhotonCameraFuel
+from photoncamera import WrapperedPhotonCameraTag, WrapperedPhotonCameraIntakeFuel
 from wpimath.units import degreesToRadians, inchesToMeters
 from robotpy_apriltag import AprilTagField, AprilTagFieldLayout
 
@@ -155,6 +155,8 @@ class PoseEstimator(Subsystem):
 
 
         # self.curEstPose = Pose2d(4.44, 8.1-0.641, math.pi)
+        # climb pose
+        # self.curEstPose = Pose2d(1.003, 4.637, Rotation2d(math.pi / 2))
         self.curEstPose = Pose2d()
         self.estZ = 0
 
@@ -169,20 +171,20 @@ class PoseEstimator(Subsystem):
         ROBOT_TO_CAM1 = Transform3d(
             Translation3d(-0.317, -0.292, 0.193),
             Rotation3d.fromDegrees(0.0, -10.0, 0.0)
-        )
+        ) # TO DO 
         ROBOT_TO_CAM3 = Transform3d(
             Translation3d(0.0254, -0.387, 0.2179),
             Rotation3d.fromDegrees(0, -15, -90)
-        )
-        ROBOT_TO_COLOR_1 = Transform3d()
-        ROBOT_TO_COLOR_2 = Transform3d()
+        ) # DONE
+        ROBOT_TO_COLOR_1 = Transform3d() # TO DO
+        ROBOT_TO_COLOR_2 = Transform3d() # TO DO
 
         self.cams = [
             WrapperedPhotonCameraTag("camera3", ROBOT_TO_CAM3),
         ]
-        self.intake_cam = WrapperedPhotonCameraFuel("color1", ROBOT_TO_COLOR_1) # WRONG NAME MAYBE
-        self.hopper_cam = WrapperedPhotonCameraFuel("color2", ROBOT_TO_COLOR_2)
-        self.fuel_field_map : list[Translation3d] = []
+        self.intake_cam = WrapperedPhotonCameraIntakeFuel("color1", ROBOT_TO_COLOR_1) # WRONG NAME MAYBE
+        # self.hopper_cam = WrapperedPhotonCameraFuel("color2", ROBOT_TO_COLOR_2)
+        self.fuel_map = []
 
 
 
@@ -195,11 +197,47 @@ class PoseEstimator(Subsystem):
 
         self.tag_layout = AprilTagFieldLayout.loadField(AprilTagField.k2026RebuiltWelded)
         
+        self.active_intake_tgt = Translation2d()
+        self.active_intake_tgt_score = 0
+
+    def update_fuel_intake_tgt(self):
+        res = self.intake_cam.getBestPtIntake(self.curEstPose)
+        if res is None:
+            return None
+        else:
+            cur_best_pt = res[0]
+            cur_best_score = res[1]
+        
+        if self.active_intake_tgt is None:
+            self.active_intake_tgt = cur_best_pt
+            self.active_intake_tgt_score = cur_best_score
+            return self.active_intake_tgt
+        
+        still_exists = False
+        for pos, timestamp in self.intake_cam.getFuelMemory():
+            if pos.distance(self.active_intake_tgt) < 0.4:
+                still_exists = True
+                self.active_intake_tgt_score = self.intake_cam.calculate_single_score(pos, self.curEstPose)
+                break
+        
+        if not still_exists: # all balls in 0.4 meers are poofed
+            self.active_intake_tgt = cur_best_pt
+            self.active_intake_tgt_score = cur_best_score
+        elif cur_best_pt is not None:
+            if cur_best_score > (self.active_intake_tgt_score * 4):
+                self.active_intake_tgt = cur_best_pt
+                self.active_intake_tgt_score = cur_best_score
+        
+        if self.active_intake_tgt and (self.curEstPose.translation().distance(self.active_intake_tgt)) < 0.2:
+            self.active_intake_tgt = None
+        
+        return self.active_intake_tgt
+
     def stop(self):
         print("sike this aint stoppin")
 
     def set_module_states(self, desired_states):
-        SwerveDrive4Kinematics.desaturateWheelSpeeds(
+        desired_states = SwerveDrive4Kinematics.desaturateWheelSpeeds(
             desired_states, const.SWERVE_MAX_SPEED
         )
 
@@ -298,8 +336,6 @@ class PoseEstimator(Subsystem):
         for module in self.modules:
             dm = module.drive_motor
             accel = dm.get_acceleration().value
-            if accel is None:
-                continue
             if abs(accel) > EPS:
                 total += dm.get_torque_current().value / accel
                 count += 1
@@ -329,6 +365,14 @@ class PoseEstimator(Subsystem):
         # add more elifs as conditions
         else:
             return True
+        
+    def set_wheels_to_x(self):
+        fl = SwerveModuleState(0, Rotation2d.fromDegrees(45))
+        fr = SwerveModuleState(0, Rotation2d.fromDegrees(-45))
+        bl = SwerveModuleState(0, Rotation2d.fromDegrees(-45))
+        br = SwerveModuleState(0, Rotation2d.fromDegrees(45))
+        desired_states = (fl, fr, bl, br)
+        self.set_module_states(desired_states)        
 
     def periodic(self):
         allianceColor = DriverStation.getAlliance()
@@ -364,12 +408,11 @@ class PoseEstimator(Subsystem):
         if z_count > 0:
             self.estZ = z_sum / z_count
         
-        ## UPDATING OBJECT DETECTION CAMERAS
-        # self.intake_cam.update(self.curEstPose, self.estZ, self.gyro.getRotation3d())
-        # fuels = self.intake_cam.getFuelSeen()
-        # for fuel in fuels:
-        #     if abs(fuel.Z()) >= 5:
-        #         pass
+        # UPDATING OBJECT DETECTION CAMERAS
+        self.intake_cam.update(self.curEstPose, self.estZ, self.gyro.getRotation3d())
+        self.fuel_map = [pose for (pose, timestamp) in self.intake_cam.getFuelMemory()]
+        if self.robot.is_intaking:
+            self.update_fuel_intake_tgt()
 
 
 
@@ -430,4 +473,4 @@ class PoseEstimator(Subsystem):
             )
             SmartDashboard.putNumber(f"Swerve/{module.module_name}/Motor Position", module.get_position().distance)
         
-        SmartDashboard.putNumber("Weight by Acceleration", self.get_weight_by_accel())
+        SmartDashboard.putNumber("Test/Weight by Acceleration", self.get_weight_by_accel())

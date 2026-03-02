@@ -61,6 +61,8 @@ class Hopper(Subsystem):
             self.stop()
         elif self.robot.shooter_at_default:
             self.stop()
+        
+        # ADD WEIGHT CODE HERE
 
     def log(self):
         SmartDashboard.putNumber("Hopper/Actual Speed", self.get_speed())
