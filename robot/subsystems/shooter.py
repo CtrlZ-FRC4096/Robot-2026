@@ -181,12 +181,14 @@ class Shooter(Subsystem):
                         if not self.accel_good:
                             self.robot.intake.tick_count = 0
                         self.accel_good = True
+                        self.robot.hopper.commanded_speed = 0.95
                         self.robot.hopper.indexer_motor.set_control(controls.DutyCycleOut(0.95))
                         self.robot.pulse_pivot = True 
 
                         # self.robot.hopper.set_speed(self.robot.hopper.test_indexer_speed) 
                     else:
-                        self.robot.hopper.set_speed(-20)
+                        self.robot.hopper.commanded_speed = -0.5
+                        self.robot.hopper.indexer_motor.set_control(controls.DutyCycleOut(-0.5))
         elif self.robot.is_climbing:
             self.set_hood_position(0.0)
             self.stop_fly()

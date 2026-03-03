@@ -38,10 +38,10 @@ class AutoRoutines:
         return SequentialCommandGroup(
             ParallelCommandGroup(self.robot.getPathCommand(PathPlannerPath.fromPathFile("Sprint")),
                                  self.robot.coroutines.intake),
-            self.robot.coroutines.drive_to_zone_no_intake,
+            self.robot.coroutines.drive_to_zone_no_intake.withTimeout(4),
             ParallelCommandGroup(self.robot.getPathCommand(PathPlannerPath.fromPathFile("Second Pass")),
                                  self.robot.coroutines.intake_2),
-            self.robot.coroutines.drive_to_zone_no_intake_2,
+            self.robot.coroutines.drive_to_zone_no_intake_2.withTimeout(4),
             self.robot.coroutines.climb_from_left,
             self.robot.coroutines.climb
         )

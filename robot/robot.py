@@ -149,7 +149,7 @@ class Robot(CoroutineRobot):
         self.intake = subsystems.intake.Intake(self)
         self.shooter = shooter.Shooter(self)
         self.hopper = hopper.Hopper(self)
-        self.climber = climber.Climber(self)
+        # self.climber = climber.Climber(self)
 
         self.subsystems = [
             self.drivetrain,
@@ -158,7 +158,7 @@ class Robot(CoroutineRobot):
             self.intake,
             self.shooter,
             self.hopper,
-            self.climber
+            # self.climber
         ]
 
         # If everything in self.subsystems is a Subsystem object, then
@@ -221,6 +221,7 @@ class Robot(CoroutineRobot):
         self.fly_speed = 50
         self.hood_angle = 35
         self.virtual_goal = Translation2d()
+        self.fuel_in_hopper = 8
 
         self.virtual_target = self.poseEstimator.field.getObject("Virtual Target")
 
@@ -251,7 +252,7 @@ class Robot(CoroutineRobot):
             self.x_hopper_max = inchesToMeters(25)
             self.y_hopper_max = inchesToMeters(18)
             self.z_hopper_max = inchesToMeters(15)
-            self.fuel_in_hopper = 8
+            
             self.tick_count = 0
 
             self.fuel_sim = FuelSim(self, self.intake.can_intake_sim, self.intake.intake_sim_callback)

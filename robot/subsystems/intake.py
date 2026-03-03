@@ -139,10 +139,10 @@ class Intake(Subsystem):
             self.set_position(-0.06) # TUNE
         elif self.robot.pulse_pivot:
             if self.tick_count % 20 < 10:
-                print("switch to out")
+                # print("switch to out")
                 self.set_position(-0.06)
             else:
-                print("switch to in")
+                # print("switch to in")
                 self.set_position(-0.23)
             self.set_intake_speed(self.test_intake_speed)
         elif self.robot.is_climbing:

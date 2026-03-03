@@ -167,7 +167,6 @@ class PoseEstimator(Subsystem):
         self.xystd_single_tag = 0.01
         self.thetastd_single_tag = 1000.0
 
-        # test position of camera 1 on front right module
         ROBOT_TO_CAM1 = Transform3d(
             Translation3d(-0.317, -0.292, 0.193),
             Rotation3d.fromDegrees(0.0, -10.0, 0.0)
@@ -182,9 +181,9 @@ class PoseEstimator(Subsystem):
         self.cams = [
             WrapperedPhotonCameraTag("camera3", ROBOT_TO_CAM3),
         ]
-        self.intake_cam = WrapperedPhotonCameraIntakeFuel("color1", ROBOT_TO_COLOR_1) # WRONG NAME MAYBE
+        # self.intake_cam = WrapperedPhotonCameraIntakeFuel("color1", ROBOT_TO_COLOR_1) # WRONG NAME MAYBE
         # self.hopper_cam = WrapperedPhotonCameraFuel("color2", ROBOT_TO_COLOR_2)
-        self.fuel_map = []
+        # self.fuel_map = []
 
 
 
@@ -409,10 +408,10 @@ class PoseEstimator(Subsystem):
             self.estZ = z_sum / z_count
         
         # UPDATING OBJECT DETECTION CAMERAS
-        self.intake_cam.update(self.curEstPose, self.estZ, self.gyro.getRotation3d())
-        self.fuel_map = [pose for (pose, timestamp) in self.intake_cam.getFuelMemory()]
-        if self.robot.is_intaking:
-            self.update_fuel_intake_tgt()
+        # self.intake_cam.update(self.curEstPose, self.estZ, self.gyro.getRotation3d())
+        # self.fuel_map = [pose for (pose, timestamp) in self.intake_cam.getFuelMemory()]
+        # if self.robot.is_intaking:
+        #     self.update_fuel_intake_tgt()
 
 
 
@@ -473,4 +472,4 @@ class PoseEstimator(Subsystem):
             )
             SmartDashboard.putNumber(f"Swerve/{module.module_name}/Motor Position", module.get_position().distance)
         
-        SmartDashboard.putNumber("Test/Weight by Acceleration", self.get_weight_by_accel())
+        SmartDashboard.putNumber("Test/Weight by Acceleration", abs(self.get_weight_by_accel()))

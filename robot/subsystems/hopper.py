@@ -52,17 +52,20 @@ class Hopper(Subsystem):
 
     def periodic(self):
         if not self.robot.shoot_intent and self.robot.is_intaking:
+            self.commanded_speed = -0.95
             self.indexer_motor.set_control(controls.DutyCycleOut(-0.95))
         # elif self.robot.pulse_indexer:
         #     self.set_speed(abs(sin(self.time.get()*pi*self.hz)*self.amp)) # moves fuel towards shooter
         elif not self.robot.shoot_intent and self.robot.intake_at_default:
+            self.commanded_speed = 0
             self.indexer_motor.set_control(controls.DutyCycleOut(0.0))
         elif self.robot.is_climbing:
             self.stop()
         elif self.robot.shooter_at_default:
             self.stop()
-        
+
         # ADD WEIGHT CODE HERE
+        weight_ratio = self.robot.poseEstimator.get_weight_by_accel()
 
     def log(self):
         SmartDashboard.putNumber("Hopper/Actual Speed", self.get_speed())

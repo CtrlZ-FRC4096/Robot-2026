@@ -66,8 +66,6 @@ class Coroutines:
         def drive_to_zone_no_intake_2():
             robot.is_intaking = False
             robot.intake_at_default = True
-            if robot.fuel_in_hopper < 10:
-                robot.fuel_in_hopper = 10
             Pose2d(3.368, 8.1-0.709, Rotation2d())
             robot.running_pid_lineup = True
             robot.shoot_intent = True
