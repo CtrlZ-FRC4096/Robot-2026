@@ -26,7 +26,7 @@ class Intake(Subsystem):
 
         self.left_intake_motor = hardware.TalonFX(const.LEFT_INTAKE_MOTOR_ID, "rio")
         self.right_intake_motor = hardware.TalonFX(const.RIGHT_INTAKE_MOTOR_ID, "rio")
-        self.inside_track_motor = hardware.TalonFX(const.INSIDE_TRACK_MOTOR_ID, "carnivore")
+        self.inside_track_motor = hardware.TalonFX(const.INSIDE_TRACK_MOTOR_ID, "rio")
         self.deploy_motor = hardware.TalonFX(const.INTAKE_DEPLOY_MOTOR_ID, "rio")
         self.deploy_cancoder = hardware.CANcoder(const.INTAKE_DEPLOY_CANCODER_ID, "rio")
 
