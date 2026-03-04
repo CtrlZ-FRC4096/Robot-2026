@@ -156,7 +156,7 @@ class OI:
                         left_right = 0.0
                         rotate = 0
                     if self.robot.shoot_intent:
-                        rotation = self.robot.drivetrain.get_hub_angle(self.robot.time_of_flight)
+                        rotation = self.robot.drivetrain.get_target_angle(self.robot.time_of_flight, self.robot.static_target)
                         lineup  = Pose2d(self.robot.final_lineup_pose.X(), self.robot.final_lineup_pose.Y(), rotation)
                     else:
                         lineup = self.robot.final_lineup_pose
@@ -166,10 +166,7 @@ class OI:
                 #       abs(const.SWERVE_KINEMATICS.toChassisSpeeds(self.robot.poseEstimator.get_module_states()).omega_dps) <= 1):
                 #     self.robot.drivetrain.turn_wheels_to_x()
                 elif self.robot.shoot_intent: #and self.robot.should_hub_track:
-                    if (self.robot.poseEstimator.curEstPose.X() <= 4.4 and not self.robot.fieldConstants.shouldFlip) or (self.robot.poseEstimator.curEstPose.X() >= self.robot.fieldConstants.flip_X_coord(4.4) and self.robot.fieldConstants.shouldFlip): 
-                        rotation = self.robot.drivetrain.get_hub_angle(self.robot.time_of_flight).degrees()
-                    else:
-                        rotation = self.robot.poseEstimator.curEstPose.rotation().degrees()
+                    rotation = self.robot.drivetrain.get_target_angle(self.robot.time_of_flight, self.robot.static_target).degrees()
                     mag_vel = Translation2d(forward_back, left_right).norm()
 
                     if mag_vel > 1e-6:
@@ -387,3 +384,28 @@ class OI:
         @self.driver2.LEFT_TRIGGER_AS_BUTTON.whenPressed
         def _():
             self.robot.should_hub_track = not self.robot.should_hub_track
+
+        
+        @self.driver2.RIGHT_TRIGGER_AS_BUTTON.whenPressed
+        def _():
+            self.robot.is_climbing = True
+            self.robot.at_climbing_position = True
+            self.robot.intake_at_default = True
+            self.robot.is_intaking = False
+            self.robot.pulse_pivot = False
+            self.robot.track_fuel = False
+            self.robot.shooter_at_default = True
+            self.robot.shoot_fuel = False
+            self.robot.shoot_intent = False
+        
+        @self.driver2.LEFT_TRIGGER_AS_BUTTON.whenPressed
+        def _():
+            self.robot.is_climbing = False
+            self.robot.at_climbing_position = False
+            self.robot.intake_at_default = True
+            self.robot.is_intaking = False
+            self.robot.pulse_pivot = False
+            self.robot.track_fuel = False
+            self.robot.shooter_at_default = True
+            self.robot.shoot_fuel = False
+            self.robot.shoot_intent = False

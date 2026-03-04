@@ -156,7 +156,7 @@ class Shooter(Subsystem):
             return False
 
     def ready_to_shoot(self):
-        rotation = self.robot.drivetrain.get_hub_angle(self.robot.time_of_flight)
+        rotation = self.robot.drivetrain.get_target_angle(self.robot.time_of_flight, self.robot.static_target)
         if (abs(abs(self.get_fly_speed()) - self.commanded_fly_speed <= 3)) and (abs(abs(self.get_hood_position()) - self.commanded_hood_position) < 2) and (abs((self.robot.poseEstimator.curEstPose.rotation() - rotation).degrees()) <= 3): #and pointed at hub   
             self.shoot_ready = True
             return True
@@ -170,10 +170,9 @@ class Shooter(Subsystem):
             self.stop_accelerator()
             self.stop_fly()
         elif self.robot.shoot_intent:
-            if self.robot.poseEstimator.curEstPose.X() <= 4.4:
                 self.set_fly_speed(self.robot.fly_speed)
                 self.set_hood_position(self.robot.hood_angle)
-                rotation = self.robot.drivetrain.get_hub_angle(self.robot.time_of_flight)
+                rotation = self.robot.drivetrain.get_target_angle(self.robot.time_of_flight, self.robot.static_target)
                 SmartDashboard.putNumber("rotation lock error", (self.robot.poseEstimator.curEstPose.rotation() - rotation).degrees())
                 if self.robot.shoot_fuel or self.ready_to_shoot() or self.shoot_ready:
                     self.set_accelerator_speed(self.test_accelerator_speed)

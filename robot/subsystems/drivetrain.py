@@ -407,21 +407,24 @@ class Drivetrain(Subsystem):
     def shouldFlipPath(self):
         return DriverStation.getAlliance() == DriverStation.Alliance.kRed
     
-    def get_hub_angle(self, tof):
-        target_goal = self.robot.fieldConstants.flip_Translation2d(self.robot.fieldConstants.Hub.topCenterPoint.toTranslation2d())
+    def get_target_angle(self, tof, target : Translation2d):
         field_relative_speeds = self.get_field_relative_speeds()
 
-        virtual_goal_x = target_goal.x - tof * (field_relative_speeds.vx)
-        virtual_goal_y = target_goal.y - tof * (field_relative_speeds.vy)
+        virtual_goal_x = target.x - tof * (field_relative_speeds.vx)
+        virtual_goal_y = target.y - tof * (field_relative_speeds.vy)
 
         moving_goal_location = Translation2d(virtual_goal_x, virtual_goal_y)
         robot_to_target = (moving_goal_location - self.robot.poseEstimator.curEstPose.translation())
         self.robot.virtual_target.setPose(Pose2d(virtual_goal_x, virtual_goal_y, 0))
 
         return Rotation2d.fromDegrees(Rotation2d((-1 * robot_to_target.X()), (-1 * robot_to_target.Y())).degrees() - 90)
+    
+    def get_hub_angle(self, tof):
+        target_goal = self.robot.fieldConstants.flip_Translation2d(self.robot.fieldConstants.Hub.topCenterPoint.toTranslation2d())
+        return self.get_target_angle(tof, target_goal)
 
     def get_hub_distance(self, pos : Translation2d):
-        hub_pos = self.robot.fieldConstants.Hub.innerCenterPoint.toTranslation2d()
+        hub_pos = self.robot.fieldConstants.flip_Translation2d(self.robot.fieldConstants.Hub.innerCenterPoint.toTranslation2d())
         return (pos - hub_pos).norm()
 
     def _get_final_lineup_pose(self, pose : Pose2d):
@@ -492,7 +495,22 @@ class Drivetrain(Subsystem):
         if self.robot.shoot_intent:
             cur_rot = cur_pos.rotation().radians()
             shooter_pos = cur_pos.translation() + Translation2d(0, 0.196).rotateBy(Rotation2d(cur_rot))
-            dist_from_shooter = self.get_hub_distance(shooter_pos)
+            if (cur_pos.X() <= 4.4 and not self.robot.fieldConstants.shouldFlip) or (cur_pos.X() >= self.robot.fieldConstants.fieldLength - 4.4 and self.robot.fieldConstants.shouldFlip):
+                self.robot.static_target = self.robot.fieldConstants.flip_Translation2d(self.robot.fieldConstants.Hub.topCenterPoint.toTranslation2d())
+            elif 4.43 < cur_pos.X() < self.robot.fieldConstants.fieldLength - 4.4:
+                if not self.robot.fieldConstants.shouldFlip:
+                    if cur_pos.Y() <= self.robot.fieldConstants.fieldWidth / 2: #shoot to right corner blue
+                        self.robot.static_target = self.robot.fieldConstants.flip_Translation2d(Translation2d(1.694, 1.417))
+                    else: #pass to left corner blue
+                        self.robot.static_target = self.robot.fieldConstants.flip_Translation2d(Translation2d(1.694, self.robot.fieldConstants.fieldWidth - 1.417))
+                else:
+                    if cur_pos.Y() <= self.robot.fieldConstants.fieldWidth / 2: # pass to left corner red (red relative)
+                        self.robot.static_target = self.robot.fieldConstants.flip_Translation2d(Translation2d(1.694, self.robot.fieldConstants.fieldWidth - 1.417))
+                    else: #pass to right corner 
+                        self.robot.static_target = self.robot.fieldConstants.flip_Translation2d(Translation2d(1.694, 1.417))
+            
+            dist_from_shooter = shooter_pos.distance(self.robot.static_target)           
+            
             temp_time_of_flight = self.dist_lookup_table.interpolate(dist_from_shooter)[2]
             temp_virtual_goal = Translation2d()
             field_relative_speeds = self.get_field_relative_speeds()
@@ -500,9 +518,8 @@ class Drivetrain(Subsystem):
             SmartDashboard.putNumber("Test/ Field Rel Y", field_relative_speeds.vy)
             for _ in range(5):
                 if True: # CHANGE TO CASES ON ALLIANCE ZONE AND NEUTRAL ZONE
-                    static_target = self.robot.fieldConstants.flip_Translation2d(self.robot.fieldConstants.Hub.topCenterPoint.toTranslation2d())
                     temp_virtual_goal = Translation2d(
-                        static_target.X() - temp_time_of_flight * field_relative_speeds.vx, static_target.Y() - temp_time_of_flight * field_relative_speeds.vy 
+                        self.robot.static_target.X() - temp_time_of_flight * field_relative_speeds.vx, self.robot.static_target.Y() - temp_time_of_flight * field_relative_speeds.vy 
                     )
                 virtual_robot_distance = (shooter_pos - temp_virtual_goal).norm()
                 temp_time_of_flight = self.dist_lookup_table.interpolate(virtual_robot_distance)[2]

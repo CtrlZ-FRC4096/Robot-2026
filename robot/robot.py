@@ -132,7 +132,7 @@ class Robot(CoroutineRobot):
                     break
             # time.sleep(1.0) # Give enough time to make sure the FMS has told the Driver Station the Alliance 
         self.fieldConstants = FieldConstants()
-        self.fieldConstants.shouldFlip = DriverStation.getAlliance() == DriverStation.Alliance.kRed
+        self.fieldConstants.shouldFlip = True # DriverStation.getAlliance() == DriverStation.Alliance.kRed
         # Match Stuff
         self.match_time = -1
 
@@ -149,7 +149,7 @@ class Robot(CoroutineRobot):
         self.intake = subsystems.intake.Intake(self)
         self.shooter = shooter.Shooter(self)
         self.hopper = hopper.Hopper(self)
-        # self.climber = climber.Climber(self)
+        self.climber = climber.Climber(self)
 
         self.subsystems = [
             self.drivetrain,
@@ -158,7 +158,7 @@ class Robot(CoroutineRobot):
             self.intake,
             self.shooter,
             self.hopper,
-            # self.climber
+            self.climber
         ]
 
         # If everything in self.subsystems is a Subsystem object, then
@@ -200,6 +200,10 @@ class Robot(CoroutineRobot):
         self.intake_at_default = True
         self.shooter_at_default = True
         self.trench = True
+
+        self.static_target = Translation2d()
+
+        self.at_climbing_position = False
 
         self.shoot_fuel = False
         self.shoot_intent = False
