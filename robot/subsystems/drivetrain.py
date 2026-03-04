@@ -495,7 +495,7 @@ class Drivetrain(Subsystem):
         if self.robot.shoot_intent:
             cur_rot = cur_pos.rotation().radians()
             shooter_pos = cur_pos.translation() + Translation2d(0, 0.196).rotateBy(Rotation2d(cur_rot))
-            if (cur_pos.X() <= 4.4 and not self.robot.fieldConstants.shouldFlip) or (cur_pos.X() >= self.robot.fieldConstants.fieldLength - 4.4 and self.robot.fieldConstants.shouldFlip):
+            if self.robot.poseEstimator.cur_pos_in_zone():
                 self.robot.static_target = self.robot.fieldConstants.flip_Translation2d(self.robot.fieldConstants.Hub.topCenterPoint.toTranslation2d())
             elif 4.43 < cur_pos.X() < self.robot.fieldConstants.fieldLength - 4.4:
                 if not self.robot.fieldConstants.shouldFlip:

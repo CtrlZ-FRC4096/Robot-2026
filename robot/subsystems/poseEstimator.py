@@ -199,6 +199,11 @@ class PoseEstimator(Subsystem):
         self.active_intake_tgt = Translation2d()
         self.active_intake_tgt_score = 0
 
+    def cur_pos_in_zone(self):
+        cur_pos = self.curEstPose
+        return (cur_pos.X() <= 4.4 and not self.robot.fieldConstants.shouldFlip) or (cur_pos.X() >= self.robot.fieldConstants.fieldLength - 4.4 and self.robot.fieldConstants.shouldFlip)
+
+
     def update_fuel_intake_tgt(self):
         res = self.intake_cam.getBestPtIntake(self.curEstPose)
         if res is None:

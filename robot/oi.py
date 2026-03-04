@@ -368,12 +368,6 @@ class OI:
         @self.driver2.X.whenPressed
         def _():
             self.robot.shooter.test_hood_position -= 1
-        @self.driver2.Y.whenPressed
-        def _():
-            self.robot.hopper.test_indexer_speed += 1
-        @self.driver2.A.whenPressed
-        def _():
-            self.robot.hopper.test_indexer_speed -= 1
         @self.driver2.POV.RIGHT.whenPressed
         def _():
             self.robot.intake.test_intake_speed += 1
@@ -381,12 +375,24 @@ class OI:
         def _():
             self.robot.intake.test_intake_speed -= 1
 
-        @self.driver2.LEFT_TRIGGER_AS_BUTTON.whenPressed
+        @self.driver2.A.whenPressed
         def _():
             self.robot.should_hub_track = not self.robot.should_hub_track
 
         
         @self.driver2.RIGHT_TRIGGER_AS_BUTTON.whenPressed
+        def _():
+            self.robot.is_climbing = True
+            self.robot.at_climbing_position = False
+            self.robot.intake_at_default = True
+            self.robot.is_intaking = False
+            self.robot.pulse_pivot = False
+            self.robot.track_fuel = False
+            self.robot.shooter_at_default = True
+            self.robot.shoot_fuel = False
+            self.robot.shoot_intent = False
+
+        @self.driver2.LEFT_TRIGGER_AS_BUTTON.whenPressed
         def _():
             self.robot.is_climbing = True
             self.robot.at_climbing_position = True
@@ -398,7 +404,7 @@ class OI:
             self.robot.shoot_fuel = False
             self.robot.shoot_intent = False
         
-        @self.driver2.LEFT_TRIGGER_AS_BUTTON.whenPressed
+        @self.driver2.START.whenPressed
         def _():
             self.robot.is_climbing = False
             self.robot.at_climbing_position = False

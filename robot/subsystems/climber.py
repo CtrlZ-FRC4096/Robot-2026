@@ -8,6 +8,7 @@ import wpimath.controller
 from commands2 import Subsystem
 import math
 from wpimath.trajectory import TrapezoidProfile
+from wpimath.geometry import Pose2d, Rotation2d
 
 import const
 from wpilib import Timer
@@ -51,15 +52,21 @@ class Climber(Subsystem):
 
     def periodic(self):
         if self.robot.is_climbing:
-            if abs(self.get_position() - self.test_climber_up_position) >= 1 and not self.climber_is_up: #change values
-                self.set_position(self.test_climber_up_position)
-            else:
-                self.climber_is_up = True
-                if abs(self.get_position() - self.test_climber_down_position) >= 1:
-                    self.set_position(self.test_climber_down_position)
-                    pass
+            if self.robot.poseEstimator.cur_pos_in_zone() or True:
+                if (abs(self.get_position() - self.test_climber_up_position) >= 1 and not self.climber_is_up) or not self.robot.at_climbing_position:
+                    self.set_position(self.test_climber_up_position)
+                    # self.robot.final_lineup_pose = Pose2d(1,1, Rotation2d())
+                    # self.robot.running_pid_lineup = True
                 else:
-                    self.stop()
+                    self.climber_is_up = True
+                    if abs(self.get_position() - self.test_climber_down_position) >= 1:
+                        self.set_position(self.test_climber_down_position)
+                    else:
+                        self.stop()
+
+            else:
+                self.set_position(0)
+                self.stop()
         else:
             self.stop()
 
