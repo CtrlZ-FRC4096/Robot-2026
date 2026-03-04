@@ -132,7 +132,7 @@ class Robot(CoroutineRobot):
                     break
             # time.sleep(1.0) # Give enough time to make sure the FMS has told the Driver Station the Alliance 
         self.fieldConstants = FieldConstants()
-        self.fieldConstants.shouldFlip = True # DriverStation.getAlliance() == DriverStation.Alliance.kRed
+        self.fieldConstants.shouldFlip = DriverStation.getAlliance() == DriverStation.Alliance.kRed
         # Match Stuff
         self.match_time = -1
 

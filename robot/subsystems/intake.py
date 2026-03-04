@@ -26,7 +26,7 @@ class Intake(Subsystem):
 
         self.left_intake_motor = hardware.TalonFX(const.LEFT_INTAKE_MOTOR_ID, "rio")
         self.right_intake_motor = hardware.TalonFX(const.RIGHT_INTAKE_MOTOR_ID, "rio")
-        # self.inside_track_motor = hardware.TalonFX(const.INSIDE_TRACK_MOTOR_ID, "carnivore")
+        self.inside_track_motor = hardware.TalonFX(const.INSIDE_TRACK_MOTOR_ID, "carnivore")
         self.deploy_motor = hardware.TalonFX(const.INTAKE_DEPLOY_MOTOR_ID, "rio")
         self.deploy_cancoder = hardware.CANcoder(const.INTAKE_DEPLOY_CANCODER_ID, "rio")
 
@@ -50,11 +50,11 @@ class Intake(Subsystem):
 
         self.left_intake_motor.configurator.apply(self.intake_motor_config)
         self.right_intake_motor.configurator.apply(self.intake_motor_config)
-        # self.inside_track_motor.configurator.apply(self.inside_track_motor_config)
+        self.inside_track_motor.configurator.apply(self.inside_track_motor_config)
         self.deploy_motor.configurator.apply(self.deploy_motor_config)
 
         self.right_intake_motor.set_control(controls.Follower(const.LEFT_INTAKE_MOTOR_ID, signals.MotorAlignmentValue(1)))
-        # self.inside_track_motor.set_control(controls.Follower(const.LEFT_INTAKE_MOTOR_ID, signals.motoral))
+        self.inside_track_motor.set_control(controls.Follower(const.LEFT_INTAKE_MOTOR_ID, signals.MotorAlignmentValue(0)))
 
         # self.deploy_encoder = wpilib.DutyCycleEncoder(6)
         self.commanded_intake_speed = 0.0
