@@ -57,7 +57,6 @@ class Intake(Subsystem):
         self.deploy_motor.configurator.apply(self.deploy_motor_config)
 
         self.right_intake_motor.set_control(controls.Follower(const.LEFT_INTAKE_MOTOR_ID, signals.MotorAlignmentValue(1)))
-        self.inside_track_motor.set_control(controls.Follower(const.LEFT_INTAKE_MOTOR_ID, signals.MotorAlignmentValue(0)))
 
         # self.deploy_encoder = wpilib.DutyCycleEncoder(6)
         self.commanded_intake_speed = 0.0
@@ -144,7 +143,7 @@ class Intake(Subsystem):
             else:
                 # print("switch to in")
                 self.set_position(-0.23)
-            self.set_intake_speed(self.test_intake_speed)
+            self.stop_intake()
         elif self.robot.is_climbing:
             self.stop_intake()
             self.set_position(-0.23)
@@ -152,6 +151,10 @@ class Intake(Subsystem):
             self.stop_intake()
             self.stop_deploy()
         
+        if self.commanded_intake_speed >= 0:
+            self.inside_track_motor.set_control(controls.DutyCycleOut(0.5, enable_foc=False))
+        elif self.robot.hopper.commanded_speed >= 0:
+            self.inside_track_motor.set_control(controls.DutyCycleOut(0.5, enable_foc=False))
         self.tick_count += 1
 
     def log(self):
