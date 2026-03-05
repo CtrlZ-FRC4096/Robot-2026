@@ -137,7 +137,13 @@ class OI:
                 if not self.robot.shoot_intent:
                     cur_speeds = self.robot.drivetrain.get_field_relative_speeds()
                     raw_mag = Translation2d(cur_speeds.vx, cur_speeds.vy).norm()
-                    dummy_val = self.accel_shoot_limiter.calculate(raw_mag)    
+                    dummy_val = self.accel_shoot_limiter.calculate(raw_mag)   
+                
+                if not self.robot.running_pid_lineup and not (self.robot.track_fuel and self.robot.poseEstimator.active_intake_tgt is not None):
+                    cur_speeds = self.robot.drivetrain.get_field_relative_speeds()
+                    raw_mag_2 = Translation2d(cur_speeds.vx, cur_speeds.vy).norm()
+                    dummy_val_2 = self.robot.drivetrain.accel_shoot_limiter.calculate(raw_mag_2)
+
                 # if self.robot.wheels_at_x:
                 #     self.robot.drivetrain.turn_wheels_to_x()
                 SmartDashboard.putNumber("Test/Limit accel", self.accel_shoot_limiter.lastValue())
@@ -166,28 +172,32 @@ class OI:
                 #       abs(const.SWERVE_KINEMATICS.toChassisSpeeds(self.robot.poseEstimator.get_module_states()).omega_dps) <= 1):
                 #     self.robot.drivetrain.turn_wheels_to_x()
                 elif self.robot.shoot_intent: #and self.robot.should_hub_track:
-                    rotation = self.robot.drivetrain.get_target_angle(self.robot.time_of_flight, self.robot.static_target).degrees()
+                    rotation_2d = self.robot.drivetrain.get_target_angle(self.robot.time_of_flight, self.robot.static_target)
+                    rotation = rotation_2d.degrees()
                     mag_vel = Translation2d(forward_back, left_right).norm()
-
-                    if mag_vel > 1e-6:
-                        direction = Translation2d(forward_back, left_right) / mag_vel
+                    if mag_vel <= 1e-4 and abs((self.robot.poseEstimator.curEstPose.rotation() - rotation_2d).degrees()) <= 3:
+                        self.robot.poseEstimator.set_wheels_to_x()
                     else:
-                        direction = Translation2d(0, 0)
 
-                    if mag_vel >= 0.1:
-                        forward_back = (forward_back / mag_vel) * 0.25
-                        left_right = (left_right / mag_vel) * 0.25
-                    new_mag_vel = Translation2d(forward_back, left_right).norm()
+                        if mag_vel > 1e-6:
+                            direction = Translation2d(forward_back, left_right) / mag_vel
+                        else:
+                            direction = Translation2d(0, 0)
 
-                    limit_mag = self.accel_shoot_limiter.calculate(new_mag_vel)
-                    forward_back = direction.X() * limit_mag
-                    left_right = direction.Y() * limit_mag
+                        if mag_vel >= 0.25:
+                            forward_back = (forward_back / mag_vel) * 0.25
+                            left_right = (left_right / mag_vel) * 0.25
+                        new_mag_vel = Translation2d(forward_back, left_right).norm()
 
-                    self.robot_oriented_angle = rotation
-                    self.robot.drivetrain.drive_with_pid(
-                            Translation2d(forward_back, left_right)
-                            * const.SWERVE_MAX_SPEED,
-                            rotation)
+                        limit_mag = self.accel_shoot_limiter.calculate(new_mag_vel)
+                        forward_back = direction.X() * limit_mag
+                        left_right = direction.Y() * limit_mag
+
+                        self.robot_oriented_angle = rotation
+                        self.robot.drivetrain.drive_with_pid(
+                                Translation2d(forward_back, left_right)
+                                * const.SWERVE_MAX_SPEED,
+                                rotation)
                 elif False and self.robot.is_intaking and ((self.robot.snake_intake and abs(rotate) <= 0.02) or (self.robot.track_fuel and self.robot.poseEstimator.active_intake_tgt is not None and False)):
                     if self.robot.snake_intake and abs(rotate) <= 0.02:
                         self.robot.drivetrain.drive_with_pid(

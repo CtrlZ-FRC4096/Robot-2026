@@ -15,6 +15,7 @@ from wpimath.geometry import (
     Translation3d,
     Transform3d,
     Rotation3d,
+    Twist2d
 )
 from wpimath.kinematics import (
     ChassisSpeeds,
@@ -51,12 +52,13 @@ from pathplannerlib.path import PathPlannerTrajectory
 from pathplannerlib.path import PathPlannerPath, PathConstraints
 from wpimath.estimator import SwerveDrive4PoseEstimator
 from photoncamera import WrapperedPhotonCameraTag
+from wpimath.filter import SlewRateLimiter
 from wpimath.units import degreesToRadians, inchesToMeters, radiansToDegrees
 from collections import deque
 from lookup_table import LookupTableAll, LookupTableAngle, LookupTableVel
 
-# from shapely import Polygon, Point
-# from shapely.affinity import translate, rotate
+from shapely import Polygon, Point
+from shapely.affinity import translate, rotate
 
 class Drivetrain(Subsystem):
     def __init__(self, robot: "Robot"):
@@ -103,6 +105,7 @@ class Drivetrain(Subsystem):
         self.log_chassis = ChassisSpeeds()
 
         self.final_velo = Translation2d()
+        self.accel_shoot_limiter = SlewRateLimiter(0.2, -3)
 
         # SIM STUFF
 
@@ -323,6 +326,11 @@ class Drivetrain(Subsystem):
         SmartDashboard.putNumber("pathplanner omega", chassis_speeds.omega_dps)
         SmartDashboard.putNumber("pose yaw", self.robot.poseEstimator.curEstPose.rotation().degrees())
 
+
+        mag_vel_dummy = Translation2d(chassis_speeds.vx, chassis_speeds.vy).norm()
+        dummy_val = self.accel_shoot_limiter.calculate(mag_vel_dummy)
+
+
         if self.robot.isSimulation():
             new_chassis_speeds = ChassisSpeeds.fromRobotRelativeSpeeds(chassis_speeds.vx, chassis_speeds.vy, chassis_speeds.omega, self.robot.poseEstimator.curEstPose.rotation())
             curPose = self.robot.poseEstimator.curEstPose
@@ -350,6 +358,16 @@ class Drivetrain(Subsystem):
         omega = self.theta_controller.calculate(
             current_pose.rotation().degrees(), target_pose.rotation().degrees()
         ) + feedfoward_theta
+
+        if self.robot.shoot_intent:
+            mag_vel = Translation2d(vx, vy).norm()
+            if mag_vel > 1e-6:
+                direction = Translation2d(vx, vy) / mag_vel
+            else:
+                direction = Translation2d(0, 0) 
+            limit_mag = self.accel_shoot_limiter.calculate(mag_vel)
+            vx = direction.X() * limit_mag
+            vy = direction.Y() * limit_mag
 
         # Check if the controllers are at their setpoints
         if (
@@ -490,14 +508,16 @@ class Drivetrain(Subsystem):
         self.angle_lookup_table.add_entry(85, 0)
 
     def periodic(self):
-        cur_pos = self.robot.poseEstimator.curEstPose
+        cur_speeds = self.get_robot_relative_speeds()
+        phase_delay_twist = Twist2d(cur_speeds.vx * 0.1, cur_speeds.vy * 0.1, cur_speeds.omega * 0.1)
+        cur_pos = self.robot.poseEstimator.curEstPose.exp(phase_delay_twist)
         self.robot.distance = self.get_hub_distance(cur_pos.translation())
         if self.robot.shoot_intent:
             cur_rot = cur_pos.rotation().radians()
             shooter_pos = cur_pos.translation() + Translation2d(0, 0.196).rotateBy(Rotation2d(cur_rot))
-            if self.robot.poseEstimator.cur_pos_in_zone():
+            if self.robot.poseEstimator.cur_pos_in_zone(4.55):
                 self.robot.static_target = self.robot.fieldConstants.flip_Translation2d(self.robot.fieldConstants.Hub.topCenterPoint.toTranslation2d())
-            elif 4.43 < cur_pos.X() < self.robot.fieldConstants.fieldLength - 4.4:
+            elif 4.43 < cur_pos.X() < self.robot.fieldConstants.fieldLength - 4.4 or True:
                 if not self.robot.fieldConstants.shouldFlip:
                     if cur_pos.Y() <= self.robot.fieldConstants.fieldWidth / 2: #shoot to right corner blue
                         self.robot.static_target = self.robot.fieldConstants.flip_Translation2d(Translation2d(1.694, 1.417))
