@@ -358,7 +358,7 @@ class PoseEstimator(Subsystem):
         return not (inX and inY)
 
     def candidate_pose_OK(self, candidate_pose: Pose2d):
-        if self.poseIsOffField(candidate_pose):  # Check if the robot is on the field
+        if self.poseIsOffField(candidate_pose) and False:  # Check if the robot is on the field
             return False
         elif (
             self.get_skidding_ratio() > const.SKIDDING_RATIO_MAX

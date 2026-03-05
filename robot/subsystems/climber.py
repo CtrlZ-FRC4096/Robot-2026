@@ -44,7 +44,10 @@ class Climber(Subsystem):
     def set_position(self, position):
         self.commanded_climber_position = position
         rotations = position # DO INVERSE GEAR RATIOS AND stuff
-        self.climber_motor.set_control(self.request.with_position(rotations))
+        if abs(position - self.get_position()) >= 0.5:
+            self.climber_motor.set_control(self.request.with_position(rotations))
+        else:
+            self.climber_motor.set_control(controls.StaticBrake())
 
     def stop(self):
         # self.climber_motor.set_control(controls.MotionMagicTorqueCurrentFOC(0.0))
@@ -68,7 +71,7 @@ class Climber(Subsystem):
                 self.set_position(0)
                 self.stop()
         else:
-            self.stop()
+            self.set_position(0)
 
     def log(self):
         wpilib.SmartDashboard.putNumber("Climber/Actual Position", self.climber_motor.get_position().value)

@@ -48,17 +48,17 @@ class Hopper(Subsystem):
 
     def stop(self):
         self.commanded_speed = 0.0
-        self.indexer_motor.set_control(controls.DutyCycleOut(0.0))
+        self.indexer_motor.set_control(controls.DutyCycleOut(0.0, enable_foc=False))
 
     def periodic(self):
         if not self.robot.shoot_intent and self.robot.is_intaking:
             self.commanded_speed = -0.95
-            self.indexer_motor.set_control(controls.DutyCycleOut(-0.95))
+            self.indexer_motor.set_control(controls.DutyCycleOut(-0.95, enable_foc=False))
         # elif self.robot.pulse_indexer:
         #     self.set_speed(abs(sin(self.time.get()*pi*self.hz)*self.amp)) # moves fuel towards shooter
         elif not self.robot.shoot_intent and self.robot.intake_at_default:
             self.commanded_speed = 0
-            self.indexer_motor.set_control(controls.DutyCycleOut(0.0))
+            self.indexer_motor.set_control(controls.DutyCycleOut(0.0, enable_foc=False))
         elif self.robot.is_climbing:
             self.stop()
         elif self.robot.shooter_at_default:

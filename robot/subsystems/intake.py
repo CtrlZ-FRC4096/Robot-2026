@@ -47,6 +47,9 @@ class Intake(Subsystem):
         self.deploy_motor_config.feedback.feedback_remote_sensor_id = const.INTAKE_DEPLOY_CANCODER_ID
         self.deploy_motor_config.feedback.feedback_sensor_source = signals.FeedbackSensorSourceValue.REMOTE_CANCODER
 
+        self.deploy_motor_config.current_limits.supply_current_limit = 80
+        self.deploy_motor_config.torque_current.peak_forward_torque_current = 80
+        self.deploy_motor_config.torque_current.peak_reverse_torque_current = -80
 
         self.left_intake_motor.configurator.apply(self.intake_motor_config)
         self.right_intake_motor.configurator.apply(self.intake_motor_config)
@@ -128,19 +131,16 @@ class Intake(Subsystem):
 
     def periodic(self):
         if self.robot.intake_at_default:
-            if abs(self.get_position() - (-0.23)) >= 0.04:
-                self.set_intake_speed(50)
-            else:
-                self.stop_intake()
+            self.stop_intake()
             self.set_position(-0.23)
         elif self.robot.is_intaking:
             # if self.robot.fieldConstants.LinesVertical.starting < self.robot.poseEstimator.curEstPose.X() < self.robot.fieldConstants.fieldLength - self.robot.fieldConstants.LinesVertical.starting: # neutral zone
             self.set_intake_speed(self.test_intake_speed) # TUNE
-            self.set_position(-0.06) # TUNE
+            self.set_position(-0.07) # TUNE
         elif self.robot.pulse_pivot:
             if self.tick_count % 20 < 10:
                 # print("switch to out")
-                self.set_position(-0.06)
+                self.set_position(-0.07)
             else:
                 # print("switch to in")
                 self.set_position(-0.23)

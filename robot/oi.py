@@ -105,7 +105,7 @@ class OI:
         self.right_trigger_being_held = False
         self.left_trigger_being_held = False
 
-        self.accel_shoot_limiter = SlewRateLimiter(1, -3)
+        self.accel_shoot_limiter = SlewRateLimiter(0.2, -3)
 
         @self.rumble_button.whenPressed
         def _():
@@ -175,19 +175,20 @@ class OI:
                         direction = Translation2d(0, 0)
 
                     if mag_vel >= 0.1:
-                        forward_back = (forward_back / mag_vel) * 0.1
-                        left_right = (left_right / mag_vel) * 0.1
+                        forward_back = (forward_back / mag_vel) * 0.25
+                        left_right = (left_right / mag_vel) * 0.25
                     new_mag_vel = Translation2d(forward_back, left_right).norm()
 
                     limit_mag = self.accel_shoot_limiter.calculate(new_mag_vel)
                     forward_back = direction.X() * limit_mag
                     left_right = direction.Y() * limit_mag
 
+                    self.robot_oriented_angle = rotation
                     self.robot.drivetrain.drive_with_pid(
                             Translation2d(forward_back, left_right)
                             * const.SWERVE_MAX_SPEED,
                             rotation)
-                elif self.robot.is_intaking and ((self.robot.snake_intake and abs(rotate) <= 0.02) or (self.robot.track_fuel and self.robot.poseEstimator.active_intake_tgt is not None and False)):
+                elif False and self.robot.is_intaking and ((self.robot.snake_intake and abs(rotate) <= 0.02) or (self.robot.track_fuel and self.robot.poseEstimator.active_intake_tgt is not None and False)):
                     if self.robot.snake_intake and abs(rotate) <= 0.02:
                         self.robot.drivetrain.drive_with_pid(
                                 Translation2d(forward_back, left_right)
@@ -216,7 +217,7 @@ class OI:
                         self.robot.drivetrain.drive(
                             Translation2d(forward_back, left_right)
                             * const.SWERVE_MAX_SPEED,
-                            rotate * 4.25,
+                            rotate * 3,
                             True,
                             False,
                         )
@@ -309,7 +310,7 @@ class OI:
             self.robot.intake_at_default = True
             self.robot.shoot_intent = False
             self.robot.shoot_fuel = False
-            self.robot.is_climbing = True
+            self.robot.is_climbing = False
         
         @self.driver1.LEFT_TRIGGER_AS_BUTTON.whenHeld
         def _():
