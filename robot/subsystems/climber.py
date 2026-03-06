@@ -56,7 +56,7 @@ class Climber(Subsystem):
     def periodic(self):
         if self.robot.is_climbing:
             if self.robot.poseEstimator.cur_pos_in_zone() or True:
-                if (abs(self.get_position() - self.test_climber_up_position) >= 1 and not self.climber_is_up) or not self.robot.at_climbing_position:
+                if not ((abs(self.get_position() - self.test_climber_up_position) <= 1 or self.climber_is_up) and self.robot.at_climbing_position):
                     self.set_position(self.test_climber_up_position)
                     # self.robot.final_lineup_pose = Pose2d(1,1, Rotation2d())
                     # self.robot.running_pid_lineup = True

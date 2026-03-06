@@ -35,6 +35,10 @@ class Coroutines:
 
         @commandify
         def intake():
+            robot.pulse_pivot = False
+            robot.shoot_intent = False
+            robot.shooter_at_default = True
+            robot.running_pid_lineup = False
             robot.intake_at_default = False
             robot.is_intaking = True
             yield

@@ -57,8 +57,8 @@ from wpimath.units import degreesToRadians, inchesToMeters, radiansToDegrees
 from collections import deque
 from lookup_table import LookupTableAll, LookupTableAngle, LookupTableVel
 
-from shapely import Polygon, Point
-from shapely.affinity import translate, rotate
+# from shapely import Polygon, Point
+# from shapely.affinity import translate, rotate
 
 class Drivetrain(Subsystem):
     def __init__(self, robot: "Robot"):
@@ -318,11 +318,11 @@ class Drivetrain(Subsystem):
         # PathPlanner returns robot-relative chassis speeds with +ω = CCW.
         # Our kinematics/modules expect the opposite sign, so flip it here.
         # chassis_speeds.omega = -chassis_speeds.omega
-        module_states = const.SWERVE_KINEMATICS.toSwerveModuleStates(chassis_speeds)
+        module_states = const.SWERVE_KINEMATICS.toSwerveModuleStates(ChassisSpeeds(chassis_speeds.vx, chassis_speeds.vy, chassis_speeds.omega))
 
-        module_states = SwerveDrive4Kinematics.desaturateWheelSpeeds(
-            module_states, const.SWERVE_MAX_SPEED
-        )
+        #module_states = SwerveDrive4Kinematics.desaturateWheelSpeeds(
+         #   module_states, const.SWERVE_MAX_SPEED
+        #)
         SmartDashboard.putNumber("pathplanner omega", chassis_speeds.omega_dps)
         SmartDashboard.putNumber("pose yaw", self.robot.poseEstimator.curEstPose.rotation().degrees())
 
@@ -359,15 +359,15 @@ class Drivetrain(Subsystem):
             current_pose.rotation().degrees(), target_pose.rotation().degrees()
         ) + feedfoward_theta
 
-        if self.robot.shoot_intent:
-            mag_vel = Translation2d(vx, vy).norm()
-            if mag_vel > 1e-6:
-                direction = Translation2d(vx, vy) / mag_vel
-            else:
-                direction = Translation2d(0, 0) 
-            limit_mag = self.accel_shoot_limiter.calculate(mag_vel)
-            vx = direction.X() * limit_mag
-            vy = direction.Y() * limit_mag
+        # if self.robot.shoot_intent:
+        #     mag_vel = Translation2d(vx, vy).norm()
+        #     if mag_vel > 1e-6:
+        #         direction = Translation2d(vx, vy) / mag_vel
+        #     else:
+        #         direction = Translation2d(0, 0) 
+        #     limit_mag = self.accel_shoot_limiter.calculate(mag_vel)
+        #     vx = direction.X() * limit_mag
+        #     vy = direction.Y() * limit_mag
 
         # Check if the controllers are at their setpoints
         if (
@@ -452,39 +452,6 @@ class Drivetrain(Subsystem):
             return Pose2d(pose.translation(), self.get_hub_angle())
         
     def create_lookup_table(self):
-        self.dist_lookup_table.add_entry(0.7, 5.404, 79.295, 0.655)
-        self.dist_lookup_table.add_entry(0.952, 5.543, 76.074, 0.688)
-        self.dist_lookup_table.add_entry(1.203, 5.698, 73.252, 0.719)
-        self.dist_lookup_table.add_entry(1.455, 5.864, 70.78, 0.749)
-        self.dist_lookup_table.add_entry(1.707, 6.038, 68.611, 0.778)
-        self.dist_lookup_table.add_entry(1.959, 6.217, 66.703, 0.806)
-        self.dist_lookup_table.add_entry(2.21, 6.399, 65.019, 0.834)
-        self.dist_lookup_table.add_entry(2.462, 6.647, 65.0, 0.9)
-        self.dist_lookup_table.add_entry(2.714, 6.902, 65.0, 0.963)
-        self.dist_lookup_table.add_entry(2.966, 7.158, 65.0, 1.022)
-        self.dist_lookup_table.add_entry(3.217, 7.413, 65.0, 1.079)
-        self.dist_lookup_table.add_entry(3.469, 7.665, 65.0, 1.134)
-        self.dist_lookup_table.add_entry(3.721, 7.916, 65.0, 1.186)
-        self.dist_lookup_table.add_entry(3.972, 8.163, 65.0, 1.236)
-        self.dist_lookup_table.add_entry(4.224, 8.409, 65.0, 1.285)
-        self.dist_lookup_table.add_entry(4.476, 8.651, 65.0, 1.333)
-        self.dist_lookup_table.add_entry(4.728, 8.892, 65.0, 1.379)
-        self.dist_lookup_table.add_entry(4.979, 9.13, 65.0, 1.424)
-        self.dist_lookup_table.add_entry(5.231, 9.2, 65.0, 1.437)
-        self.dist_lookup_table.add_entry(5.483, 9.2, 65.0, 1.437)
-        self.dist_lookup_table.add_entry(5.734, 9.2, 65.0, 1.437)
-        self.dist_lookup_table.add_entry(5.986, 9.2, 65.0, 1.437)
-        self.dist_lookup_table.add_entry(6.238, 9.2, 65.0, 1.437)
-        self.dist_lookup_table.add_entry(6.49, 9.2, 65.0, 1.437)
-        self.dist_lookup_table.add_entry(6.741, 9.2, 65.0, 1.437)
-        self.dist_lookup_table.add_entry(6.993, 9.2, 65.0, 1.437)
-        self.dist_lookup_table.add_entry(7.245, 9.2, 65.0, 1.437)
-        self.dist_lookup_table.add_entry(7.497, 9.2, 65.0, 1.437)
-        self.dist_lookup_table.add_entry(7.748, 9.2, 65.0, 1.437)
-        self.dist_lookup_table.add_entry(8.0, 9.2, 65.0, 1.437)
-
-        # Safe Lookup Table
-                # Good table
         # self.dist_lookup_table.add_entry(0.7, 5.404, 79.295, 0.655)
         # self.dist_lookup_table.add_entry(0.952, 5.543, 76.074, 0.688)
         # self.dist_lookup_table.add_entry(1.203, 5.698, 73.252, 0.719)
@@ -494,6 +461,39 @@ class Drivetrain(Subsystem):
         # self.dist_lookup_table.add_entry(2.21, 6.399, 65.019, 0.834)
         # self.dist_lookup_table.add_entry(2.462, 6.647, 65.0, 0.9)
         # self.dist_lookup_table.add_entry(2.714, 6.902, 65.0, 0.963)
+        # self.dist_lookup_table.add_entry(2.966, 7.158, 65.0, 1.022)
+        # self.dist_lookup_table.add_entry(3.217, 7.413, 65.0, 1.079)
+        # self.dist_lookup_table.add_entry(3.469, 7.665, 65.0, 1.134)
+        # self.dist_lookup_table.add_entry(3.721, 7.916, 65.0, 1.186)
+        # self.dist_lookup_table.add_entry(3.972, 8.163, 65.0, 1.236)
+        # self.dist_lookup_table.add_entry(4.224, 8.409, 65.0, 1.285)
+        # self.dist_lookup_table.add_entry(4.476, 8.651, 65.0, 1.333)
+        # self.dist_lookup_table.add_entry(4.728, 8.892, 65.0, 1.379)
+        # self.dist_lookup_table.add_entry(4.979, 9.13, 65.0, 1.424)
+        # self.dist_lookup_table.add_entry(5.231, 9.2, 65.0, 1.437)
+        # self.dist_lookup_table.add_entry(5.483, 9.2, 65.0, 1.437)
+        # self.dist_lookup_table.add_entry(5.734, 9.2, 65.0, 1.437)
+        # self.dist_lookup_table.add_entry(5.986, 9.2, 65.0, 1.437)
+        # self.dist_lookup_table.add_entry(6.238, 9.2, 65.0, 1.437)
+        # self.dist_lookup_table.add_entry(6.49, 9.2, 65.0, 1.437)
+        # self.dist_lookup_table.add_entry(6.741, 9.2, 65.0, 1.437)
+        # self.dist_lookup_table.add_entry(6.993, 9.2, 65.0, 1.437)
+        # self.dist_lookup_table.add_entry(7.245, 9.2, 65.0, 1.437)
+        # self.dist_lookup_table.add_entry(7.497, 9.2, 65.0, 1.437)
+        # self.dist_lookup_table.add_entry(7.748, 9.2, 65.0, 1.437)
+        # self.dist_lookup_table.add_entry(8.0, 9.2, 65.0, 1.437)
+
+        # Safe Lookup Table
+                # Good table
+        self.dist_lookup_table.add_entry(0.7, 5.404, 79.295, 0.655)
+        self.dist_lookup_table.add_entry(0.952, 5.543, 76.074, 0.688)
+        self.dist_lookup_table.add_entry(1.203, 5.698, 73.252, 0.719)
+        self.dist_lookup_table.add_entry(1.455, 5.864, 70.78, 0.749)
+        self.dist_lookup_table.add_entry(1.707, 6.038, 68.611, 0.778)
+        self.dist_lookup_table.add_entry(1.959, 6.217, 66.703, 0.806)
+        self.dist_lookup_table.add_entry(2.21, 6.399, 65.019, 0.834)
+        self.dist_lookup_table.add_entry(2.462, 6.647, 65.0, 0.9)
+        self.dist_lookup_table.add_entry(2.714, 6.902, 65.0, 0.963)
 
     def create_launch_vel_table(self):
         self.vel_lookup_table.add_entry(5.6, 50)
@@ -515,7 +515,7 @@ class Drivetrain(Subsystem):
         if self.robot.shoot_intent:
             cur_rot = cur_pos.rotation().radians()
             shooter_pos = cur_pos.translation() + Translation2d(0, 0.196).rotateBy(Rotation2d(cur_rot))
-            if self.robot.poseEstimator.cur_pos_in_zone(4.55):
+            if self.robot.poseEstimator.cur_pos_in_zone(4.55) or self.robot.in_autonomous_mode:
                 self.robot.static_target = self.robot.fieldConstants.flip_Translation2d(self.robot.fieldConstants.Hub.topCenterPoint.toTranslation2d())
             elif 4.43 < cur_pos.X() < self.robot.fieldConstants.fieldLength - 4.4 or True:
                 if not self.robot.fieldConstants.shouldFlip:

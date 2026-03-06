@@ -41,7 +41,7 @@ class Intake(Subsystem):
 
         self.intake_motor_config = self.robot.get_motor_config(0, 5, 0, 0, 0.21, 0, 0, 11)
         self.inside_track_motor_config = self.robot.get_motor_config(0, 1, 0, 0, 0, 0, 0, 0)
-        self.deploy_motor_config = self.robot.get_motor_config(0, 350, 0, 30, 0, 0, -14, 127)
+        self.deploy_motor_config = self.robot.get_motor_config(0, 300, 0, 30, 0, 0, -14, 127)
         self.deploy_motor_config.motion_magic.motion_magic_cruise_velocity = 20
         self.deploy_motor_config.motion_magic.motion_magic_acceleration = 50
         self.deploy_motor_config.feedback.feedback_remote_sensor_id = const.INTAKE_DEPLOY_CANCODER_ID
@@ -135,11 +135,11 @@ class Intake(Subsystem):
         elif self.robot.is_intaking:
             # if self.robot.fieldConstants.LinesVertical.starting < self.robot.poseEstimator.curEstPose.X() < self.robot.fieldConstants.fieldLength - self.robot.fieldConstants.LinesVertical.starting: # neutral zone
             self.set_intake_speed(self.test_intake_speed) # TUNE
-            self.set_position(-0.07) # TUNE
+            self.set_position(-0.085) # TUNE
         elif self.robot.pulse_pivot:
             if self.tick_count % 20 < 10:
                 # print("switch to out")
-                self.set_position(-0.07)
+                self.set_position(-0.085)
             else:
                 # print("switch to in")
                 self.set_position(-0.23)
@@ -151,10 +151,12 @@ class Intake(Subsystem):
             self.stop_intake()
             self.stop_deploy()
         
-        if self.commanded_intake_speed >= 0:
+        if self.commanded_intake_speed >= 0.05:
             self.inside_track_motor.set_control(controls.DutyCycleOut(0.5, enable_foc=False))
-        elif self.robot.hopper.commanded_speed >= 0:
+        elif self.robot.hopper.commanded_speed >= 0.05:
             self.inside_track_motor.set_control(controls.DutyCycleOut(0.5, enable_foc=False))
+        else:
+            self.inside_track_motor.set_control(controls.DutyCycleOut(0, enable_foc=False))
         self.tick_count += 1
 
     def log(self):

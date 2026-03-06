@@ -171,24 +171,25 @@ class Shooter(Subsystem):
             self.stop_accelerator()
             self.stop_fly()
         elif self.robot.shoot_intent:
-                self.set_fly_speed(self.robot.fly_speed)
-                self.set_hood_position(self.robot.hood_angle)
-                rotation = self.robot.drivetrain.get_target_angle(self.robot.time_of_flight, self.robot.static_target)
-                SmartDashboard.putNumber("rotation lock error", (self.robot.poseEstimator.curEstPose.rotation() - rotation).degrees())
-                if self.robot.shoot_fuel or self.ready_to_shoot() or self.shoot_ready:
-                    self.set_accelerator_speed(self.test_accelerator_speed)
-                    if (abs(abs(self.get_accelerator_speed()) - self.commanded_accelerator_speed) <= 3 or self.accel_good) and self.robot.poseEstimator.cur_pos_in_zone():
-                        if not self.accel_good:
-                            self.robot.intake.tick_count = 0
-                        self.accel_good = True
-                        self.robot.hopper.commanded_speed = 0.95
-                        self.robot.hopper.indexer_motor.set_control(controls.DutyCycleOut(0.95, enable_foc=False))
-                        self.robot.pulse_pivot = True 
+                if not self.robot.in_autonomous_mode or (self.robot.in_autonomous_mode and self.robot.poseEstimator.cur_pos_in_zone()):
+                    self.set_fly_speed(self.robot.fly_speed)
+                    self.set_hood_position(self.robot.hood_angle)
+                    rotation = self.robot.drivetrain.get_target_angle(self.robot.time_of_flight, self.robot.static_target)
+                    SmartDashboard.putNumber("rotation lock error", (self.robot.poseEstimator.curEstPose.rotation() - rotation).degrees())
+                    if self.robot.shoot_fuel or self.ready_to_shoot() or self.shoot_ready:
+                        self.set_accelerator_speed(self.test_accelerator_speed)
+                        if (abs(abs(self.get_accelerator_speed()) - self.commanded_accelerator_speed) <= 3 or self.accel_good) and self.robot.poseEstimator.cur_pos_in_zone():
+                            if not self.accel_good:
+                                self.robot.intake.tick_count = 0
+                            self.accel_good = True
+                            self.robot.hopper.commanded_speed = 0.95
+                            self.robot.hopper.indexer_motor.set_control(controls.DutyCycleOut(0.95, enable_foc=False))
+                            self.robot.pulse_pivot = True 
 
-                        # self.robot.hopper.set_speed(self.robot.hopper.test_indexer_speed) 
-                    else:
-                        self.robot.hopper.commanded_speed = -0.5
-                        self.robot.hopper.indexer_motor.set_control(controls.DutyCycleOut(-0.5, enable_foc=False))
+                            # self.robot.hopper.set_speed(self.robot.hopper.test_indexer_speed) 
+                        else:
+                            self.robot.hopper.commanded_speed = -0.5
+                            self.robot.hopper.indexer_motor.set_control(controls.DutyCycleOut(-0.5, enable_foc=False))
         elif self.robot.is_climbing:
             self.set_hood_position(0.0)
             self.stop_fly()
