@@ -274,16 +274,16 @@ class OI:
             robot.poseEstimator.set_yaw(0.0)
             self.robot_oriented_angle = 0.0
         
-        @self.driver1.A.whenPressed
+        @self.driver1.LEFT_TRIGGER_AS_BUTTON.whenHeld
         def _():
             self.robot.is_intaking = True
             self.robot.intake_at_default = False
         
-        @self.driver1.B.whenPressed
+        @self.driver1.LEFT_TRIGGER_AS_BUTTON.whenReleased
         def _():
             self.robot.is_intaking = False
         
-        @self.driver1.START.whenPressed
+        @self.driver1.A.whenPressed
         def _():
             self.robot.snake_intake = not self.robot.snake_intake
             self.robot_oriented_angle = self.robot.poseEstimator.curEstPose.rotation().degrees()
@@ -322,7 +322,7 @@ class OI:
             self.robot.shoot_fuel = False
             self.robot.is_climbing = False
         
-        @self.driver1.LEFT_TRIGGER_AS_BUTTON.whenHeld
+        @self.driver1.START.whenPressed
         def _():
             self.robot.is_intaking = True
             self.robot.intake_at_default = False
@@ -331,7 +331,7 @@ class OI:
             self.robot.snake_intake = False
             self.robot.track_fuel = True
 
-        @self.driver1.LEFT_TRIGGER_AS_BUTTON.whenReleased
+        @self.driver1.BACK.whenPressed
         def _():
             self.robot.is_intaking = False
             self.robot.track_fuel = False

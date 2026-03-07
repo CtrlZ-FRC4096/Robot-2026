@@ -318,7 +318,7 @@ class Drivetrain(Subsystem):
         # PathPlanner returns robot-relative chassis speeds with +ω = CCW.
         # Our kinematics/modules expect the opposite sign, so flip it here.
         # chassis_speeds.omega = -chassis_speeds.omega
-        module_states = const.SWERVE_KINEMATICS.toSwerveModuleStates(ChassisSpeeds(chassis_speeds.vx, chassis_speeds.vy, chassis_speeds.omega))
+        module_states = const.SWERVE_KINEMATICS.toSwerveModuleStates(chassis_speeds)
 
         #module_states = SwerveDrive4Kinematics.desaturateWheelSpeeds(
          #   module_states, const.SWERVE_MAX_SPEED
@@ -343,6 +343,9 @@ class Drivetrain(Subsystem):
             for idx, module in enumerate(self.robot.poseEstimator.modules):
                 # print(module_states[idx].speed)
                 module.set_desired_state(module_states[idx], is_open_loop=False)
+    
+    def should_flip_path(self):
+        return self.robot.fieldConstants.shouldFlip
 
     def go_to_pose_profiled_pid(self, target_pose : Translation2d, feedforward_x=0.0, feedforward_y=0.0, feedfoward_theta=0.0):
 

@@ -171,6 +171,10 @@ class PoseEstimator(Subsystem):
             Translation3d(-0.317, -0.292, 0.193),
             Rotation3d.fromDegrees(0.0, -10.0, 0.0)
         ) # TO DO 
+        ROBOT_TO_CAM2 = Transform3d(
+            Translation3d(0.038, 0.343, 0.218),
+            Rotation3d.fromDegrees(0, -15, 90)
+        )
         ROBOT_TO_CAM3 = Transform3d(
             Translation3d(0.0254, -0.387, 0.2179),
             Rotation3d.fromDegrees(0, -15, -90)
@@ -179,6 +183,7 @@ class PoseEstimator(Subsystem):
         ROBOT_TO_COLOR_2 = Transform3d() # TO DO
 
         self.cams = [
+            WrapperedPhotonCameraTag("camera2", ROBOT_TO_CAM2),
             WrapperedPhotonCameraTag("camera3", ROBOT_TO_CAM3),
         ]
         # self.intake_cam = WrapperedPhotonCameraIntakeFuel("color1", ROBOT_TO_COLOR_1) # WRONG NAME MAYBE

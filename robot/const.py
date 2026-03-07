@@ -169,16 +169,16 @@ MAX_ACCEL_AUTO = 3  # This is the max rate you want the robot to accelerate at, 
 MAX_ANG_ACCEL_AUTO = (
     6 * math.pi
 )  # This is the max rate you want the robot to accelerate at, not its true max acceleration
-X_KP = 0.4  # 8 # 5  # 0.12667925	#0.73225
+X_KP = 0.01  # 8 # 5  # 0.12667925	#0.73225
 X_KI = 0  # 0.015  # 0.015 #0.0346173		#0.2001
 X_KD = 0  # 0.01165449	#0.067367
 
 Y_KP = X_KP
 Y_KI = X_KI
 Y_KD = X_KD
-THETA_KP = 0.6  # 1.9 #0.232  # * 2.866 * 5.0
+THETA_KP = 0.01  # 1.9 #0.232  # * 2.866 * 5.0
 THETA_KI = 0.0  # 0.07  # 0.0625  # * 2.866 * 5.0
-THETA_KD = 0.001  # 0.01
+THETA_KD = 0.0  # 0.01
 
 INTAKE_DEPLOY_CANCODER_ID = 14 #The reference cancoder needs to be on an ID under 16 apparently
 LEFT_INTAKE_MOTOR_ID = 25
@@ -198,7 +198,7 @@ CLIMBER_MOTOR_ID = 24
 
 
 COLLISION_JERK_MAX = 50
-SKIDDING_RATIO_MAX = 10
+SKIDDING_RATIO_MAX = 2.5
 
 CAM_DICT = {
     "camera_1": (

@@ -178,7 +178,7 @@ class Shooter(Subsystem):
                     SmartDashboard.putNumber("rotation lock error", (self.robot.poseEstimator.curEstPose.rotation() - rotation).degrees())
                     if self.robot.shoot_fuel or self.ready_to_shoot() or self.shoot_ready:
                         self.set_accelerator_speed(self.test_accelerator_speed)
-                        if (abs(abs(self.get_accelerator_speed()) - self.commanded_accelerator_speed) <= 3 or self.accel_good) and self.robot.poseEstimator.cur_pos_in_zone():
+                        if (abs(abs(self.get_accelerator_speed()) - self.commanded_accelerator_speed) <= 3 or self.accel_good) and (not self.robot.in_autonomous_mode or  self.robot.poseEstimator.cur_pos_in_zone()):
                             if not self.accel_good:
                                 self.robot.intake.tick_count = 0
                             self.accel_good = True

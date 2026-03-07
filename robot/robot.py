@@ -272,19 +272,19 @@ class Robot(CoroutineRobot):
     def getPathCommand(self, path : PathPlannerPath):
         return FollowPathCommand(
             path,
-            lambda : self.poseEstimator.curEstPose,
+            self.drivetrain.get_pose,
             self.drivetrain.get_robot_relative_speeds,
             self.drivetrain.drive_robot_relative,
             PPHolonomicDriveController(
                 PIDConstants(
-                    const.X_KP, const.X_KI, const.X_KD
+                    0.001, 0, 0
                 ),  # Translation PID constants
                 PIDConstants(
-                    const.THETA_KP, const.THETA_KI, const.THETA_KD
+                    0.001, 0, 0.00005
                 ),  # Rotation PID constants)
             ),
             RobotConfig.fromGUISettings(),
-            lambda : self.fieldConstants.shouldFlip,
+            self.drivetrain.should_flip_path,
             self.drivetrain
         )   
 
@@ -371,6 +371,7 @@ class Robot(CoroutineRobot):
         """
         Logs some info to shuffleboard, and standard output
         """
+        # SmartDashboard.putString("Shooting Values/")
         wpilib.SmartDashboard.putBoolean("Has Coral", self.has_coral)
         SmartDashboard.putNumberArray("Empty Pose", [0,0,0,1,0,0,0])
         wpilib.SmartDashboard.putBoolean("Connected to FMS", self.driverstation.isFMSAttached())

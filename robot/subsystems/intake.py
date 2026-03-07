@@ -41,7 +41,7 @@ class Intake(Subsystem):
 
         self.intake_motor_config = self.robot.get_motor_config(0, 5, 0, 0, 0.21, 0, 0, 11)
         self.inside_track_motor_config = self.robot.get_motor_config(0, 1, 0, 0, 0, 0, 0, 0)
-        self.deploy_motor_config = self.robot.get_motor_config(0, 300, 0, 30, 0, 0, -14, 127)
+        self.deploy_motor_config = self.robot.get_motor_config(0, 220, 0, 5, 0, 0, -14, 15)
         self.deploy_motor_config.motion_magic.motion_magic_cruise_velocity = 20
         self.deploy_motor_config.motion_magic.motion_magic_acceleration = 50
         self.deploy_motor_config.feedback.feedback_remote_sensor_id = const.INTAKE_DEPLOY_CANCODER_ID
@@ -143,7 +143,7 @@ class Intake(Subsystem):
             else:
                 # print("switch to in")
                 self.set_position(-0.23)
-            self.stop_intake()
+            self.set_intake_speed(self.test_intake_speed)
         elif self.robot.is_climbing:
             self.stop_intake()
             self.set_position(-0.23)
