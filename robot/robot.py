@@ -278,10 +278,10 @@ class Robot(CoroutineRobot):
             self.drivetrain.drive_robot_relative,
             PPHolonomicDriveController(
                 PIDConstants(
-                    0.001, 0, 0
+                    0.5, 0, 0
                 ),  # Translation PID constants
                 PIDConstants(
-                    0.001, 0, 0.00005
+                    0.5, 0, 0.1
                 ),  # Rotation PID constants)
             ),
             RobotConfig.fromGUISettings(),

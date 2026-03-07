@@ -69,8 +69,8 @@ class Drivetrain(Subsystem):
         self.angle_pid.enableContinuousInput(0, 360)
         self.angle_pid.setTolerance(0.5)  # Set position tolerance to 0.5 degrees
 
-        self.x_controller = PIDController(2.25, 0, 0.025) #0.01
-        self.y_controller = PIDController(2.25, 0, 0.025) #0.01
+        self.x_controller = PIDController(1.75, 0, 0.1) #0.01
+        self.y_controller = PIDController(1.75, 0, 0.1) #0.01
         self.xy_controller = ProfiledPIDController(2.3, 0.0, 0.025, TrapezoidProfile.Constraints(4.0, 4.0))
         self.theta_controller = PIDController(0.07, 0.01, 0.0015)
         
@@ -95,8 +95,8 @@ class Drivetrain(Subsystem):
 
 
         ## Need to check these tolerances
-        self.x_controller.setTolerance(0.03, 0.1) #0.025, 0.1
-        self.y_controller.setTolerance(0.03, 0.1) #0.025, 0.1
+        self.x_controller.setTolerance(0.25, 0.1) #0.025, 0.1
+        self.y_controller.setTolerance(0.25, 0.1) #0.025, 0.1
         self.xy_controller.setTolerance(0.0225, 0.15)
         self.theta_controller.enableContinuousInput(0, 360)
         self.theta_controller.setTolerance(2.8, 2.0) #3.0, 0.1
@@ -318,6 +318,7 @@ class Drivetrain(Subsystem):
         # PathPlanner returns robot-relative chassis speeds with +ω = CCW.
         # Our kinematics/modules expect the opposite sign, so flip it here.
         module_states = const.SWERVE_KINEMATICS.toSwerveModuleStates(chassis_speeds)
+        module_states = const.SWERVE_KINEMATICS.desaturateWheelSpeeds(module_states, 4)
 
         SmartDashboard.putNumber("pathplanner omega", chassis_speeds.omega_dps)
         SmartDashboard.putNumber("pose yaw", self.robot.poseEstimator.curEstPose.rotation().degrees())
@@ -368,7 +369,7 @@ class Drivetrain(Subsystem):
         if (
             self.x_controller.atSetpoint()
             and self.y_controller.atSetpoint()
-            and self.theta_controller.atSetpoint()
+            # and self.theta_controller.atSetpoint()
         ):
             # self.robot.running_pid_lineup = False
             self.robot.running_pid_lineup = False
@@ -515,14 +516,14 @@ class Drivetrain(Subsystem):
             elif 4.43 < cur_pos.X() < self.robot.fieldConstants.fieldLength - 4.4 or True:
                 if not self.robot.fieldConstants.shouldFlip:
                     if cur_pos.Y() <= self.robot.fieldConstants.fieldWidth / 2: #shoot to right corner blue
-                        self.robot.static_target = self.robot.fieldConstants.flip_Translation2d(Translation2d(1.694, 1.417))
+                        self.robot.static_target = Translation2d(1.694, 1.417)
                     else: #pass to left corner blue
-                        self.robot.static_target = self.robot.fieldConstants.flip_Translation2d(Translation2d(1.694, self.robot.fieldConstants.fieldWidth - 1.417))
+                        self.robot.static_target = Translation2d(1.694, self.robot.fieldConstants.fieldWidth - 1.417)
                 else:
                     if cur_pos.Y() <= self.robot.fieldConstants.fieldWidth / 2: # pass to left corner red (red relative)
-                        self.robot.static_target = self.robot.fieldConstants.flip_Translation2d(Translation2d(1.694, self.robot.fieldConstants.fieldWidth - 1.417))
+                        self.robot.static_target = Translation2d(1.694, self.robot.fieldConstants.fieldWidth - 1.417)
                     else: #pass to right corner 
-                        self.robot.static_target = self.robot.fieldConstants.flip_Translation2d(Translation2d(1.694, 1.417))
+                        self.robot.static_target = Translation2d(1.694, 1.417)
             
             dist_from_shooter = shooter_pos.distance(self.robot.static_target)           
             
@@ -572,13 +573,16 @@ class Drivetrain(Subsystem):
             #     pass
 
             if self.robot.running_pid_lineup:
-                if self.robot.shoot_intent and self.robot.poseEstimator.curEstPose.X() <= 4.4:
+                if self.robot.shoot_intent and self.robot.poseEstimator.cur_pos_in_zone(4.5):
                         rotation = self.robot.drivetrain.get_hub_angle(self.robot.time_of_flight)
                         lineup  = Pose2d(self.robot.final_lineup_pose.X(), self.robot.final_lineup_pose.Y(), rotation)
                         SmartDashboard.putNumber("Shooter/Rotation to Hub", rotation.degrees())
                 else:
                     lineup = self.robot.final_lineup_pose
                 self.go_to_pose_profiled_pid(lineup)
+            elif not self.robot.running_pid_lineup and self.robot.shoot_intent:
+                rotation = self.get_hub_angle(self.robot.time_of_flight)
+                self.drive_with_pid(Translation2d(0, 0), rotation, )
             # self.go_to_pose_profiled_pid(self.robot.final_lineup_pose)
 
     def log(self):
