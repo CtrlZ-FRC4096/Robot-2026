@@ -130,7 +130,8 @@ SWERVE_ANGLE_INVERT_BACK_LEFT = signals.InvertedValue(1)
 
 # Other
 
-
+#trackwidth / 2 = 0.29845
+#wheelbase / 2 = 0.2667
 SWERVE_KINEMATICS = SwerveDrive4Kinematics(
     Translation2d(
         DRIVETRAIN_WHEELBASE_METERS / 2.0, DRIVETRAIN_TRACKWIDTH_METERS / 2.0

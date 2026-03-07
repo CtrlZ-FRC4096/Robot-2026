@@ -61,7 +61,7 @@ import autoroutines
 
 from pathplannerlib.path import PathPlannerPath, Waypoint, IdealStartingState, GoalEndState, PathPoint
 from pathplannerlib.auto import AutoBuilder, PathPlannerAuto, NamedCommands, FollowPathCommand, PathConstraints
-from pathplannerlib.config import PIDConstants, RobotConfig
+from pathplannerlib.config import PIDConstants, RobotConfig, ModuleConfig
 from pathplannerlib.controller import PPHolonomicDriveController
 
 from wpimath.geometry import Rotation2d, Pose2d, Translation2d, Pose3d, Rotation3d, Transform3d, Translation3d, Twist2d
@@ -79,6 +79,7 @@ import time
 from wpilibextra.coroutine import CoroutineCommand
 from wpilib import SmartDashboard
 from pathplannerlib.controller import PathFollowingController, PPHolonomicDriveController
+from pathplannerlib.path import DriveFeedforwards
 
 from fuel_sim import FuelSim
 
@@ -286,8 +287,7 @@ class Robot(CoroutineRobot):
             RobotConfig.fromGUISettings(),
             self.drivetrain.should_flip_path,
             self.drivetrain
-        )   
-
+        ) 
 
 
     def get_motor_config(self, inverted=0, k_p=0.0, k_i=0.0, k_d=0.0, k_v=0.0, k_a=0.0, k_g=0.0, k_s=0.0):

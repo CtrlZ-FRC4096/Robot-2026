@@ -49,7 +49,7 @@ from pathplannerlib.auto import AutoBuilder, PathPlannerAuto
 from pathplannerlib.config import PIDConstants
 
 from pathplannerlib.path import PathPlannerTrajectory
-from pathplannerlib.path import PathPlannerPath, PathConstraints
+from pathplannerlib.path import PathPlannerPath, PathConstraints, DriveFeedforwards
 from wpimath.estimator import SwerveDrive4PoseEstimator
 from photoncamera import WrapperedPhotonCameraTag
 from wpimath.filter import SlewRateLimiter
@@ -313,23 +313,17 @@ class Drivetrain(Subsystem):
         # print(in_motion)
 
     def drive_robot_relative(
-        self, chassis_speeds: ChassisSpeeds, feedfoward=None
+        self, chassis_speeds: ChassisSpeeds, feedfoward : DriveFeedforwards
     ):  # only use for pathplannerlib
         # PathPlanner returns robot-relative chassis speeds with +ω = CCW.
         # Our kinematics/modules expect the opposite sign, so flip it here.
-        # chassis_speeds.omega = -chassis_speeds.omega
         module_states = const.SWERVE_KINEMATICS.toSwerveModuleStates(chassis_speeds)
 
-        #module_states = SwerveDrive4Kinematics.desaturateWheelSpeeds(
-         #   module_states, const.SWERVE_MAX_SPEED
-        #)
         SmartDashboard.putNumber("pathplanner omega", chassis_speeds.omega_dps)
         SmartDashboard.putNumber("pose yaw", self.robot.poseEstimator.curEstPose.rotation().degrees())
 
-
         mag_vel_dummy = Translation2d(chassis_speeds.vx, chassis_speeds.vy).norm()
         dummy_val = self.accel_shoot_limiter.calculate(mag_vel_dummy)
-
 
         if self.robot.isSimulation():
             new_chassis_speeds = ChassisSpeeds.fromRobotRelativeSpeeds(chassis_speeds.vx, chassis_speeds.vy, chassis_speeds.omega, self.robot.poseEstimator.curEstPose.rotation())
@@ -337,12 +331,10 @@ class Drivetrain(Subsystem):
             self.robot.poseEstimator.curEstPose = Pose2d(
                 curPose.X() + new_chassis_speeds.vx / 15, curPose.Y() + new_chassis_speeds.vy / 15, Rotation2d(curPose.rotation().radians() + new_chassis_speeds.omega / 10)
             )
-            # if self.robot.poseEstimator.poseIsOffField(self.robot.poseEstimator.curEstPose):# or self.in_obstacle(self.robot.poseEstimator.curEstPose.translation()):
-            #     self.robot.poseEstimator.curEstPose = curPose 
         else:
             for idx, module in enumerate(self.robot.poseEstimator.modules):
-                # print(module_states[idx].speed)
-                module.set_desired_state(module_states[idx], is_open_loop=False)
+                amps = feedfoward.torqueCurrentsAmps[idx]
+                module.set_desired_state(module_states[idx], is_open_loop=False, feed_forward=amps)
     
     def should_flip_path(self):
         return self.robot.fieldConstants.shouldFlip

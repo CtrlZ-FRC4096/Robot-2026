@@ -165,7 +165,7 @@ class SwerveModule:
             const.SWERVE_DRIVE_KS, const.SWERVE_DRIVE_KV, const.SWERVE_DRIVE_KA
         )
 
-    def set_desired_state(self, desired_state: SwerveModuleState, is_open_loop):
+    def set_desired_state(self, desired_state: SwerveModuleState, is_open_loop, feed_forward=0.0):
         desired_state = ctre_module_state.optimize(
             desired_state, self.get_state().angle
         )
@@ -174,9 +174,9 @@ class SwerveModule:
         ## Add cosine compensation, wheels don't spin as fast when they are at the wrong angle
         desired_state.speed *= (desired_state.angle - self.get_state().angle).cos()
 
-        self.set_speed(desired_state, is_open_loop)
+        self.set_speed(desired_state, is_open_loop, feed_forward)
 
-    def set_speed(self, desired_state: SwerveModuleState, is_open_loop):
+    def set_speed(self, desired_state: SwerveModuleState, is_open_loop, feed_forward=0.0):
         if is_open_loop:
             percent_output = desired_state.speed / const.SWERVE_MAX_SPEED
             self.drive_motor.set_control(controls.DutyCycleOut(percent_output))
@@ -194,7 +194,7 @@ class SwerveModule:
                 controls.VelocityTorqueCurrentFOC(
                     motor_RPS,
                     acceleration=300,
-                    # feed_forward=self.feedforward.calculate(desired_state.speed), #Remove Feedfoward for now
+                    feed_forward=feed_forward# feed_forward=self.feedforward.calculate(desired_state.speed), #Remove Feedfoward for now
                 )
             )
 
