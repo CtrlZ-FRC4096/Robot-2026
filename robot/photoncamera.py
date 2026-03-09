@@ -158,8 +158,9 @@ class WrapperedPhotonCameraTag:
             )
             zEst = tagFieldPose.Z() - self.robotToCam.Z() - math.sin(self.robotToCam.rotation().Y() +  target_y_angle) * distance_3d
             self.zEstimates.append(zEst)
-            self.poseSingleTag.append(robot_pose)
+            self.poseSingleTag.append([robot_pose, tgtID, target.getPoseAmbiguity()])
             self.singleTagIDs.append(tgtID)
+            
 
 
 
