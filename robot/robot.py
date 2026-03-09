@@ -346,7 +346,7 @@ class Robot(CoroutineRobot):
         if self.isSimulation():
             self.fuel_sim.running = True
 
-        self.scheduler.schedule(self.auto)
+        # self.scheduler.schedule(self.auto)
 
     ### TELEOPERATED ###
     def teleop_mode(self):

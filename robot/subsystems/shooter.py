@@ -196,8 +196,8 @@ class Shooter(Subsystem):
 
                             # self.robot.hopper.set_speed(self.robot.hopper.test_indexer_speed) 
                         else:
-                            self.robot.hopper.commanded_speed = -0.5
-                            self.robot.hopper.indexer_motor.set_control(controls.DutyCycleOut(-0.5, enable_foc=False))
+                            self.robot.hopper.commanded_speed = -0.2
+                            self.robot.hopper.indexer_motor.set_control(controls.DutyCycleOut(-0.2, enable_foc=False))
         elif self.robot.is_climbing:
             self.set_hood_position(0.0)
             self.stop_fly()

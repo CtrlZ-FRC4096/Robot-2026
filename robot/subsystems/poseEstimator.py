@@ -183,7 +183,7 @@ class PoseEstimator(Subsystem):
         ROBOT_TO_COLOR_2 = Transform3d() # TO DO
 
         self.cams = [
-            WrapperedPhotonCameraTag("camera2", ROBOT_TO_CAM2),
+            # WrapperedPhotonCameraTag("camera2", ROBOT_TO_CAM2),
             WrapperedPhotonCameraTag("camera3", ROBOT_TO_CAM3),
         ]
         # self.intake_cam = WrapperedPhotonCameraIntakeFuel("color1", ROBOT_TO_COLOR_1) # WRONG NAME MAYBE
@@ -411,26 +411,31 @@ class PoseEstimator(Subsystem):
             cam.update(
                 self.curEstPose
             )
-            single_tag_poses = cam.getPoseSingleTag()
+            single_tag_poses : list[(Pose2d, int)] = cam.getPoseSingleTag()
             self.single_tag_IDs.update(cam.getSingleTagIDs())
             zEstimates = cam.getZEstimates()
             z_sum += sum(zEstimates)
             z_count += len(zEstimates)
            
-            for pose in single_tag_poses:
+            for combined in single_tag_poses:
+                pose : Pose2d = combined[0]
+                tgt_id = combined[1]
+                tag_pose = self.tag_layout.getTagPose(tgt_id)
+                distance = tag_pose.translation().toTranslation2d().distance(pose.translation())
                 self.camera_X[cam.camName] = pose.X()
                 self.camera_Y[cam.camName] = pose.Y()
                 self.camera_theta[cam.camName] = pose.rotation()
                 # if not(abs(self.gyro.get_pitch()) >= 10 or abs(self.gyro.get_roll()) >= 10):
-                self.poseEst.addVisionMeasurement(
-                    pose,
-                    cam.getObsTime(),
-                    (
-                        self.xystd_single_tag,  # * (min_ambiguity / 0.4),
-                        self.xystd_single_tag,  # * (min_ambiguity / 0.4),
-                        self.thetastd_single_tag,  # * (min_ambiguity / 0.4),
-                    ),
-                )
+                if distance <= 5:
+                    self.poseEst.addVisionMeasurement(
+                        pose,
+                        cam.getObsTime(),
+                        (
+                            self.xystd_single_tag * (distance ** 2),  # * (min_ambiguity / 0.4),
+                            self.xystd_single_tag * (distance ** 2),  # * (min_ambiguity / 0.4),
+                            self.thetastd_single_tag * (distance ** 2),  # * (min_ambiguity / 0.4),
+                        ),
+                    )
         if z_count > 0:
             self.estZ = z_sum / z_count
         

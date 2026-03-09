@@ -65,7 +65,7 @@ class Drivetrain(Subsystem):
         super().__init__()
         self.robot = robot
 
-        self.angle_pid = PIDController(0.046, 0.0, 0.001)
+        self.angle_pid = PIDController(0.04, 0.0, 0.001)
         self.angle_pid.enableContinuousInput(0, 360)
         self.angle_pid.setTolerance(0.5)  # Set position tolerance to 0.5 degrees
 
@@ -448,39 +448,6 @@ class Drivetrain(Subsystem):
             return Pose2d(pose.translation(), self.get_hub_angle())
         
     def create_lookup_table(self):
-        # self.dist_lookup_table.add_entry(0.7, 5.404, 79.295, 0.655)
-        # self.dist_lookup_table.add_entry(0.952, 5.543, 76.074, 0.688)
-        # self.dist_lookup_table.add_entry(1.203, 5.698, 73.252, 0.719)
-        # self.dist_lookup_table.add_entry(1.455, 5.864, 70.78, 0.749)
-        # self.dist_lookup_table.add_entry(1.707, 6.038, 68.611, 0.778)
-        # self.dist_lookup_table.add_entry(1.959, 6.217, 66.703, 0.806)
-        # self.dist_lookup_table.add_entry(2.21, 6.399, 65.019, 0.834)
-        # self.dist_lookup_table.add_entry(2.462, 6.647, 65.0, 0.9)
-        # self.dist_lookup_table.add_entry(2.714, 6.902, 65.0, 0.963)
-        # self.dist_lookup_table.add_entry(2.966, 7.158, 65.0, 1.022)
-        # self.dist_lookup_table.add_entry(3.217, 7.413, 65.0, 1.079)
-        # self.dist_lookup_table.add_entry(3.469, 7.665, 65.0, 1.134)
-        # self.dist_lookup_table.add_entry(3.721, 7.916, 65.0, 1.186)
-        # self.dist_lookup_table.add_entry(3.972, 8.163, 65.0, 1.236)
-        # self.dist_lookup_table.add_entry(4.224, 8.409, 65.0, 1.285)
-        # self.dist_lookup_table.add_entry(4.476, 8.651, 65.0, 1.333)
-        # self.dist_lookup_table.add_entry(4.728, 8.892, 65.0, 1.379)
-        # self.dist_lookup_table.add_entry(4.979, 9.13, 65.0, 1.424)
-        # self.dist_lookup_table.add_entry(5.231, 9.2, 65.0, 1.437)
-        # self.dist_lookup_table.add_entry(5.483, 9.2, 65.0, 1.437)
-        # self.dist_lookup_table.add_entry(5.734, 9.2, 65.0, 1.437)
-        # self.dist_lookup_table.add_entry(5.986, 9.2, 65.0, 1.437)
-        # self.dist_lookup_table.add_entry(6.238, 9.2, 65.0, 1.437)
-        # self.dist_lookup_table.add_entry(6.49, 9.2, 65.0, 1.437)
-        # self.dist_lookup_table.add_entry(6.741, 9.2, 65.0, 1.437)
-        # self.dist_lookup_table.add_entry(6.993, 9.2, 65.0, 1.437)
-        # self.dist_lookup_table.add_entry(7.245, 9.2, 65.0, 1.437)
-        # self.dist_lookup_table.add_entry(7.497, 9.2, 65.0, 1.437)
-        # self.dist_lookup_table.add_entry(7.748, 9.2, 65.0, 1.437)
-        # self.dist_lookup_table.add_entry(8.0, 9.2, 65.0, 1.437)
-
-        # Safe Lookup Table
-                # Good table
         self.dist_lookup_table.add_entry(0.7, 5.404, 79.295, 0.655)
         self.dist_lookup_table.add_entry(0.952, 5.543, 76.074, 0.688)
         self.dist_lookup_table.add_entry(1.203, 5.698, 73.252, 0.719)
@@ -490,11 +457,44 @@ class Drivetrain(Subsystem):
         self.dist_lookup_table.add_entry(2.21, 6.399, 65.019, 0.834)
         self.dist_lookup_table.add_entry(2.462, 6.647, 65.0, 0.9)
         self.dist_lookup_table.add_entry(2.714, 6.902, 65.0, 0.963)
+        self.dist_lookup_table.add_entry(2.966, 7.158, 65.0, 1.022)
+        self.dist_lookup_table.add_entry(3.217, 7.413, 65.0, 1.079)
+        self.dist_lookup_table.add_entry(3.469, 7.665, 65.0, 1.134)
+        self.dist_lookup_table.add_entry(3.721, 7.916, 65.0, 1.186)
+        self.dist_lookup_table.add_entry(3.972, 8.163, 65.0, 1.236)
+        self.dist_lookup_table.add_entry(4.224, 8.409, 65.0, 1.285)
+        self.dist_lookup_table.add_entry(4.476, 8.651, 65.0, 1.333)
+        self.dist_lookup_table.add_entry(4.728, 8.892, 65.0, 1.379)
+        self.dist_lookup_table.add_entry(4.979, 9.13, 65.0, 1.424)
+        self.dist_lookup_table.add_entry(5.231, 9.2, 65.0, 1.437)
+        self.dist_lookup_table.add_entry(5.483, 9.2, 65.0, 1.437)
+        self.dist_lookup_table.add_entry(5.734, 9.2, 65.0, 1.437)
+        self.dist_lookup_table.add_entry(5.986, 9.2, 65.0, 1.437)
+        self.dist_lookup_table.add_entry(6.238, 9.2, 65.0, 1.437)
+        self.dist_lookup_table.add_entry(6.49, 9.2, 65.0, 1.437)
+        self.dist_lookup_table.add_entry(6.741, 9.2, 65.0, 1.437)
+        self.dist_lookup_table.add_entry(6.993, 9.2, 65.0, 1.437)
+        self.dist_lookup_table.add_entry(7.245, 9.2, 65.0, 1.437)
+        self.dist_lookup_table.add_entry(7.497, 9.2, 65.0, 1.437)
+        self.dist_lookup_table.add_entry(7.748, 9.2, 65.0, 1.437)
+        self.dist_lookup_table.add_entry(8.0, 9.2, 65.0, 1.437)
+
+        # Safe Lookup Table
+                # Good table
+        # self.dist_lookup_table.add_entry(0.7, 5.404, 79.295, 0.655)
+        # self.dist_lookup_table.add_entry(0.952, 5.543, 76.074, 0.688)
+        # self.dist_lookup_table.add_entry(1.203, 5.698, 73.252, 0.719)
+        # self.dist_lookup_table.add_entry(1.455, 5.864, 70.78, 0.749)
+        # self.dist_lookup_table.add_entry(1.707, 6.038, 68.611, 0.778)
+        # self.dist_lookup_table.add_entry(1.959, 6.217, 66.703, 0.806)
+        # self.dist_lookup_table.add_entry(2.21, 6.399, 65.019, 0.834)
+        # self.dist_lookup_table.add_entry(2.462, 6.647, 65.0, 0.9)
+        # self.dist_lookup_table.add_entry(2.714, 6.902, 65.0, 0.963)
 
     def create_launch_vel_table(self):
         self.vel_lookup_table.add_entry(5.6, 50)
-        self.vel_lookup_table.add_entry(8.2, 70)
-        self.vel_lookup_table.add_entry(8.85, 80)
+        self.vel_lookup_table.add_entry(8, 70)
+        self.vel_lookup_table.add_entry(8.65, 80)
         
     def create_launch_angle_table(self):
         self.angle_lookup_table.add_entry(65, 40)
