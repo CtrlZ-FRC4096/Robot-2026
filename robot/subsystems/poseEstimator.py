@@ -157,7 +157,7 @@ class PoseEstimator(Subsystem):
         # self.curEstPose = Pose2d(4.44, 8.1-0.641, math.pi)
         # climb pose
         # self.curEstPose = Pose2d(1.003, 4.637, Rotation2d(math.pi / 2))
-        self.curEstPose = Pose2d()
+        self.curEstPose = Pose2d(1, 1, self.getYaw())
         self.estZ = 0
 
         self.poseEst = SwerveDrive4PoseEstimator(
@@ -208,6 +208,23 @@ class PoseEstimator(Subsystem):
         cur_pos = self.curEstPose
         return (cur_pos.X() <= alt_pos and not self.robot.fieldConstants.shouldFlip) or (cur_pos.X() >= self.robot.fieldConstants.fieldLength - alt_pos and self.robot.fieldConstants.shouldFlip)
 
+    def get_path_to_trench(self):
+        if self.cur_pos_in_zone(): #from zone
+            good_rotation = self.robot.fieldConstants.flip_Rotation2d(Rotation2d(0))
+            can_rotate = (self.curEstPose.X() <= 2.7 and not self.robot.fieldConstants.shouldFlip) or (self.curEstPose.X() >= self.robot.fieldConstants.fieldLength - 2.7 and self.robot.fieldConstants.shouldFlip) 
+            if (self.curEstPose.Y() >= self.robot.fieldConstants.fieldWidth / 2):  #(blue origin) left side
+                target_pose = Pose2d(self.robot.fieldConstants.flip_X_coord(4.621 - 1.25), 7.44, (good_rotation if can_rotate else self.curEstPose.rotation()))
+            else: #(blue origin) right side
+                target_pose = Pose2d(self.robot.fieldConstants.flip_X_coord(4.621 - 1.25), self.robot.fieldConstants.fieldWidth - 7.44, (good_rotation if can_rotate else self.curEstPose.rotation()))
+        else: # from neutral
+            can_rotate = (self.curEstPose.X() >= 6.421 and not self.robot.fieldConstants.shouldFlip) or (self.curEstPose.X() <= self.robot.fieldConstants.fieldLength - 6.421 and self.robot.fieldConstants.shouldFlip)
+            if self.curEstPose.Y() >= self.robot.fieldConstants.fieldWidth / 2: # (blue origin) left side
+                good_rotation = Rotation2d()
+                target_pose = Pose2d(self.robot.fieldConstants.flip_X_coord(4.621 + 1.25), 7.44, (good_rotation if can_rotate else self.curEstPose.rotation()))
+            else:
+                good_rotation = Rotation2d.fromDegrees(180)
+                target_pose = Pose2d(self.robot.fieldConstants.flip_X_coord(4.621 + 1.25), self.robot.fieldConstants.fieldWidth - 7.44, (good_rotation if can_rotate else self.curEstPose.rotation()))
+        return target_pose
 
     def update_fuel_intake_tgt(self):
         res = self.intake_cam.getBestPtIntake(self.curEstPose)
@@ -394,7 +411,7 @@ class PoseEstimator(Subsystem):
             cam.update(
                 self.curEstPose
             )
-            single_tag_poses : list[Pose2d] = cam.getPoseSingleTag()
+            single_tag_poses = cam.getPoseSingleTag()
             self.single_tag_IDs.update(cam.getSingleTagIDs())
             zEstimates = cam.getZEstimates()
             z_sum += sum(zEstimates)

@@ -163,7 +163,7 @@ class FuelSim:
                 states = robot.poseEstimator.get_module_states()
                 chassis_speeds = const.SWERVE_KINEMATICS.toChassisSpeeds(states)
                 # Rotate robot-relative speeds to field-relative
-                yaw = self.robot.poseEstimator.getYaw()
+                yaw = self.robot.poseEstimator.curEstPose.rotation()
                 c = yaw.cos()
                 s = yaw.sin()
                 

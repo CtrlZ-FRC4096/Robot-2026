@@ -93,7 +93,7 @@ class OI:
         ### Driving ###
         self.cardinal = 0
         self.cardinal_directing = False
-        self.robot_oriented_angle = self.robot.poseEstimator.getYaw().degrees()
+        self.robot_oriented_angle = self.robot.poseEstimator.curEstPose.rotation().degrees()
 
         self.rumble_button = Button(lambda: self.robot.has_coral)
         self.can_crash = False
@@ -232,7 +232,7 @@ class OI:
                             False,
                         )
                         self.robot_oriented_angle = (
-                            self.robot.poseEstimator.getYaw().degrees()
+                            self.robot.poseEstimator.curEstPose.rotation().degrees()
                         )
                         self.tick_count_max = 5
                     else:
@@ -256,7 +256,7 @@ class OI:
                             if self.find_heading:
                                 if self.tick_count <= self.tick_count_max:
                                     self.robot_oriented_angle = (
-                                        self.robot.poseEstimator.getYaw().degrees()
+                                        self.robot.poseEstimator.curEstPose.rotation().degrees()
                                     )
                                     self.tick_count += 1
                                 else:
@@ -360,6 +360,16 @@ class OI:
             self.robot.shooter.accel_good = False
             self.robot.pulse_pivot = False
             self.robot.intake_at_default = True
+
+        @self.driver1.RIGHT_BUMPER.whenHeld
+        def _():
+            self.robot.final_lineup_pose = self.robot.poseEstimator.get_path_to_trench()
+            self.robot.running_pid_lineup = True
+        
+        @self.driver1.RIGHT_BUMPER.whenReleased
+        def _():
+            self.robot.running_pid_lineup = False
+            self.robot_oriented_angle = self.robot.poseEstimator.curEstPose.rotation().degrees()
 
         @self.driver2.RIGHT_BUMPER.whenPressed
         def _():

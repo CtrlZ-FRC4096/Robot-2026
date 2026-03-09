@@ -9,7 +9,7 @@ from phoenix6 import controls, configs, hardware, signals
 import wpilib
 import wpimath
 import wpimath.controller
-from wpimath.geometry import Rotation2d, Translation2d, Translation3d, Rotation3d
+from wpimath.geometry import Rotation2d, Translation2d, Translation3d, Rotation3d, Pose2d
 from wpimath.trajectory import TrapezoidProfile
 from wpimath.units import inchesToMeters, degreesToRadians
 from wpilib import Timer
@@ -138,6 +138,9 @@ class Shooter(Subsystem):
     
     def pose_in_trench(self):
         pose = self.robot.poseEstimator.curEstPose.translation() + Translation2d(0, 0.27).rotateBy(self.robot.poseEstimator.curEstPose.rotation())
+        cur_speeds = self.robot.drivetrain.get_field_relative_speeds()
+        predicted_pose = Translation2d(self.robot.poseEstimator.curEstPose.X() + cur_speeds.vx * 0.1,
+                                       self.robot.poseEstimator.curEstPose.Y() * cur_speeds.vy * 0.1) + Translation2d(0, 0.27).rotateBy(Rotation2d(self.robot.poseEstimator.curEstPose.rotation().radians() + cur_speeds.omega))
 
         min_x_blue = inchesToMeters(156.406)
         max_x_blue = inchesToMeters(205.406)
@@ -151,6 +154,11 @@ class Shooter(Subsystem):
         or (min_x_blue <= pose.X() <= max_x_blue and min_y_left <= pose.Y() <= max_y_left) # blue left trench
         or (min_x_red <= pose.X() <= max_x_red and min_y_right <= pose.Y() <= max_y_right) # red right trench
         or (min_x_red <= pose.X() <= max_x_red and min_y_left <= pose.Y() <= max_y_left) # red left trench
+        ) or (
+            (min_x_blue <= predicted_pose.X() <= max_x_blue and min_y_right <= predicted_pose.Y() <= max_y_right) # blue right trench
+        or (min_x_blue <= predicted_pose.X() <= max_x_blue and min_y_left <= predicted_pose.Y() <= max_y_left) # blue left trench
+        or (min_x_red <= predicted_pose.X() <= max_x_red and min_y_right <= predicted_pose.Y() <= max_y_right) # red right trench
+        or (min_x_red <= predicted_pose.X() <= max_x_red and min_y_left <= predicted_pose.Y() <= max_y_left)
         ):
             return True
         else:

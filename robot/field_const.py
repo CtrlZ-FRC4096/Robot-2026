@@ -56,7 +56,7 @@ class FieldConstants:
             else translation
         )
 
-    def flip_Rotation2d(self, rotation):
+    def flip_Rotation2d(self, rotation : Rotation2d):
         return (
             rotation.rotateBy(Rotation2d.fromDegrees(180))
             if self.shouldFlip

@@ -353,7 +353,7 @@ class Robot(CoroutineRobot):
         self.scheduler.cancelAll()
         self.running_pid_lineup = False
         self.in_autonomous_mode = False
-        self.oi.robot_oriented_angle = self.poseEstimator.getYaw().degrees()
+        self.oi.robot_oriented_angle = self.poseEstimator.curEstPose.rotation().degrees()
         self.in_teleop_mode = True
         self.timer.start()
 
