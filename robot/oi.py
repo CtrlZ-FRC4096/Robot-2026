@@ -52,6 +52,7 @@ from robotpy_apriltag import AprilTagField, AprilTagFieldLayout
 
 # Controls
 from wpilibextra.customcontroller import XboxCommandController
+from wpilib.interfaces import GenericHID
 
 from field_const import FieldConstants
 from wpimath.units import inchesToMeters, degreesToRadians, radiansToDegrees
@@ -95,7 +96,8 @@ class OI:
         self.cardinal_directing = False
         self.robot_oriented_angle = self.robot.poseEstimator.getYaw().degrees()
 
-        self.rumble_button = Button(lambda: self.robot.has_coral)
+        self.rumble_button_d1 = Button(lambda: self.robot.rumble_d1)
+        self.rumble_button_d2 = Button(lambda: self.robot.rumble_d2)
         self.can_crash = False
 
         self.find_heading = True
@@ -107,16 +109,26 @@ class OI:
 
         self.accel_shoot_limiter = SlewRateLimiter(0.2, -3)
 
-        @self.rumble_button.whenPressed
+        @self.rumble_button_d1.whenPressed
+        def _():
+            timer = Timer()
+            timer.start()
+            self.driver1.xbox.setRumble(GenericHID.RumbleType.kLeftRumble, 1)
+            while not timer.hasElapsed(0.5):
+                print("rumbling")
+                yield
+            # self.driver1.setRumble(0)
+            self.robot.rumble_d1 = False
+        
+        @self.rumble_button_d2.whenPressed
         def _():
             timer = Timer()
             timer.start()
             self.driver2.setRumble(1)
-            self.driver1.setRumble(1)
             while not timer.hasElapsed(0.5):
                 yield
             self.driver2.setRumble(0)
-            self.driver1.setRumble(0)
+            self.robot.rumble_d2 = False
 
         @self.robot.drivetrain.setDefaultCommand
         def _():
@@ -400,7 +412,10 @@ class OI:
         def _():
             self.robot.should_hub_track = not self.robot.should_hub_track
 
-        
+        @self.driver1.B.whenPressed
+        def _():
+            self.robot.rumble_d1 = True
+
         @self.driver2.RIGHT_TRIGGER_AS_BUTTON.whenPressed
         def _():
             self.robot.is_climbing = True

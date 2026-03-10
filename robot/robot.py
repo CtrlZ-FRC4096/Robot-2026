@@ -25,6 +25,7 @@ from commands2 import (
 )
 import wpilib
 from wpilib import Timer, DataLogManager, DriverStation, Field2d, SmartDashboard
+from wpilib.simulation import DriverStationSim
 import wpilib.sysid
 import wpimath.geometry
 import const
@@ -172,7 +173,8 @@ class Robot(CoroutineRobot):
         # With V's wrapper for commandify we automatically register all commands
 
         ### OTHER ###
-        
+        self.rumble_d1 = False
+        self.rumble_d2 = False
         self.oi = oi.OI(self)
 
 		
@@ -231,6 +233,8 @@ class Robot(CoroutineRobot):
         self.virtual_target = self.poseEstimator.field.getObject("Virtual Target")
 
         self.timer = Timer()
+        self.auto_winner_blue = None
+        self.match_timer = Timer()
 
         log_refresh_rate = 0.02 if self.isSimulation() else 0.25
         @self.addPeriodic(period=log_refresh_rate, offset=0)
@@ -350,6 +354,15 @@ class Robot(CoroutineRobot):
 
     ### TELEOPERATED ###
     def teleop_mode(self):
+        auto_winner = self.driverstation.getGameSpecificMessage()
+        if auto_winner == "R":
+            self.auto_winner_blue = False
+        elif auto_winner == "B":
+            self.auto_winner_blue = True
+        else:
+            pass
+            
+
         self.scheduler.cancelAll()
         self.running_pid_lineup = False
         self.in_autonomous_mode = False
@@ -465,11 +478,13 @@ class Robot(CoroutineRobot):
         for s in self.subsystems:
             s.log()
 
-        self.match_time = self.timer.get()
+        self.match_time = self.match_timer.get()
         wpilib.SmartDashboard.putNumber("Match Time", self.match_time)
         wpilib.SmartDashboard.putNumber(
             "robot oriented angle", self.oi.robot_oriented_angle
         )
+
+        SmartDashboard.putBoolean("Rumble D1", self.rumble_d1)
 
 
 ### MAIN ###
