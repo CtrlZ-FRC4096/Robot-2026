@@ -164,7 +164,7 @@ class PoseEstimator(Subsystem):
             const.SWERVE_KINEMATICS, self.getYaw(), self.get_module_positions(), self.curEstPose # type: ignore
         )
 
-        self.xystd_single_tag = 0.01
+        self.xystd_single_tag = 0.2
         self.thetastd_single_tag = 1000.0
 
         ROBOT_TO_CAM1 = Transform3d(
@@ -420,20 +420,25 @@ class PoseEstimator(Subsystem):
             for combined in single_tag_poses:
                 pose : Pose2d = combined[0]
                 tgt_id = combined[1]
+                ambiguity = combined[2]
+                tgtZEst = combined[3]
+                print(f"tgtZEst: {tgtZEst}")
+                print(f"ambiguity : {ambiguity}")
                 tag_pose = self.tag_layout.getTagPose(tgt_id)
                 distance = tag_pose.translation().toTranslation2d().distance(pose.translation())
                 self.camera_X[cam.camName] = pose.X()
                 self.camera_Y[cam.camName] = pose.Y()
                 self.camera_theta[cam.camName] = pose.rotation()
                 # if not(abs(self.gyro.get_pitch()) >= 10 or abs(self.gyro.get_roll()) >= 10):
-                if distance <= 5:
+                if not(ambiguity >= 0.3 or tgtZEst > 0.75):
+                    distance_modifier = 100 if distance > 5 else 1
                     self.poseEst.addVisionMeasurement(
                         pose,
                         cam.getObsTime(),
                         (
-                            self.xystd_single_tag * (distance ** 2),  # * (min_ambiguity / 0.4),
-                            self.xystd_single_tag * (distance ** 2),  # * (min_ambiguity / 0.4),
-                            self.thetastd_single_tag * (distance ** 2),  # * (min_ambiguity / 0.4),
+                            self.xystd_single_tag * (distance ** 2) * distance_modifier,  # * (min_ambiguity / 0.4),
+                            self.xystd_single_tag * (distance ** 2) * distance_modifier,  # * (min_ambiguity / 0.4),
+                            self.thetastd_single_tag * (distance ** 2) * distance_modifier,  # * (min_ambiguity / 0.4),
                         ),
                     )
         if z_count > 0:
@@ -477,6 +482,7 @@ class PoseEstimator(Subsystem):
         SmartDashboard.putNumber(
             "Camera/Odometry Theta", self.curEstPose.rotation().degrees()
         )
+        SmartDashboard.putNumber("Est Z", self.estZ)
 
         SmartDashboard.putNumber(
             "Swerve/Odometry X", self.odometry.getPose().x_feet * 0.305
