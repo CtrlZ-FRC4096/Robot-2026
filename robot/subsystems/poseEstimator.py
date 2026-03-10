@@ -157,7 +157,7 @@ class PoseEstimator(Subsystem):
         # self.curEstPose = Pose2d(4.44, 8.1-0.641, math.pi)
         # climb pose
         # self.curEstPose = Pose2d(1.003, 4.637, Rotation2d(math.pi / 2))
-        self.curEstPose = Pose2d()
+        self.curEstPose = Pose2d(2, 2, self.getYaw())
         self.estZ = 0
 
         self.poseEst = SwerveDrive4PoseEstimator(

@@ -65,7 +65,7 @@ class Drivetrain(Subsystem):
         super().__init__()
         self.robot = robot
 
-        self.angle_pid = PIDController(0.046, 0.0, 0.001)
+        self.angle_pid = PIDController(0.046, 0.0, 0.001) # 0.046, 0.0, 0.001
         self.angle_pid.enableContinuousInput(0, 360)
         self.angle_pid.setTolerance(0.5)  # Set position tolerance to 0.5 degrees
 
