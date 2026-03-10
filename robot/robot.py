@@ -179,8 +179,6 @@ class Robot(CoroutineRobot):
 
         # self.pathplanner_config = RobotConfig.fromGUISettings()
 
-        self.match_time = -1
-
         ### FIELD LOGGING ###
         self.field = Field2d()
         wpilib.SmartDashboard.putData("Field", self.field)
@@ -232,6 +230,9 @@ class Robot(CoroutineRobot):
 
         self.timer = Timer()
 
+        self.match_timer = Timer()
+        self.alliance_shift = 0
+
         log_refresh_rate = 0.02 if self.isSimulation() else 0.25
         @self.addPeriodic(period=log_refresh_rate, offset=0)
         def _():
@@ -246,7 +247,7 @@ class Robot(CoroutineRobot):
         self.in_autonomous_mode = False
         self.in_teleop_mode = False
 
-
+        self.can_score = False
 
         self.auto = self.autoroutines.test_trench_auto()
 
@@ -360,6 +361,15 @@ class Robot(CoroutineRobot):
         while True:
             yield
 
+    def update_match_timer(self):
+        self.match_time = self.match_timer.get()
+        if self.match_time <= 10:
+            self.alliance_shift = 0
+        elif 10 < self.match_time <= 100:
+            self.alliance_shift = ((self.match_time-10)//25)+1
+        else:
+            self.alliance_shift = 5
+
     ### WAIT FUNCTION ###
     def wait(self, time):
         timer = Timer()
@@ -388,6 +398,8 @@ class Robot(CoroutineRobot):
         SmartDashboard.putNumber("Shooting Values/Fly Speed", self.fly_speed)
 
         SmartDashboard.putBoolean("Should Flip", self.fieldConstants.shouldFlip)
+
+        wpilib.SmartDashboard.putNumber("Match Time", self.match_time)
 
         if self.isSimulation():
             wpilib.SmartDashboard.putNumberArray("RobotPose", [self.poseEstimator.curEstPose.X(), self.poseEstimator.curEstPose.Y(), self.poseEstimator.curEstPose.rotation().degrees()])
@@ -465,8 +477,6 @@ class Robot(CoroutineRobot):
         for s in self.subsystems:
             s.log()
 
-        self.match_time = self.timer.get()
-        wpilib.SmartDashboard.putNumber("Match Time", self.match_time)
         wpilib.SmartDashboard.putNumber(
             "robot oriented angle", self.oi.robot_oriented_angle
         )
