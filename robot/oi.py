@@ -93,7 +93,7 @@ class OI:
         ### Driving ###
         self.cardinal = 0
         self.cardinal_directing = False
-        self.robot_oriented_angle = self.robot.poseEstimator.curEstPose.rotation().degrees()
+        self.robot_oriented_angle = self.robot.poseEstimator.getYaw().degrees()
 
         self.rumble_button = Button(lambda: self.robot.has_coral)
         self.can_crash = False
@@ -232,7 +232,7 @@ class OI:
                             False,
                         )
                         self.robot_oriented_angle = (
-                            self.robot.poseEstimator.curEstPose.rotation().degrees()
+                            self.robot.poseEstimator.getYaw().degrees()
                         )
                         self.tick_count_max = 5
                     else:
@@ -256,7 +256,7 @@ class OI:
                             if self.find_heading:
                                 if self.tick_count <= self.tick_count_max:
                                     self.robot_oriented_angle = (
-                                        self.robot.poseEstimator.curEstPose.rotation().degrees()
+                                        self.robot.poseEstimator.getYaw().degrees()
                                     )
                                     self.tick_count += 1
                                 else:

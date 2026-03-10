@@ -157,14 +157,14 @@ class PoseEstimator(Subsystem):
         # self.curEstPose = Pose2d(4.44, 8.1-0.641, math.pi)
         # climb pose
         # self.curEstPose = Pose2d(1.003, 4.637, Rotation2d(math.pi / 2))
-        self.curEstPose = Pose2d(1, 1, self.getYaw())
+        self.curEstPose = Pose2d(2, 2, self.getYaw())
         self.estZ = 0
 
         self.poseEst = SwerveDrive4PoseEstimator(
             const.SWERVE_KINEMATICS, self.getYaw(), self.get_module_positions(), self.curEstPose # type: ignore
         )
 
-        self.xystd_single_tag = 0.2
+        self.xystd_single_tag = 0.05
         self.thetastd_single_tag = 1000.0
 
         ROBOT_TO_CAM1 = Transform3d(
@@ -183,8 +183,8 @@ class PoseEstimator(Subsystem):
         ROBOT_TO_COLOR_2 = Transform3d() # TO DO
 
         self.cams = [
-            # WrapperedPhotonCameraTag("camera2", ROBOT_TO_CAM2),
-            WrapperedPhotonCameraTag("camera3", ROBOT_TO_CAM3),
+            WrapperedPhotonCameraTag("camera2", ROBOT_TO_CAM2),
+            # WrapperedPhotonCameraTag("camera3", ROBOT_TO_CAM3),
         ]
         # self.intake_cam = WrapperedPhotonCameraIntakeFuel("color1", ROBOT_TO_COLOR_1) # WRONG NAME MAYBE
         # self.hopper_cam = WrapperedPhotonCameraFuel("color2", ROBOT_TO_COLOR_2)
@@ -430,8 +430,8 @@ class PoseEstimator(Subsystem):
                 self.camera_Y[cam.camName] = pose.Y()
                 self.camera_theta[cam.camName] = pose.rotation()
                 # if not(abs(self.gyro.get_pitch()) >= 10 or abs(self.gyro.get_roll()) >= 10):
-                if not(ambiguity >= 0.3 or tgtZEst > 0.75):
-                    distance_modifier = 100 if distance > 5 else 1
+                if not(ambiguity >= 0.3) or True:# or tgtZEst > 0.75):
+                    distance_modifier = 1 if distance > 5 else 1
                     self.poseEst.addVisionMeasurement(
                         pose,
                         cam.getObsTime(),
