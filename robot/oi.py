@@ -392,17 +392,20 @@ class OI:
         @self.driver2.B.whenPressed
         def _():
             self.robot.shooter.test_hood_position += 1
+
+        @self.driver2.RIGHT_BUMPER.whenPressed
+        def _():
+            self.robot.known_auto_win = True
+        
+        @self.driver2.LEFT_BUMPER.whenPressed
+        def _():
+            self.robot.known_auto_win = False
         
         @self.driver2.X.whenPressed
         def _():
             self.robot.shooter.test_hood_position -= 1
             if self.robot.did_autonomous:
                 self.robot.known_auto_win = False
-        
-        @self.driver2.Y.whenPressed
-        def _():
-            if self.robot.did_autonomous:
-                self.robot.known_auto_win = True
         
         @self.driver2.POV.RIGHT.whenPressed
         def _():

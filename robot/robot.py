@@ -344,6 +344,8 @@ class Robot(CoroutineRobot):
                 data = self.driverstation.getGameSpecificMessage()
                 if data != None:
                     self.known_auto_win = (data == "R")
+        
+        self.match_timer.stop()
 
         while True: # Needs to continuously call while robot is disabled.
             yield
@@ -377,8 +379,8 @@ class Robot(CoroutineRobot):
             yield
     
     def hub_active(self):
-        if not self.driverstation.isFMSAttached():
-            return True
+        # if not self.driverstation.isFMSAttached():
+        #     return True
         if self.alliance_shift == 0 or self.alliance_shift == 5:
             return True
         if self.known_auto_win == None:
@@ -397,7 +399,7 @@ class Robot(CoroutineRobot):
             self.alliance_shift = 5
         self.is_hub_active = self.hub_active()
         if self.is_hub_active == None:
-            if (self.timer % 1) >= 0.5:
+            if (self.timer.get() % 1) >= 0.5:
                 self.oi.driver2.xbox.setRumble(GenericHID.RumbleType.kLeftRumble, 0.5)
                 self.oi.driver2.xbox.setRumble(GenericHID.RumbleType.kRightRumble, 0)
             else:
@@ -439,8 +441,12 @@ class Robot(CoroutineRobot):
         wpilib.SmartDashboard.putNumber("Match Time", self.match_time)
         wpilib.SmartDashboard.putNumber("Alliance Shift", self.alliance_shift)
         wpilib.SmartDashboard.putBoolean("Hub active?", self.is_hub_active)
-        wpilib.SmartDashboard.putString("Winner of Autonomous", "RED"*self.known_auto_win+"BLUE"*(not self.known_auto_win))
+        if self.known_auto_win == None:
+            wpilib.SmartDashboard.putString("Winner of Autonomous", "UNKNOWN")
+        else:
+            wpilib.SmartDashboard.putString("Winner of Autonomous", "RED"*self.known_auto_win+"BLUE"*(not self.known_auto_win))
 
+        wpilib.SmartDashboard.putBooleanArray("Did autononmous/Did teleop", (self.did_autonomous, self.did_teleop))
         if self.isSimulation():
             wpilib.SmartDashboard.putNumberArray("RobotPose", [self.poseEstimator.curEstPose.X(), self.poseEstimator.curEstPose.Y(), self.poseEstimator.curEstPose.rotation().degrees()])
             # SmartDashboard.putNumberArray("ZeroedComponentPoses/Pose0", [0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0])
