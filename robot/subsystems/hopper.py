@@ -68,6 +68,8 @@ class Hopper(Subsystem):
         # ADD WEIGHT CODE HERE
         weight_ratio = self.robot.poseEstimator.get_weight_by_accel()
 
+        self.robot.update_match_timer()
+
     def log(self):
         SmartDashboard.putNumber("Hopper/Actual Speed", self.get_speed())
         SmartDashboard.putNumber("Hopper/Commanded Speed", self.commanded_speed)
