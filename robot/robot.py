@@ -247,7 +247,7 @@ class Robot(CoroutineRobot):
         self.in_autonomous_mode = False
         self.in_teleop_mode = False
 
-        self.known_auto_win = None  # false = BLUE, true = RED
+        self.auto_win = None  # false = BLUE, true = RED
 
         self.did_autonomous = False
         self.did_teleop = False
@@ -340,10 +340,10 @@ class Robot(CoroutineRobot):
             if self.did_teleop:
                 self.did_autonomous = False
                 self.did_teleop = False
-            elif self.known_auto_win == None:
+            elif self.auto_win == None:
                 data = self.driverstation.getGameSpecificMessage()
                 if data != None:
-                    self.known_auto_win = (data == "R")
+                    self.auto_win = (data == "R")
         
         self.match_timer.stop()
 
@@ -383,11 +383,11 @@ class Robot(CoroutineRobot):
         #     return True
         if self.alliance_shift == 0 or self.alliance_shift == 5:
             return True
-        if self.known_auto_win == None:
+        if self.auto_win == None:
             return None
         switch = (self.alliance_shift-1) % 2
         # shift is not equal to [did this alliance win auto?]
-        return switch != (self.known_auto_win == self.fieldConstants.shouldFlip)
+        return switch != (self.auto_win == self.fieldConstants.shouldFlip)
 
     def update_hub_status(self):
         self.match_time = self.match_timer.get()
@@ -441,10 +441,10 @@ class Robot(CoroutineRobot):
         wpilib.SmartDashboard.putNumber("Match Time", self.match_time)
         wpilib.SmartDashboard.putNumber("Alliance Shift", self.alliance_shift)
         wpilib.SmartDashboard.putBoolean("Hub active?", self.is_hub_active)
-        if self.known_auto_win == None:
+        if self.auto_win == None:
             wpilib.SmartDashboard.putString("Winner of Autonomous", "UNKNOWN")
         else:
-            wpilib.SmartDashboard.putString("Winner of Autonomous", "RED"*self.known_auto_win+"BLUE"*(not self.known_auto_win))
+            wpilib.SmartDashboard.putString("Winner of Autonomous", "RED"*self.auto_win+"BLUE"*(not self.auto_win))
 
         wpilib.SmartDashboard.putBooleanArray("Did autononmous/Did teleop", (self.did_autonomous, self.did_teleop))
         if self.isSimulation():
