@@ -57,8 +57,8 @@ from wpimath.units import degreesToRadians, inchesToMeters, radiansToDegrees
 from collections import deque
 from lookup_table import LookupTableAll, LookupTableAngle, LookupTableVel
 
-# from shapely import Polygon, Point
-# from shapely.affinity import translate, rotate
+from shapely import Polygon, Point
+from shapely.affinity import translate, rotate
 
 class Drivetrain(Subsystem):
     def __init__(self, robot: "Robot"):

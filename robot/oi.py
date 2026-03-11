@@ -113,11 +113,10 @@ class OI:
         def _():
             timer = Timer()
             timer.start()
-            self.driver1.xbox.setRumble(GenericHID.RumbleType.kLeftRumble, 1)
+            self.driver1.setRumble(1)
             while not timer.hasElapsed(0.5):
-                print("rumbling")
                 yield
-            # self.driver1.setRumble(0)
+            self.driver1.setRumble(0)
             self.robot.rumble_d1 = False
         
         @self.rumble_button_d2.whenPressed
@@ -281,9 +280,30 @@ class OI:
 
         ## D1 - POV
         
+        @self.driver1.A.whenPressed
+        def _():
+            self.cardinal_directing = True
+            self.robot_oriented_angle = self.robot.fieldConstants.flip_Rotation2d(Rotation2d.fromDegrees(180)).degrees()
+        
+        @self.driver1.B.whenPressed
+        def _():
+            self.cardinal_directing = True
+            self.robot_oriented_angle = self.robot.fieldConstants.flip_Rotation2d(Rotation2d.fromDegrees(-90)).degrees()
+        
+        @self.driver1.X.whenPressed
+        def _():
+            self.cardinal_directing = True
+            self.robot_oriented_angle = self.robot.fieldConstants.flip_Rotation2d(Rotation2d.fromDegrees(90)).degrees()
+
+        @self.driver1.Y.whenPressed
+        def _():
+            self.cardinal_directing = True
+            self.robot_oriented_angle = self.robot.fieldConstants.flip_Rotation2d(Rotation2d.fromDegrees(0)).degrees()
+
+
         @self.driver1.POV.DOWN.whenPressed
         def _():
-            robot.poseEstimator.set_yaw(0.0)
+            self.robot.poseEstimator.set_yaw(0.0)
             self.robot_oriented_angle = 0.0
         
         @self.driver1.LEFT_TRIGGER_AS_BUTTON.whenHeld
@@ -295,12 +315,12 @@ class OI:
         def _():
             self.robot.is_intaking = False
         
-        @self.driver1.A.whenPressed
+        @self.driver1.BACK.whenPressed
         def _():
             self.robot.snake_intake = not self.robot.snake_intake
             self.robot_oriented_angle = self.robot.poseEstimator.curEstPose.rotation().degrees()
         
-        @self.driver1.Y.whenPressed
+        @self.driver1.POV.UP.whenPressed
         def _():
             self.robot.shooter_at_default = True
             self.robot.intake_at_default = True
@@ -308,22 +328,16 @@ class OI:
             self.robot.shoot_fuel = False
             self.robot.shoot_intent = False
 
-        @self.driver1.X.whenHeld
+        @self.driver1.POV.RIGHT.whenHeld
         def _():
             self.robot.shoot_fuel = True
             self.robot.shooter_at_default = False
             self.robot.shoot_intent = False
             self.robot.is_climbing = False
-        @self.driver1.X.whenReleased
+        @self.driver1.POV.RIGHT.whenReleased
         def _():
             self.robot.shoot_fuel = False
             self.robot.shoot_intent = False
-
-        @self.driver1.POV.UP.whenPressed
-        def _():
-            self.robot.is_intaking = False
-            self.robot.intake_at_default = True
-            self.robot.pulse_pivot = False
 
         @self.driver1.POV.LEFT.whenPressed
         def _():
@@ -334,21 +348,21 @@ class OI:
             self.robot.shoot_fuel = False
             self.robot.is_climbing = False
         
-        @self.driver1.START.whenPressed
-        def _():
-            self.robot.is_intaking = True
-            self.robot.intake_at_default = False
-            self.robot.pulse_pivot = False
-            self.robot.is_climbing = False
-            self.robot.snake_intake = False
-            self.robot.track_fuel = True
+        # @self.driver1.START.whenPressed
+        # def _():
+        #     self.robot.is_intaking = True
+        #     self.robot.intake_at_default = False
+        #     self.robot.pulse_pivot = False
+        #     self.robot.is_climbing = False
+        #     self.robot.snake_intake = False
+        #     self.robot.track_fuel = True
 
-        @self.driver1.BACK.whenPressed
-        def _():
-            self.robot.is_intaking = False
-            self.robot.track_fuel = False
-            self.robot.pulse_pivot = False
-            self.robot.is_climbing = False
+        # @self.driver1.BACK.whenPressed
+        # def _():
+        #     self.robot.is_intaking = False
+        #     self.robot.track_fuel = False
+        #     self.robot.pulse_pivot = False
+        #     self.robot.is_climbing = False
             
         # @self.driver1.B.whenPressed
         # def _():
@@ -411,10 +425,6 @@ class OI:
         @self.driver2.A.whenPressed
         def _():
             self.robot.should_hub_track = not self.robot.should_hub_track
-
-        @self.driver1.B.whenPressed
-        def _():
-            self.robot.rumble_d1 = True
 
         @self.driver2.RIGHT_TRIGGER_AS_BUTTON.whenPressed
         def _():

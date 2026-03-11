@@ -172,7 +172,7 @@ class PoseEstimator(Subsystem):
             Rotation3d.fromDegrees(0.0, -10.0, 0.0)
         ) # TO DO 
         ROBOT_TO_CAM2 = Transform3d(
-            Translation3d(0.038, 0.343, 0.218),
+            Translation3d(0.165, 0.343, 0.218),
             Rotation3d.fromDegrees(0, -15, 90)
         )
         ROBOT_TO_CAM3 = Transform3d(
@@ -210,7 +210,7 @@ class PoseEstimator(Subsystem):
 
     def get_path_to_trench(self):
         if self.cur_pos_in_zone(): #from zone
-            good_rotation = self.robot.fieldConstants.flip_Rotation2d(Rotation2d(0))
+            good_rotation = self.robot.fieldConstants.flip_Rotation2d(Rotation2d.fromDegrees(90))
             can_rotate = (self.curEstPose.X() <= 2.7 and not self.robot.fieldConstants.shouldFlip) or (self.curEstPose.X() >= self.robot.fieldConstants.fieldLength - 2.7 and self.robot.fieldConstants.shouldFlip) 
             if (self.curEstPose.Y() >= self.robot.fieldConstants.fieldWidth / 2):  #(blue origin) left side
                 target_pose = Pose2d(self.robot.fieldConstants.flip_X_coord(4.621 - 1.25), 7.44, (good_rotation if can_rotate else self.curEstPose.rotation()))
@@ -219,10 +219,10 @@ class PoseEstimator(Subsystem):
         else: # from neutral
             can_rotate = (self.curEstPose.X() >= 6.421 and not self.robot.fieldConstants.shouldFlip) or (self.curEstPose.X() <= self.robot.fieldConstants.fieldLength - 6.421 and self.robot.fieldConstants.shouldFlip)
             if self.curEstPose.Y() >= self.robot.fieldConstants.fieldWidth / 2: # (blue origin) left side
-                good_rotation = Rotation2d()
+                good_rotation = Rotation2d.fromDegrees(-90)
                 target_pose = Pose2d(self.robot.fieldConstants.flip_X_coord(4.621 + 1.25), 7.44, (good_rotation if can_rotate else self.curEstPose.rotation()))
             else:
-                good_rotation = Rotation2d.fromDegrees(180)
+                good_rotation = Rotation2d.fromDegrees(90)
                 target_pose = Pose2d(self.robot.fieldConstants.flip_X_coord(4.621 + 1.25), self.robot.fieldConstants.fieldWidth - 7.44, (good_rotation if can_rotate else self.curEstPose.rotation()))
         return target_pose
 
