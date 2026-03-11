@@ -295,6 +295,7 @@ class OI:
             self.robot.is_intaking = False
             self.robot.shoot_fuel = False
             self.robot.shoot_intent = False
+        
 
         @self.driver1.X.whenHeld
         def _():
@@ -302,6 +303,7 @@ class OI:
             self.robot.shooter_at_default = False
             self.robot.shoot_intent = False
             self.robot.is_climbing = False
+        
         @self.driver1.X.whenReleased
         def _():
             self.robot.shoot_fuel = False
@@ -374,24 +376,38 @@ class OI:
         @self.driver2.RIGHT_BUMPER.whenPressed
         def _():
             self.robot.shooter.test_accelerator_speed += 1
+        
         @self.driver2.LEFT_BUMPER.whenPressed
         def _():
             self.robot.shooter.test_accelerator_speed -= 1
+        
         @self.driver2.POV.UP.whenPressed
         def _():
             self.robot.shooter.test_fly_speed += 1
+        
         @self.driver2.POV.DOWN.whenPressed
         def _():
             self.robot.shooter.test_fly_speed -= 1
+        
         @self.driver2.B.whenPressed
         def _():
             self.robot.shooter.test_hood_position += 1
+        
         @self.driver2.X.whenPressed
         def _():
             self.robot.shooter.test_hood_position -= 1
+            if self.robot.did_autonomous:
+                self.robot.known_auto_win = False
+        
+        @self.driver2.Y.whenPressed
+        def _():
+            if self.robot.did_autonomous:
+                self.robot.known_auto_win = True
+        
         @self.driver2.POV.RIGHT.whenPressed
         def _():
             self.robot.intake.test_intake_speed += 1
+        
         @self.driver2.POV.LEFT.whenPressed
         def _():
             self.robot.intake.test_intake_speed -= 1
@@ -399,7 +415,6 @@ class OI:
         @self.driver2.A.whenPressed
         def _():
             self.robot.should_hub_track = not self.robot.should_hub_track
-
         
         @self.driver2.RIGHT_TRIGGER_AS_BUTTON.whenPressed
         def _():

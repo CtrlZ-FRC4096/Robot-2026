@@ -183,7 +183,8 @@ class PoseEstimator(Subsystem):
         ROBOT_TO_COLOR_2 = Transform3d() # TO DO
 
         self.cams = [
-            # WrapperedPhotonCameraTag("camera2", ROBOT_TO_CAM2),
+            # WrapperedPhotonCameraTag("camera1", ROBOT_TO_CAM1),
+            WrapperedPhotonCameraTag("camera2", ROBOT_TO_CAM2),
             WrapperedPhotonCameraTag("camera3", ROBOT_TO_CAM3),
         ]
         # self.intake_cam = WrapperedPhotonCameraIntakeFuel("color1", ROBOT_TO_COLOR_1) # WRONG NAME MAYBE

@@ -307,4 +307,61 @@ class WrapperedPhotonCameraIntakeFuel:
     
     def getFuelMemory(self):
         return self.fuel_memory
+
+class WrapperedPhotonCameraBin:
+    def __init__(self, camName, robotToCam):
+        self.cam = PhotonCamera(camName)
+        self.camName = camName
+        self.robotToCam = robotToCam
+
+        self.count = 0
+        self.highest = 0
+
+        self.hopper_fill = 10 # fuel to fill the bottom of the hopper
+        self.offset = 0
+        self.layers = 0
+        self.layers_old = 0
+
+        self.tsw = False # timer switch
+        self.tsw_old = False
+        self.mem = []
+        self.timer = wpilib.Timer()
+        self.timer.start()
     
+    def update(self):
+        res = self.cam.getLatestResult()
+        fuel = res.getTargets()
+
+        self.mem.append(len(fuel))
+        if len(self.mem) > 1000:
+            del self.mem[0]
+        if (self.timer.get())%0.05 == 0:
+            self.tsw = not self.tsw
+        if self.tsw != self.tsw_old:
+            if self.tsw:
+                count1 = len(fuel)
+            else:
+                count2 = len(fuel)
+            if abs(count1-count2) <= 2:
+                self.count = (min(self.mem)+max(self.mem))/2 # median
+            else:
+                self.count = self.get_mode(self.mem)
+            self.tsw_old = self.tsw
+        
+        if self.count > self.highest:
+            self.highest = self.count
+
+        if self.count-self.offset > self.hopper_fill:
+            self.layers += 1
+            self.offset += self.hopper_fill
+
+    def is_full(self):
+        return self.layers >= 2
+    
+    def get_mode(x):
+        log = []
+        for item in x:
+            if (not item in [f[0] for f in log]) or (len(log) == 0):
+                log.append([item, 0])
+            log[[f[0] for f in log].index(item)][1] += 1
+        return sorted(log, key=lambda x:x[1], reverse=True)[0][0]
