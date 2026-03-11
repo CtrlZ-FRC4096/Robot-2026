@@ -371,6 +371,16 @@ class OI:
             self.robot.running_pid_lineup = False
             self.robot_oriented_angle = self.robot.poseEstimator.curEstPose.rotation().degrees()
 
+        @self.driver2.POV.RIGHT.whenHeld
+        def _():
+            self.robot.down_bad = True
+            self.robot.shooter_at_default = False
+        
+        @self.driver2.POV.RIGHT.whenReleased
+        def _():
+            self.robot.down_bad = False
+            self.robot.shooter_at_default = True
+
         @self.driver2.POV.UP.whenPressed
         def _():
             self.robot.shooter.test_fly_speed += 1

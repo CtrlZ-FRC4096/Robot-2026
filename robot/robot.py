@@ -406,6 +406,7 @@ class Robot(CoroutineRobot):
         SmartDashboard.putBoolean("States/Shooter at Default", self.shooter_at_default)
         SmartDashboard.putBoolean("States/Should Hub Track", self.should_hub_track)
         SmartDashboard.putBoolean("States/Pulse Pivot", self.pulse_pivot)
+        SmartDashboard.putBoolean("States/Down Bad", self.down_bad)
 
         SmartDashboard.putNumber("Shooting Values/Distance to Hub", self.distance)
         SmartDashboard.putNumber("Shooting Values/Time of Flight", self.time_of_flight)
