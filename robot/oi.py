@@ -331,13 +331,10 @@ class OI:
         @self.driver1.POV.RIGHT.whenHeld
         def _():
             self.robot.shoot_fuel = True
-            self.robot.shooter_at_default = False
-            self.robot.shoot_intent = False
-            self.robot.is_climbing = False
+
         @self.driver1.POV.RIGHT.whenReleased
         def _():
             self.robot.shoot_fuel = False
-            self.robot.shoot_intent = False
 
         @self.driver1.POV.LEFT.whenPressed
         def _():
@@ -346,42 +343,19 @@ class OI:
             self.robot.intake_at_default = True
             self.robot.shoot_intent = False
             self.robot.shoot_fuel = False
-            self.robot.is_climbing = False
-        
-        # @self.driver1.START.whenPressed
-        # def _():
-        #     self.robot.is_intaking = True
-        #     self.robot.intake_at_default = False
-        #     self.robot.pulse_pivot = False
-        #     self.robot.is_climbing = False
-        #     self.robot.snake_intake = False
-        #     self.robot.track_fuel = True
-
-        # @self.driver1.BACK.whenPressed
-        # def _():
-        #     self.robot.is_intaking = False
-        #     self.robot.track_fuel = False
-        #     self.robot.pulse_pivot = False
-        #     self.robot.is_climbing = False
-            
-        # @self.driver1.B.whenPressed
-        # def _():
-        #     self.robot.shoot_intent = not self.robot.shoot_intent
-        #     self.robot.mechanisms_at_default = not self.robot.shoot_intent
-        #     self.robot_oriented_angle = self.robot.poseEstimator.curEstPose.rotation().degrees()
 
         @self.driver1.RIGHT_TRIGGER_AS_BUTTON.whenHeld #shoot
         def _():
             self.robot.shooter_at_default = False
             self.robot.shoot_intent = True
             self.robot.shoot_fuel = False
-            self.robot.is_climbing = False
+
         @self.driver1.RIGHT_TRIGGER_AS_BUTTON.whenReleased
         def _():
             self.robot.shoot_intent = False
             self.robot.shoot_fuel = False
             self.robot.shooter_at_default = True
-            self.robot.is_climbing = False
+
             self.robot.shooter.shoot_ready = False
             self.robot.shooter.accel_good = False
             self.robot.pulse_pivot = False
@@ -397,12 +371,6 @@ class OI:
             self.robot.running_pid_lineup = False
             self.robot_oriented_angle = self.robot.poseEstimator.curEstPose.rotation().degrees()
 
-        @self.driver2.RIGHT_BUMPER.whenPressed
-        def _():
-            self.robot.shooter.test_accelerator_speed += 1
-        @self.driver2.LEFT_BUMPER.whenPressed
-        def _():
-            self.robot.shooter.test_accelerator_speed -= 1
         @self.driver2.POV.UP.whenPressed
         def _():
             self.robot.shooter.test_fly_speed += 1
@@ -415,49 +383,7 @@ class OI:
         @self.driver2.X.whenPressed
         def _():
             self.robot.shooter.test_hood_position -= 1
-        @self.driver2.POV.RIGHT.whenPressed
-        def _():
-            self.robot.intake.test_intake_speed += 1
-        @self.driver2.POV.LEFT.whenPressed
-        def _():
-            self.robot.intake.test_intake_speed -= 1
 
         @self.driver2.A.whenPressed
         def _():
             self.robot.should_hub_track = not self.robot.should_hub_track
-
-        @self.driver2.RIGHT_TRIGGER_AS_BUTTON.whenPressed
-        def _():
-            self.robot.is_climbing = True
-            self.robot.at_climbing_position = False
-            self.robot.intake_at_default = True
-            self.robot.is_intaking = False
-            self.robot.pulse_pivot = False
-            self.robot.track_fuel = False
-            self.robot.shooter_at_default = True
-            self.robot.shoot_fuel = False
-            self.robot.shoot_intent = False
-
-        @self.driver2.LEFT_TRIGGER_AS_BUTTON.whenPressed
-        def _():
-            self.robot.is_climbing = True
-            self.robot.at_climbing_position = True
-            self.robot.intake_at_default = True
-            self.robot.is_intaking = False
-            self.robot.pulse_pivot = False
-            self.robot.track_fuel = False
-            self.robot.shooter_at_default = True
-            self.robot.shoot_fuel = False
-            self.robot.shoot_intent = False
-        
-        @self.driver2.START.whenPressed
-        def _():
-            self.robot.is_climbing = False
-            self.robot.at_climbing_position = False
-            self.robot.intake_at_default = True
-            self.robot.is_intaking = False
-            self.robot.pulse_pivot = False
-            self.robot.track_fuel = False
-            self.robot.shooter_at_default = True
-            self.robot.shoot_fuel = False
-            self.robot.shoot_intent = False

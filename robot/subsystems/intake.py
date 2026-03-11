@@ -144,9 +144,6 @@ class Intake(Subsystem):
                 # print("switch to in")
                 self.set_position(-0.23)
             self.set_intake_speed(self.test_intake_speed)
-        elif self.robot.is_climbing:
-            self.stop_intake()
-            self.set_position(-0.23)
         else:
             self.stop_intake()
             self.set_position(-0.08)

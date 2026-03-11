@@ -151,7 +151,7 @@ class Robot(CoroutineRobot):
         self.intake = subsystems.intake.Intake(self)
         self.shooter = shooter.Shooter(self)
         self.hopper = hopper.Hopper(self)
-        self.climber = climber.Climber(self)
+        # self.climber = climber.Climber(self)
 
         self.subsystems = [
             self.drivetrain,
@@ -160,7 +160,7 @@ class Robot(CoroutineRobot):
             self.intake,
             self.shooter,
             self.hopper,
-            self.climber
+            # self.climber
         ]
 
         # If everything in self.subsystems is a Subsystem object, then
@@ -201,6 +201,7 @@ class Robot(CoroutineRobot):
         self.intake_at_default = True
         self.shooter_at_default = True
         self.trench = True
+        self.down_bad = False
 
         self.static_target = Translation2d()
 
@@ -209,7 +210,6 @@ class Robot(CoroutineRobot):
         self.shoot_fuel = False
         self.shoot_intent = False
         self.spin_up = False
-        self.is_climbing = False
         self.is_intaking = False
         self.pulse_indexer = False
         self.pulse_pivot = False
@@ -227,6 +227,9 @@ class Robot(CoroutineRobot):
         self.hood_angle = 35
         self.virtual_goal = Translation2d()
         self.fuel_in_hopper = 8
+
+        self.down_bad_fly_speed = 55 # TODO: TUNE
+        self.down_bad_hood_angle = 35 # TODO: TUNE
 
         self.virtual_target = self.poseEstimator.field.getObject("Virtual Target")
 
@@ -403,7 +406,6 @@ class Robot(CoroutineRobot):
         SmartDashboard.putBoolean("States/Shooter at Default", self.shooter_at_default)
         SmartDashboard.putBoolean("States/Should Hub Track", self.should_hub_track)
         SmartDashboard.putBoolean("States/Pulse Pivot", self.pulse_pivot)
-        SmartDashboard.putBoolean("States/Is Climbing", self.is_climbing)
 
         SmartDashboard.putNumber("Shooting Values/Distance to Hub", self.distance)
         SmartDashboard.putNumber("Shooting Values/Time of Flight", self.time_of_flight)
@@ -447,8 +449,8 @@ class Robot(CoroutineRobot):
             final_outer_trans = default_outer + inner_outer_transform
             SmartDashboard.putNumberArray("FinalComponentPoses/Pose2", [final_outer_trans.X(), final_outer_trans.Y(), final_outer_trans.Z(), final_outer_quat.W(), final_outer_quat.X(), final_outer_quat.Y(), final_outer_quat.Z()])
             
-            cur_climber_pos = self.climber.get_position()
-            SmartDashboard.putNumberArray("FinalComponentPoses/Pose3", [0, 0, cur_climber_pos / 5, 0, 0, 0, 0])
+            # cur_climber_pos = self.climber.get_position()
+            # SmartDashboard.putNumberArray("FinalComponentPoses/Pose3", [0, 0, cur_climber_pos / 5, 0, 0, 0, 0])
 
 
             default_fuel_pose = Translation3d(-0.26, -0.28, 0.28)

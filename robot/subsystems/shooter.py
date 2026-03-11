@@ -166,7 +166,7 @@ class Shooter(Subsystem):
 
     def ready_to_shoot(self):
         rotation = self.robot.drivetrain.get_target_angle(self.robot.time_of_flight, self.robot.static_target)
-        if (abs(abs(self.get_fly_speed()) - self.commanded_fly_speed <= 3)) and (abs(abs(self.get_hood_position()) - self.commanded_hood_position) < 2) and (abs((self.robot.poseEstimator.curEstPose.rotation() - rotation).degrees()) <= 3): #and pointed at hub   
+        if (abs(abs(self.get_fly_speed()) - self.commanded_fly_speed <= 3)) and (abs(abs(self.get_hood_position()) - self.commanded_hood_position) < 2) and (self.robot.down_bad or abs((self.robot.poseEstimator.curEstPose.rotation() - rotation).degrees()) <= 3): #and pointed at hub   
             self.shoot_ready = True
             return True
         else:
@@ -178,15 +178,21 @@ class Shooter(Subsystem):
             self.set_hood_position(0.0)
             self.stop_accelerator()
             self.stop_fly()
-        elif self.robot.shoot_intent:
+        elif self.robot.shoot_intent or self.robot.down_bad:
                 if not self.robot.in_autonomous_mode or (self.robot.in_autonomous_mode and self.robot.poseEstimator.cur_pos_in_zone()):
-                    self.set_fly_speed(self.robot.fly_speed)
-                    self.set_hood_position(self.robot.hood_angle)
+                    if self.robot.down_bad:
+                        fly_speed = self.robot.down_bad_fly_speed
+                        hood_angle = self.robot.down_bad_hood_angle
+                    else:
+                        fly_speed = self.robot.fly_speed
+                        hood_angle = self.robot.hood_angle
+                    self.set_fly_speed(fly_speed)
+                    self.set_hood_position(hood_angle)
                     rotation = self.robot.drivetrain.get_target_angle(self.robot.time_of_flight, self.robot.static_target)
                     SmartDashboard.putNumber("rotation lock error", (self.robot.poseEstimator.curEstPose.rotation() - rotation).degrees())
                     if self.robot.shoot_fuel or self.ready_to_shoot() or self.shoot_ready:
                         self.set_accelerator_speed(self.test_accelerator_speed)
-                        if (abs(abs(self.get_accelerator_speed()) - self.commanded_accelerator_speed) <= 3 or self.accel_good) and (not self.robot.in_autonomous_mode or  self.robot.poseEstimator.cur_pos_in_zone()):
+                        if self.robot.shoot_fuel or (abs(abs(self.get_accelerator_speed()) - self.commanded_accelerator_speed) <= 3 or self.accel_good) and (not self.robot.in_autonomous_mode or  self.robot.poseEstimator.cur_pos_in_zone()):
                             if not self.accel_good:
                                 self.robot.intake.tick_count = 0
                             self.accel_good = True
@@ -198,12 +204,11 @@ class Shooter(Subsystem):
                         else:
                             self.robot.hopper.commanded_speed = -0.2
                             self.robot.hopper.indexer_motor.set_control(controls.DutyCycleOut(-0.2, enable_foc=False))
-        elif self.robot.is_climbing:
+        else:
             self.set_hood_position(0.0)
-            self.stop_fly()
             self.stop_accelerator()
+            self.stop_fly()
 
-        
     def log(self):
         SmartDashboard.putNumber("Shooter/Right Fly Speed", self.right_fly_motor.get_velocity().value)
         SmartDashboard.putNumber("Shooter/Left Up Fly Speed", self.left_up_fly_motor.get_velocity().value)
