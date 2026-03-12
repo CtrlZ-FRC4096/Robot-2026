@@ -230,8 +230,6 @@ class Robot(CoroutineRobot):
 
         self.timer = Timer()
 
-        self.match_timer = Timer()
-        self.alliance_shift = 0
 
         log_refresh_rate = 0.02 if self.isSimulation() else 0.25
         @self.addPeriodic(period=log_refresh_rate, offset=0)
@@ -247,7 +245,10 @@ class Robot(CoroutineRobot):
         self.in_autonomous_mode = False
         self.in_teleop_mode = False
 
-        # auto winner logic
+        # match timer & auto winner logic
+        self.match_timer = Timer()
+        self.alliance_shift = 0
+        self.alliance_shift_time_remaining = 0
         self.auto_win = None  # false = BLUE, true = RED
         self.auto_win_found = False
         self.auto_win_check_attempts = 10 # change if not checking enough
@@ -403,10 +404,13 @@ class Robot(CoroutineRobot):
         self.match_time = self.match_timer.get()
         if self.match_time <= 10:
             self.alliance_shift = 0
-        elif 10 < self.match_time <= 100:
+            self.alliance_shift_time_remaining = int((10-self.match_time))
+        elif 10 < self.match_time <= 110:
             self.alliance_shift = ((self.match_time-10)//25)+1
+            self.alliance_shift_time_remaining = int(25-(self.match_time-10)%25)+1
         else:
             self.alliance_shift = 5
+            self.alliance_shift_time_remaining = round(130-self.match_time, 1)
         self.is_hub_active = self.hub_active()
         if self.is_hub_active == None:
             if (self.timer.get() % 1) >= 0.5:
@@ -457,9 +461,11 @@ class Robot(CoroutineRobot):
                 wpilib.SmartDashboard.putString("Alliance Shift", str(int(self.alliance_shift)))
             else:
                 wpilib.SmartDashboard.putString("Alliance Shift", "END GAME")
-        else:
+        elif self.isAutonomous():
             wpilib.SmartDashboard.putString("Alliance Shift", "AUTO")
-        
+        else:
+            wpilib.SmartDashboard.putString("Alliance Shift", "DISABLED")
+        wpilib.SmartDashboard.putNumber("Time Remaining", self.alliance_shift_time_remaining)
         wpilib.SmartDashboard.putBoolean("Hub active?", self.is_hub_active)
         if self.auto_win == None:
             wpilib.SmartDashboard.putString("Winner of Autonomous", "UNKNOWN")
