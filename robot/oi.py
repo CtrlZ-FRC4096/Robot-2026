@@ -383,8 +383,16 @@ class OI:
 
         @self.driver2.POV.UP.whenPressed
         def _():
-            self.robot.shooter.test_fly_speed += 1
+            self.robot.hood_fudge_value += 1
+        
         @self.driver2.POV.DOWN.whenPressed
+        def _():
+            self.robot.hood_fudge_value -= 1
+
+        @self.driver2.Y.whenPressed
+        def _():
+            self.robot.shooter.test_fly_speed += 1
+        @self.driver2.A.whenPressed
         def _():
             self.robot.shooter.test_fly_speed -= 1
         @self.driver2.B.whenPressed
@@ -394,6 +402,6 @@ class OI:
         def _():
             self.robot.shooter.test_hood_position -= 1
 
-        @self.driver2.A.whenPressed
+        @self.driver2.POV.LEFT.whenPressed
         def _():
             self.robot.should_hub_track = not self.robot.should_hub_track

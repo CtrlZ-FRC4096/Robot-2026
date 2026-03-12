@@ -231,6 +231,8 @@ class Robot(CoroutineRobot):
         self.down_bad_fly_speed = 55 # TODO: TUNE
         self.down_bad_hood_angle = 35 # TODO: TUNE
 
+        self.hood_fudge_value = 0
+
         self.virtual_target = self.poseEstimator.field.getObject("Virtual Target")
 
         self.timer = Timer()
@@ -412,6 +414,7 @@ class Robot(CoroutineRobot):
         SmartDashboard.putNumber("Shooting Values/Time of Flight", self.time_of_flight)
         SmartDashboard.putNumber("Shooting Values/Hood Angle", self.hood_angle)
         SmartDashboard.putNumber("Shooting Values/Fly Speed", self.fly_speed)
+        SmartDashboard.putNumber("Shooting Values/Hood Fudge Value", self.hood_fudge_value)
 
         SmartDashboard.putBoolean("Should Flip", self.fieldConstants.shouldFlip)
 
