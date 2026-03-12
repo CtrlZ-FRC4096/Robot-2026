@@ -247,7 +247,10 @@ class Robot(CoroutineRobot):
         self.in_autonomous_mode = False
         self.in_teleop_mode = False
 
+        # auto winner logic
         self.auto_win = None  # false = BLUE, true = RED
+        self.auto_win_found = False
+        self.auto_win_check_attempts = 10 # change if not checking enough
 
         self.did_autonomous = False
         self.did_teleop = False
@@ -336,20 +339,17 @@ class Robot(CoroutineRobot):
         for subsystem in self.subsystems:
             subsystem.stop()
         
-        if self.did_autonomous:
-            if self.did_teleop:
-                self.did_autonomous = False
-                self.did_teleop = False
-            elif self.auto_win == None:
-                data = self.driverstation.getGameSpecificMessage()
-                if data != None:
-                    self.auto_win = (data == "R")
+        # may or may not use these later
+        if self.did_autonomous and self.did_teleop:
+            self.did_autonomous = False
+            self.did_teleop = False
+            self.auto_win_found = False
         
         self.match_timer.stop()
 
         while True: # Needs to continuously call while robot is disabled.
             yield
-
+    
     ### AUTONOMOUS ###
     def autonomous_mode(self):
 
@@ -364,6 +364,16 @@ class Robot(CoroutineRobot):
 
         # self.scheduler.schedule(self.auto)
 
+    def autonomousExit(self):
+        for x in range(self.auto_win_check_attempts):
+            print("finding auto winner: attempt", x+1)
+            data = self.driverstation.getGameSpecificMessage()
+            if data != None:
+                self.auto_win = (data == "R")
+                self.auto_win_found = True
+                print("found!", "RED"*self.auto_win+"BLUE"*(not self.auto_win))
+                break
+    
     ### TELEOPERATED ###
     def teleop_mode(self):
         self.scheduler.cancelAll()
@@ -373,6 +383,7 @@ class Robot(CoroutineRobot):
         self.in_teleop_mode = True
         self.did_teleop = True
         self.timer.start()
+        self.match_timer.reset()
         self.match_timer.start()
 
         while True:
@@ -386,8 +397,8 @@ class Robot(CoroutineRobot):
         if self.auto_win == None:
             return None
         switch = (self.alliance_shift-1) % 2
-        # shift is not equal to [did this alliance win auto?]
-        return switch != (self.auto_win == self.fieldConstants.shouldFlip)
+        # shift is equal to [did this alliance win auto?]
+        return switch == (self.auto_win == self.fieldConstants.shouldFlip)
 
     def update_hub_status(self):
         self.match_time = self.match_timer.get()
@@ -439,19 +450,28 @@ class Robot(CoroutineRobot):
         SmartDashboard.putBoolean("Should Flip", self.fieldConstants.shouldFlip)
 
         wpilib.SmartDashboard.putNumber("Match Time", self.match_time)
-        wpilib.SmartDashboard.putNumber("Alliance Shift", self.alliance_shift)
+
+        if self.isTeleop():
+            if self.alliance_shift == 0:
+                wpilib.SmartDashboard.putString("Alliance Shift", "TRANSITION")
+            elif 1 <= self.alliance_shift <= 4:
+                wpilib.SmartDashboard.putString("Alliance Shift", str(int(self.alliance_shift)))
+            else:
+                wpilib.SmartDashboard.putString("Alliance Shift", "END GAME")
+        else:
+            wpilib.SmartDashboard.putString("Alliance Shift", "AUTO")
+        
         wpilib.SmartDashboard.putBoolean("Hub active?", self.is_hub_active)
         if self.auto_win == None:
             wpilib.SmartDashboard.putString("Winner of Autonomous", "UNKNOWN")
         else:
             wpilib.SmartDashboard.putString("Winner of Autonomous", "RED"*self.auto_win+"BLUE"*(not self.auto_win))
 
-        wpilib.SmartDashboard.putBooleanArray("Did autononmous/Did teleop", (self.did_autonomous, self.did_teleop))
         if self.isSimulation():
             wpilib.SmartDashboard.putNumberArray("RobotPose", [self.poseEstimator.curEstPose.X(), self.poseEstimator.curEstPose.Y(), self.poseEstimator.curEstPose.rotation().degrees()])
             # SmartDashboard.putNumberArray("ZeroedComponentPoses/Pose0", [0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0])
             # SmartDashboard.putNumberArray("ZeroedComponentPoses/Pose1", [0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0])
-            # SmartDashboard.putNumberArray("ZeroedComponentPoses/Pose2", [0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0])
+            # SmartDashboard.putNumberArray("ZeroedComponentPoses/Pose2", [0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0])5
 
 
             default_shooter_hood = Translation3d(-0.23, 0.15, 0.5)

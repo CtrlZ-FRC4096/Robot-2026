@@ -261,7 +261,8 @@ class PoseEstimator(Subsystem):
         return self.active_intake_tgt
 
     def stop(self):
-        print("sike this aint stoppin")
+        pass
+        # print("sike this aint stoppin")
 
     def set_module_states(self, desired_states):
         desired_states = SwerveDrive4Kinematics.desaturateWheelSpeeds(

@@ -395,11 +395,13 @@ class OI:
 
         @self.driver2.RIGHT_BUMPER.whenPressed
         def _():
-            self.robot.known_auto_win = True
+            if not self.robot.auto_win_found:
+                self.robot.auto_win = True
         
         @self.driver2.LEFT_BUMPER.whenPressed
         def _():
-            self.robot.known_auto_win = False
+            if not self.robot.auto_win_found:
+                self.robot.auto_win = False
         
         @self.driver2.X.whenPressed
         def _():
