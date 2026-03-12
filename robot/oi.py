@@ -327,6 +327,7 @@ class OI:
             self.robot.is_intaking = False
             self.robot.shoot_fuel = False
             self.robot.shoot_intent = False
+        
 
         @self.driver1.POV.RIGHT.whenHeld
         def _():
@@ -395,12 +396,20 @@ class OI:
         @self.driver2.A.whenPressed
         def _():
             self.robot.shooter.test_fly_speed -= 1
+        
         @self.driver2.B.whenPressed
         def _():
             self.robot.shooter.test_hood_position += 1
-        @self.driver2.X.whenPressed
+
+        @self.driver2.RIGHT_BUMPER.whenPressed
         def _():
-            self.robot.shooter.test_hood_position -= 1
+            if not self.robot.auto_win_found:
+                self.robot.auto_win = True
+        
+        @self.driver2.LEFT_BUMPER.whenPressed
+        def _():
+            if not self.robot.auto_win_found:
+                self.robot.auto_win = False
 
         @self.driver2.POV.LEFT.whenPressed
         def _():

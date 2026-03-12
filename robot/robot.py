@@ -36,7 +36,7 @@ import subsystems.drivetrain
 from wpimath.units import inchesToMeters
 
 from wpimath.estimator import SwerveDrive4PoseEstimator
-
+from wpilib.interfaces import GenericHID
 
 from phoenix6 import controls, signals, configs
 
@@ -134,7 +134,7 @@ class Robot(CoroutineRobot):
                     break
             # time.sleep(1.0) # Give enough time to make sure the FMS has told the Driver Station the Alliance 
         self.fieldConstants = FieldConstants()
-        self.fieldConstants.shouldFlip = DriverStation.getAlliance() == DriverStation.Alliance.kRed
+        self.fieldConstants.shouldFlip = DriverStation.getAlliance() == DriverStation.Alliance.kRed # false = BLUE, true = RED
         # Match Stuff
         self.match_time = -1
 
@@ -239,8 +239,6 @@ class Robot(CoroutineRobot):
         self.auto_winner_blue = None
         self.match_timer = Timer()
 
-        self.match_timer = Timer()
-        self.alliance_shift = 0
 
         log_refresh_rate = 0.02 if self.isSimulation() else 0.25
         @self.addPeriodic(period=log_refresh_rate, offset=0)
@@ -256,7 +254,16 @@ class Robot(CoroutineRobot):
         self.in_autonomous_mode = False
         self.in_teleop_mode = False
 
-        self.can_score = False
+        # match timer & auto winner logic
+        self.match_timer = Timer()
+        self.alliance_shift = 0
+        self.alliance_shift_time_remaining = 0
+        self.auto_win = None  # false = BLUE, true = RED
+        self.auto_win_found = False
+        self.auto_win_check_attempts = 10 # change if not checking enough
+
+        self.did_autonomous = False
+        self.did_teleop = False
 
         self.auto = self.autoroutines.test_trench_auto()
 
@@ -341,10 +348,17 @@ class Robot(CoroutineRobot):
 
         for subsystem in self.subsystems:
             subsystem.stop()
+        
+        # may or may not use these later
+        if self.did_autonomous and self.did_teleop:
+            self.did_autonomous = False
+            self.did_teleop = False
+        
+        self.match_timer.stop()
 
-        while True:  # Needs to continuously call while robot is disabled.
+        while True: # Needs to continuously call while robot is disabled.
             yield
-
+    
     ### AUTONOMOUS ###
     def autonomous_mode(self):
 
@@ -352,12 +366,23 @@ class Robot(CoroutineRobot):
         self.scheduler.cancelAll()
         self.in_teleop_mode = False
         self.in_autonomous_mode = True
+        self.did_autonomous = True
 
         if self.isSimulation():
             self.fuel_sim.running = True
 
         self.scheduler.schedule(self.auto)
 
+    def autonomousExit(self):
+        for _ in range(self.auto_win_check_attempts):
+            # print("finding auto winner: attempt", x+1)
+            data = self.driverstation.getGameSpecificMessage()
+            if data != "" and data in ("R", "B"):
+                self.auto_win = (data == "R")
+                self.auto_win_found = True
+                # print("found!", "RED"*self.auto_win+"BLUE"*(not self.auto_win))
+                break
+    
     ### TELEOPERATED ###
     def teleop_mode(self):
         auto_winner = self.driverstation.getGameSpecificMessage()
@@ -374,19 +399,47 @@ class Robot(CoroutineRobot):
         self.in_autonomous_mode = False
         self.oi.robot_oriented_angle = self.poseEstimator.curEstPose.rotation().degrees()
         self.in_teleop_mode = True
+        self.did_teleop = True
         self.timer.start()
+        self.match_timer.reset()
+        self.match_timer.start()
 
         while True:
             yield
+    
+    def hub_active(self):
+        # if not self.driverstation.isFMSAttached():
+        #     return True
+        if self.alliance_shift == 0 or self.alliance_shift == 5:
+            return True
+        if self.auto_win == None:
+            return None
+        switch = (self.alliance_shift-1) % 2
+        # shift is equal to [did this alliance win auto?]
+        return switch == (self.auto_win == self.fieldConstants.shouldFlip)
 
-    def update_match_timer(self):
+    def update_hub_status(self):
         self.match_time = self.match_timer.get()
         if self.match_time <= 10:
             self.alliance_shift = 0
-        elif 10 < self.match_time <= 100:
+            self.alliance_shift_time_remaining = int((11-self.match_time))
+        elif 10 < self.match_time <= 110:
             self.alliance_shift = ((self.match_time-10)//25)+1
+            self.alliance_shift_time_remaining = int(26-(self.match_time-10)%25)
         else:
             self.alliance_shift = 5
+            self.alliance_shift_time_remaining = round(141-self.match_time, 1)
+        self.is_hub_active = self.hub_active()
+        if self.is_hub_active == None:
+            if (self.timer.get() % 1) >= 0.5:
+                self.oi.driver2.xbox.setRumble(GenericHID.RumbleType.kLeftRumble, 0.5)
+                self.oi.driver2.xbox.setRumble(GenericHID.RumbleType.kRightRumble, 0)
+            else:
+                self.oi.driver2.xbox.setRumble(GenericHID.RumbleType.kLeftRumble, 0)
+                self.oi.driver2.xbox.setRumble(GenericHID.RumbleType.kRightRumble, 0.5)
+        else:
+            self.oi.driver2.xbox.setRumble(GenericHID.RumbleType.kLeftRumble, 0)
+            self.oi.driver2.xbox.setRumble(GenericHID.RumbleType.kRightRumble, 0)
 
     ### WAIT FUNCTION ###
     def wait(self, time):
@@ -418,13 +471,31 @@ class Robot(CoroutineRobot):
 
         SmartDashboard.putBoolean("Should Flip", self.fieldConstants.shouldFlip)
 
-        wpilib.SmartDashboard.putNumber("Match Time", self.match_time)
+        wpilib.SmartDashboard.putNumber("Match Time", round(self.match_time, 1))
+
+        if self.isTeleop():
+            if self.alliance_shift == 0:
+                wpilib.SmartDashboard.putString("Alliance Shift", "TRANSITION")
+            elif 1 <= self.alliance_shift <= 4:
+                wpilib.SmartDashboard.putString("Alliance Shift", str(int(self.alliance_shift)))
+            else:
+                wpilib.SmartDashboard.putString("Alliance Shift", "END GAME")
+        elif self.isAutonomous():
+            wpilib.SmartDashboard.putString("Alliance Shift", "AUTO")
+        else:
+            wpilib.SmartDashboard.putString("Alliance Shift", "DISABLED")
+        wpilib.SmartDashboard.putNumber("Time Remaining", self.alliance_shift_time_remaining)
+        wpilib.SmartDashboard.putBoolean("Hub active?", self.is_hub_active)
+        if self.auto_win == None:
+            wpilib.SmartDashboard.putString("Winner of Autonomous", "UNKNOWN")
+        else:
+            wpilib.SmartDashboard.putString("Winner of Autonomous", "RED"*self.auto_win+"BLUE"*(not self.auto_win))
 
         if self.isSimulation():
             wpilib.SmartDashboard.putNumberArray("RobotPose", [self.poseEstimator.curEstPose.X(), self.poseEstimator.curEstPose.Y(), self.poseEstimator.curEstPose.rotation().degrees()])
             # SmartDashboard.putNumberArray("ZeroedComponentPoses/Pose0", [0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0])
             # SmartDashboard.putNumberArray("ZeroedComponentPoses/Pose1", [0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0])
-            # SmartDashboard.putNumberArray("ZeroedComponentPoses/Pose2", [0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0])
+            # SmartDashboard.putNumberArray("ZeroedComponentPoses/Pose2", [0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0])5
 
 
             default_shooter_hood = Translation3d(-0.23, 0.15, 0.5)
