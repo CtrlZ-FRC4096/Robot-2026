@@ -404,13 +404,13 @@ class Robot(CoroutineRobot):
         self.match_time = self.match_timer.get()
         if self.match_time <= 10:
             self.alliance_shift = 0
-            self.alliance_shift_time_remaining = int((10-self.match_time))
+            self.alliance_shift_time_remaining = int((11-self.match_time))
         elif 10 < self.match_time <= 110:
             self.alliance_shift = ((self.match_time-10)//25)+1
-            self.alliance_shift_time_remaining = int(25-(self.match_time-10)%25)+1
+            self.alliance_shift_time_remaining = int(26-(self.match_time-10)%25)
         else:
             self.alliance_shift = 5
-            self.alliance_shift_time_remaining = round(130-self.match_time, 1)
+            self.alliance_shift_time_remaining = round(141-self.match_time, 1)
         self.is_hub_active = self.hub_active()
         if self.is_hub_active == None:
             if (self.timer.get() % 1) >= 0.5:
@@ -452,7 +452,7 @@ class Robot(CoroutineRobot):
 
         SmartDashboard.putBoolean("Should Flip", self.fieldConstants.shouldFlip)
 
-        wpilib.SmartDashboard.putNumber("Match Time", self.match_time)
+        wpilib.SmartDashboard.putNumber("Match Time", round(self.match_time, 1))
 
         if self.isTeleop():
             if self.alliance_shift == 0:
