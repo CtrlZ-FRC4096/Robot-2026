@@ -343,7 +343,6 @@ class Robot(CoroutineRobot):
         if self.did_autonomous and self.did_teleop:
             self.did_autonomous = False
             self.did_teleop = False
-            self.auto_win_found = False
         
         self.match_timer.stop()
 
