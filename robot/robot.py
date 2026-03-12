@@ -368,7 +368,7 @@ class Robot(CoroutineRobot):
         for _ in range(self.auto_win_check_attempts):
             # print("finding auto winner: attempt", x+1)
             data = self.driverstation.getGameSpecificMessage()
-            if data != "":
+            if data != "" and data in ("R", "B"):
                 self.auto_win = (data == "R")
                 self.auto_win_found = True
                 # print("found!", "RED"*self.auto_win+"BLUE"*(not self.auto_win))
