@@ -157,14 +157,14 @@ class PoseEstimator(Subsystem):
         # self.curEstPose = Pose2d(4.44, 8.1-0.641, math.pi)
         # climb pose
         # self.curEstPose = Pose2d(1.003, 4.637, Rotation2d(math.pi / 2))
-        self.curEstPose = Pose2d(1, 1, self.getYaw())
+        self.curEstPose = Pose2d(2, 2, self.getYaw())
         self.estZ = 0
 
         self.poseEst = SwerveDrive4PoseEstimator(
             const.SWERVE_KINEMATICS, self.getYaw(), self.get_module_positions(), self.curEstPose # type: ignore
         )
 
-        self.xystd_single_tag = 0.2
+        self.xystd_single_tag = 0.05
         self.thetastd_single_tag = 1000.0
 
         ROBOT_TO_CAM1 = Transform3d(
@@ -172,7 +172,7 @@ class PoseEstimator(Subsystem):
             Rotation3d.fromDegrees(0.0, -10.0, 0.0)
         ) # TO DO 
         ROBOT_TO_CAM2 = Transform3d(
-            Translation3d(0.038, 0.343, 0.218),
+            Translation3d(0.165, 0.343, 0.218),
             Rotation3d.fromDegrees(0, -15, 90)
         )
         ROBOT_TO_CAM3 = Transform3d(
@@ -183,9 +183,8 @@ class PoseEstimator(Subsystem):
         ROBOT_TO_COLOR_2 = Transform3d() # TO DO
 
         self.cams = [
-            # WrapperedPhotonCameraTag("camera1", ROBOT_TO_CAM1),
             WrapperedPhotonCameraTag("camera2", ROBOT_TO_CAM2),
-            WrapperedPhotonCameraTag("camera3", ROBOT_TO_CAM3),
+            # WrapperedPhotonCameraTag("camera3", ROBOT_TO_CAM3),
         ]
         # self.intake_cam = WrapperedPhotonCameraIntakeFuel("color1", ROBOT_TO_COLOR_1) # WRONG NAME MAYBE
         # self.hopper_cam = WrapperedPhotonCameraFuel("color2", ROBOT_TO_COLOR_2)
@@ -211,7 +210,7 @@ class PoseEstimator(Subsystem):
 
     def get_path_to_trench(self):
         if self.cur_pos_in_zone(): #from zone
-            good_rotation = self.robot.fieldConstants.flip_Rotation2d(Rotation2d(0))
+            good_rotation = self.robot.fieldConstants.flip_Rotation2d(Rotation2d.fromDegrees(90))
             can_rotate = (self.curEstPose.X() <= 2.7 and not self.robot.fieldConstants.shouldFlip) or (self.curEstPose.X() >= self.robot.fieldConstants.fieldLength - 2.7 and self.robot.fieldConstants.shouldFlip) 
             if (self.curEstPose.Y() >= self.robot.fieldConstants.fieldWidth / 2):  #(blue origin) left side
                 target_pose = Pose2d(self.robot.fieldConstants.flip_X_coord(4.621 - 1.25), 7.44, (good_rotation if can_rotate else self.curEstPose.rotation()))
@@ -220,10 +219,10 @@ class PoseEstimator(Subsystem):
         else: # from neutral
             can_rotate = (self.curEstPose.X() >= 6.421 and not self.robot.fieldConstants.shouldFlip) or (self.curEstPose.X() <= self.robot.fieldConstants.fieldLength - 6.421 and self.robot.fieldConstants.shouldFlip)
             if self.curEstPose.Y() >= self.robot.fieldConstants.fieldWidth / 2: # (blue origin) left side
-                good_rotation = Rotation2d()
+                good_rotation = Rotation2d.fromDegrees(-90)
                 target_pose = Pose2d(self.robot.fieldConstants.flip_X_coord(4.621 + 1.25), 7.44, (good_rotation if can_rotate else self.curEstPose.rotation()))
             else:
-                good_rotation = Rotation2d.fromDegrees(180)
+                good_rotation = Rotation2d.fromDegrees(90)
                 target_pose = Pose2d(self.robot.fieldConstants.flip_X_coord(4.621 + 1.25), self.robot.fieldConstants.fieldWidth - 7.44, (good_rotation if can_rotate else self.curEstPose.rotation()))
         return target_pose
 
@@ -432,8 +431,8 @@ class PoseEstimator(Subsystem):
                 self.camera_Y[cam.camName] = pose.Y()
                 self.camera_theta[cam.camName] = pose.rotation()
                 # if not(abs(self.gyro.get_pitch()) >= 10 or abs(self.gyro.get_roll()) >= 10):
-                if not(ambiguity >= 0.3 or tgtZEst > 0.75):
-                    distance_modifier = 100 if distance > 5 else 1
+                if not(ambiguity >= 0.3) or True:# or tgtZEst > 0.75):
+                    distance_modifier = 1 if distance > 5 else 1
                     self.poseEst.addVisionMeasurement(
                         pose,
                         cam.getObsTime(),

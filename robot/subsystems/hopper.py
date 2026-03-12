@@ -60,8 +60,6 @@ class Hopper(Subsystem):
         elif not self.robot.shoot_intent and self.robot.intake_at_default:
             self.commanded_speed = 0
             self.indexer_motor.set_control(controls.DutyCycleOut(0.0, enable_foc=False))
-        elif self.robot.is_climbing:
-            self.stop()
         elif self.robot.shooter_at_default:
             self.stop()
 

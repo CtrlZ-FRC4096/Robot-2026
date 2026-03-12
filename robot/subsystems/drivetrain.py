@@ -235,7 +235,7 @@ class Drivetrain(Subsystem):
                     translation.x,
                     translation.y,
                     rotation,
-                    self.robot.poseEstimator.curEstPose.rotation()
+                    self.robot.poseEstimator.getYaw()
                 )
             )
         else:  # Robot relative
@@ -398,9 +398,9 @@ class Drivetrain(Subsystem):
         )
 
     def reset_odometry(self, pose):
-        self.robot.poseEstimator.odometry.resetPosition(self.robot.poseEstimator.curEstPose.rotation(), [*self.robot.poseEstimator.get_module_positions()], pose)  # type: ignore
+        self.robot.poseEstimator.odometry.resetPosition(self.robot.poseEstimator.getYaw(), [*self.robot.poseEstimator.get_module_positions()], pose)  # type: ignore
         self.robot.poseEstimator.poseEst.resetPosition(
-            self.robot.poseEstimator.curEstPose.rotation(),
+            self.robot.poseEstimator.getYaw(),
             [*self.robot.poseEstimator.get_module_positions()],
             pose,
         )
@@ -582,7 +582,7 @@ class Drivetrain(Subsystem):
                 self.go_to_pose_profiled_pid(lineup)
             elif not self.robot.running_pid_lineup and self.robot.shoot_intent:
                 rotation = self.get_hub_angle(self.robot.time_of_flight)
-                self.drive_with_pid(Translation2d(0, 0), rotation, )
+                self.drive_with_pid(Translation2d(0, 0), rotation.degrees())
             # self.go_to_pose_profiled_pid(self.robot.final_lineup_pose)
 
     def log(self):

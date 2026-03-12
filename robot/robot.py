@@ -25,6 +25,7 @@ from commands2 import (
 )
 import wpilib
 from wpilib import Timer, DataLogManager, DriverStation, Field2d, SmartDashboard
+from wpilib.simulation import DriverStationSim
 import wpilib.sysid
 import wpimath.geometry
 import const
@@ -150,7 +151,7 @@ class Robot(CoroutineRobot):
         self.intake = subsystems.intake.Intake(self)
         self.shooter = shooter.Shooter(self)
         self.hopper = hopper.Hopper(self)
-        self.climber = climber.Climber(self)
+        # self.climber = climber.Climber(self)
 
         self.subsystems = [
             self.drivetrain,
@@ -159,7 +160,7 @@ class Robot(CoroutineRobot):
             self.intake,
             self.shooter,
             self.hopper,
-            self.climber
+            # self.climber
         ]
 
         # If everything in self.subsystems is a Subsystem object, then
@@ -172,7 +173,8 @@ class Robot(CoroutineRobot):
         # With V's wrapper for commandify we automatically register all commands
 
         ### OTHER ###
-        
+        self.rumble_d1 = False
+        self.rumble_d2 = False
         self.oi = oi.OI(self)
 
 		
@@ -199,6 +201,7 @@ class Robot(CoroutineRobot):
         self.intake_at_default = True
         self.shooter_at_default = True
         self.trench = True
+        self.down_bad = False
 
         self.static_target = Translation2d()
 
@@ -207,7 +210,6 @@ class Robot(CoroutineRobot):
         self.shoot_fuel = False
         self.shoot_intent = False
         self.spin_up = False
-        self.is_climbing = False
         self.is_intaking = False
         self.pulse_indexer = False
         self.pulse_pivot = False
@@ -226,9 +228,16 @@ class Robot(CoroutineRobot):
         self.virtual_goal = Translation2d()
         self.fuel_in_hopper = 8
 
+        self.down_bad_fly_speed = 55 # TODO: TUNE
+        self.down_bad_hood_angle = 35 # TODO: TUNE
+
+        self.hood_fudge_value = 0
+
         self.virtual_target = self.poseEstimator.field.getObject("Virtual Target")
 
         self.timer = Timer()
+        self.auto_winner_blue = None
+        self.match_timer = Timer()
 
 
         log_refresh_rate = 0.02 if self.isSimulation() else 0.25
@@ -362,7 +371,7 @@ class Robot(CoroutineRobot):
         if self.isSimulation():
             self.fuel_sim.running = True
 
-        # self.scheduler.schedule(self.auto)
+        self.scheduler.schedule(self.auto)
 
     def autonomousExit(self):
         for _ in range(self.auto_win_check_attempts):
@@ -376,6 +385,15 @@ class Robot(CoroutineRobot):
     
     ### TELEOPERATED ###
     def teleop_mode(self):
+        auto_winner = self.driverstation.getGameSpecificMessage()
+        if auto_winner == "R":
+            self.auto_winner_blue = False
+        elif auto_winner == "B":
+            self.auto_winner_blue = True
+        else:
+            pass
+            
+
         self.scheduler.cancelAll()
         self.running_pid_lineup = False
         self.in_autonomous_mode = False
@@ -443,12 +461,13 @@ class Robot(CoroutineRobot):
         SmartDashboard.putBoolean("States/Shooter at Default", self.shooter_at_default)
         SmartDashboard.putBoolean("States/Should Hub Track", self.should_hub_track)
         SmartDashboard.putBoolean("States/Pulse Pivot", self.pulse_pivot)
-        SmartDashboard.putBoolean("States/Is Climbing", self.is_climbing)
+        SmartDashboard.putBoolean("States/Down Bad", self.down_bad)
 
         SmartDashboard.putNumber("Shooting Values/Distance to Hub", self.distance)
         SmartDashboard.putNumber("Shooting Values/Time of Flight", self.time_of_flight)
         SmartDashboard.putNumber("Shooting Values/Hood Angle", self.hood_angle)
         SmartDashboard.putNumber("Shooting Values/Fly Speed", self.fly_speed)
+        SmartDashboard.putNumber("Shooting Values/Hood Fudge Value", self.hood_fudge_value)
 
         SmartDashboard.putBoolean("Should Flip", self.fieldConstants.shouldFlip)
 
@@ -505,8 +524,8 @@ class Robot(CoroutineRobot):
             final_outer_trans = default_outer + inner_outer_transform
             SmartDashboard.putNumberArray("FinalComponentPoses/Pose2", [final_outer_trans.X(), final_outer_trans.Y(), final_outer_trans.Z(), final_outer_quat.W(), final_outer_quat.X(), final_outer_quat.Y(), final_outer_quat.Z()])
             
-            cur_climber_pos = self.climber.get_position()
-            SmartDashboard.putNumberArray("FinalComponentPoses/Pose3", [0, 0, cur_climber_pos / 5, 0, 0, 0, 0])
+            # cur_climber_pos = self.climber.get_position()
+            # SmartDashboard.putNumberArray("FinalComponentPoses/Pose3", [0, 0, cur_climber_pos / 5, 0, 0, 0, 0])
 
 
             default_fuel_pose = Translation3d(-0.26, -0.28, 0.28)
@@ -548,9 +567,13 @@ class Robot(CoroutineRobot):
         for s in self.subsystems:
             s.log()
 
+        self.match_time = self.match_timer.get()
+        wpilib.SmartDashboard.putNumber("Match Time", self.match_time)
         wpilib.SmartDashboard.putNumber(
             "robot oriented angle", self.oi.robot_oriented_angle
         )
+
+        SmartDashboard.putBoolean("Rumble D1", self.rumble_d1)
 
 
 ### MAIN ###
