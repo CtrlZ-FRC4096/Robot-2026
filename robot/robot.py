@@ -364,13 +364,13 @@ class Robot(CoroutineRobot):
         # self.scheduler.schedule(self.auto)
 
     def autonomousExit(self):
-        for x in range(self.auto_win_check_attempts):
-            print("finding auto winner: attempt", x+1)
+        for _ in range(self.auto_win_check_attempts):
+            # print("finding auto winner: attempt", x+1)
             data = self.driverstation.getGameSpecificMessage()
             if data != None:
                 self.auto_win = (data == "R")
                 self.auto_win_found = True
-                print("found!", "RED"*self.auto_win+"BLUE"*(not self.auto_win))
+                # print("found!", "RED"*self.auto_win+"BLUE"*(not self.auto_win))
                 break
     
     ### TELEOPERATED ###
