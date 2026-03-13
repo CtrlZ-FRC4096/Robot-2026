@@ -36,10 +36,10 @@ class AutoRoutines:
 
     def test_trench_auto(self):
         return SequentialCommandGroup(
-            ParallelCommandGroup(self.robot.getPathCommand(PathPlannerPath.fromPathFile("Sprint")),
+            ParallelCommandGroup(self.robot.getPathCommand(PathPlannerPath.fromPathFile("P1_T")),
                                  self.robot.coroutines.intake),
             self.robot.coroutines.drive_to_zone_no_intake.withTimeout(4),
-            ParallelCommandGroup(self.robot.getPathCommand(PathPlannerPath.fromPathFile("Second Pass")),
+            ParallelCommandGroup(self.robot.getPathCommand(PathPlannerPath.fromPathFile("P2_T")),
                                  self.robot.coroutines.intake_2),
             self.robot.coroutines.drive_to_zone_no_intake_2.withTimeout(4),
         )

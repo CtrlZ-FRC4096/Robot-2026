@@ -275,12 +275,84 @@ class Robot(CoroutineRobot):
             # self.fuel_sim.stop()
             # self.fuel_sim.clearFuel()
             self.fuel_sim.start()
-            print("start")
+
+        test_path = self.flip_path_cmd_across_x(self.getPathCommand(PathPlannerPath.fromPathFile("P1_B")))._originalPath
+        test_path_waypoints = test_path.getWaypoints()
+        for idx, waypoint in enumerate(test_path_waypoints):
+            if idx == 0:
+                next_control_dist = (waypoint.anchor - waypoint.nextControl).norm()
+                next_control_heading = Rotation2d((waypoint.nextControl - waypoint.anchor).X(), (waypoint.nextControl - waypoint.anchor).Y()).degrees()
+                print(f"Start: anchor: {waypoint.anchor}, next_controldist: {next_control_dist}, next_control_head: {next_control_heading}")
+            elif idx == len(test_path_waypoints) - 1:
+                prev_control_dist = (waypoint.prevControl - waypoint.anchor).norm()
+                prev_control_heading = Rotation2d((waypoint.anchor - waypoint.prevControl).X(), (waypoint.anchor - waypoint.prevControl).Y()).degrees()
+                print(f"End: anchor: {waypoint.anchor}, prev_controldist: {prev_control_dist}, prev_control_head: {prev_control_heading}")
+            else:
+                next_control_dist = (waypoint.anchor - waypoint.nextControl).norm()
+                next_control_heading = Rotation2d((waypoint.nextControl - waypoint.anchor).X(), (waypoint.nextControl - waypoint.anchor).Y()).degrees()
+                prev_control_dist = (waypoint.prevControl - waypoint.anchor).norm()
+                prev_control_heading = Rotation2d((waypoint.anchor - waypoint.prevControl).X(), (waypoint.anchor - waypoint.prevControl).Y()).degrees()
+                print(f"{idx}: anchor: {waypoint.anchor}, heading: {prev_control_heading}, prevdist: {prev_control_dist}, next_controldist: {next_control_dist}")
+        print(test_path.getRotationTargets())
 
         while True:
             yield
             self.scheduler.run()
     
+    
+    def flip_X_coord(self, x):
+        return self.fieldConstants.fieldLength - x
+    def flip_Y_coord(self, y):
+        return self.fieldConstants.fieldWidth - y
+
+    def flip_path_cmd_across_x(self, cmd_path : FollowPathCommand):
+        # FLIPPING Y COORDS
+        path = cmd_path._originalPath
+        waypoints = path.getWaypoints()
+        new_waypoints = []
+        ideal_start = IdealStartingState(path.getIdealStartingState().velocity, path.getIdealStartingState().rotation.__neg__())
+        goal_end = GoalEndState(path.getGoalEndState().velocity, path.getGoalEndState().rotation.__neg__())
+        for idx, waypoint in enumerate(waypoints):
+            if idx == 0:
+                # no prev control
+                new_waypoints.append(Waypoint(
+                    prevControl=None,
+                    anchor=Translation2d(waypoint.anchor.X(), self.flip_Y_coord(waypoint.anchor.Y())),
+                    nextControl=Translation2d(waypoint.nextControl.X(), self.flip_Y_coord(waypoint.nextControl.Y()))
+                ))
+            elif idx == len(waypoints) - 1:
+                #no next control
+                new_waypoints.append(Waypoint(
+                    prevControl=Translation2d(waypoint.prevControl.X(), self.flip_Y_coord(waypoint.prevControl.Y())),
+                    anchor=Translation2d(waypoint.anchor.X(), self.flip_Y_coord(waypoint.anchor.Y())),
+                    nextControl=None
+                ))
+            else:
+                        # both controls
+                new_waypoints.append(Waypoint(
+                    prevControl=Translation2d(waypoint.prevControl.X(), self.flip_Y_coord(waypoint.prevControl.Y())),
+                        anchor=Translation2d(waypoint.anchor.X(), self.flip_Y_coord(waypoint.anchor.Y())),
+                        nextControl=Translation2d(waypoint.nextControl.X(), self.flip_Y_coord(waypoint.nextControl.Y()))
+                    ))
+        new_path = PathPlannerPath(new_waypoints, path.getGlobalConstraints(), ideal_starting_state=ideal_start, goal_end_state=goal_end)
+        return FollowPathCommand(
+            new_path,
+            self.drivetrain.get_pose, # Robot pose supplier
+            self.drivetrain.get_robot_relative_speeds, # ChassisSpeeds supplier. MUST BE ROBOT RELATIVE
+            self.drivetrain.drive_robot_relative, # Method that will drive the robot given ROBOT RELATIVE ChassisSpeeds, AND feedforwards
+            PPHolonomicDriveController(  # PPHolonomicController is the built in path following controller for holonomic drive trains
+                PIDConstants(
+                    0.5, 0, 0
+                ),  # Translation PID constants
+                PIDConstants(
+                    0.5, 0, 0.1
+                ),  # Rotation PID constants
+            ),
+            RobotConfig.fromGUISettings(), # The robot configuration
+            self.drivetrain.shouldFlipPath, # Supplier to control path flipping based on alliance color
+            self.drivetrain # Reference to this subsystem to set requirements
+        )
+
     def getPathCommand(self, path : PathPlannerPath):
         return FollowPathCommand(
             path,
@@ -358,24 +430,7 @@ class Robot(CoroutineRobot):
             self.fuel_sim.running = True
 
         self.scheduler.schedule(self.auto)
-    
-    # def disabledPeriodic(self):
-    #     if not self.auto_win_found:
-    #         data = self.driverstation.getGameSpecificMessage()
-    #         if data != "" and data in ("R", "B"):
-    #             self.auto_win = (data == "R")
-    #             self.auto_win_found = True
-    #         self.wait(0.1)
 
-    # # def autonomousExit(self):
-    # #     for _ in range(self.auto_win_check_attempts):
-    # #         # print("finding auto winner: attempt", x+1)
-    # #         data = self.driverstation.getGameSpecificMessage()
-    # #         if data != "" and data in ("R", "B"):
-    # #             self.auto_win = (data == "R")
-    # #             self.auto_win_found = True
-    # #             # print("found!", "RED"*self.auto_win+"BLUE"*(not self.auto_win))
-    # #             break
     
     ### TELEOPERATED ###
     def teleop_mode(self):
@@ -477,7 +532,6 @@ class Robot(CoroutineRobot):
 
         if self.in_teleop_mode and self.auto_win is None and self.match_timer.get() <= 4:
             game_message = self.driverstation.getGameSpecificMessage()
-            print("searching")
             if game_message != "" and self.auto_win is None:
                 self.auto_win = (game_message == "R")
                 self.oi.driver2.xbox.setRumble(GenericHID.RumbleType.kLeftRumble, 0)

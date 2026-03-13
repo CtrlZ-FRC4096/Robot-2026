@@ -41,7 +41,7 @@ class Intake(Subsystem):
 
         self.intake_motor_config = self.robot.get_motor_config(0, 5, 0, 0, 0.21, 0, 0, 11)
         self.inside_track_motor_config = self.robot.get_motor_config(0, 1, 0, 0, 0, 0, 0, 0)
-        self.deploy_motor_config = self.robot.get_motor_config(0, 250, 0, 5, 0, 0, -14, 15)
+        self.deploy_motor_config = self.robot.get_motor_config(0, 0, 0, 0, 0, 0, 0, 0)
         self.deploy_motor_config.motion_magic.motion_magic_cruise_velocity = 20
         self.deploy_motor_config.motion_magic.motion_magic_acceleration = 50
         self.deploy_motor_config.feedback.feedback_remote_sensor_id = const.INTAKE_DEPLOY_CANCODER_ID
