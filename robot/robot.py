@@ -262,8 +262,6 @@ class Robot(CoroutineRobot):
         self.auto_win_found = False
         self.auto_win_check_attempts = 10 # change if not checking enough
 
-        self.did_autonomous = False
-        self.did_teleop = False
 
         self.auto = self.autoroutines.test_trench_auto()
 
@@ -366,7 +364,6 @@ class Robot(CoroutineRobot):
         self.scheduler.cancelAll()
         self.in_teleop_mode = False
         self.in_autonomous_mode = True
-        self.did_autonomous = True
 
         if self.isSimulation():
             self.fuel_sim.running = True
@@ -398,7 +395,6 @@ class Robot(CoroutineRobot):
         self.in_autonomous_mode = False
         self.oi.robot_oriented_angle = self.poseEstimator.curEstPose.rotation().degrees()
         self.in_teleop_mode = True
-        self.did_teleop = True
         self.timer.start()
         self.match_timer.reset()
         self.match_timer.start()
