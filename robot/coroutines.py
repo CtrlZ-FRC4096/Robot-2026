@@ -70,34 +70,16 @@ class Coroutines:
         def drive_to_zone_no_intake_2():
             robot.is_intaking = False
             robot.intake_at_default = True
-            Pose2d(3.368, 8.1-0.709, Rotation2d())
+            robot.final_lineup_pose = Pose2d(3.368, 8.1-0.709, Rotation2d())
             robot.running_pid_lineup = True
             robot.shoot_intent = True
             robot.shooter_at_default = False
             while robot.fuel_in_hopper > 0:
                 yield
 
-        @commandify
-        def climb_from_left():
-            robot.is_intaking = False
-            robot.pulse_pivot = False
-            robot.intake_at_default = True
-            robot.shoot_intent = False
-            robot.shoot_fuel = False
-            robot.shooter_at_default = True
-            robot.final_lineup_pose = Pose2d(1.003, 4.637, Rotation2d(math.pi / 2))
-            robot.running_pid_lineup = True
-            while robot.running_pid_lineup:
-                yield
-        
-        @commandify
-        def climb():
-            yield
 
         self.drive_to_zone_no_intake = (drive_to_zone_no_intake)
         self.drive_to_zone_no_intake_2 = (drive_to_zone_no_intake_2)
         self.intake = (intake)
         self.intake_2 = (intake_2)
 
-        self.climb_from_left = (climb_from_left)
-        self.climb = (climb)

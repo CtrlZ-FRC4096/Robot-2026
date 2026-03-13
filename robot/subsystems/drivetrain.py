@@ -231,19 +231,20 @@ class Drivetrain(Subsystem):
         
         if field_relative and not self.robot.isSimulation():
             module_states = const.SWERVE_KINEMATICS.toSwerveModuleStates(
-                ChassisSpeeds.fromFieldRelativeSpeeds(
+                ChassisSpeeds.discretize(ChassisSpeeds.fromFieldRelativeSpeeds(
                     translation.x,
                     translation.y,
                     rotation,
                     self.robot.poseEstimator.getYaw()
                 )
-            )
+            ), 0.02)
         else:  # Robot relative
             module_states = const.SWERVE_KINEMATICS.toSwerveModuleStates(
-                ChassisSpeeds(
+                ChassisSpeeds.discretize(
                     translation.x,
                     translation.y,
                     rotation,
+                    0.02
                 )
             )
         if self.robot.in_autonomous_mode:

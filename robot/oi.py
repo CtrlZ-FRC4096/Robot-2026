@@ -98,9 +98,8 @@ class OI:
 
         self.rumble_button_d1 = Button(lambda: self.robot.rumble_d1)
         self.rumble_button_d2 = Button(lambda: self.robot.rumble_d2)
-        self.can_crash = False
         
-        self.can_change_auto_win = True
+        self.can_change_auto_win = False
 
         self.find_heading = True
         self.tick_count = 0
@@ -258,13 +257,6 @@ class OI:
                         #             self.find_heading = False
                         #         else:
                         #             self.wait_one_tick = True
-                        # if self.robot.has_coral:
-                        #     # self.robot_oriented_angle = self.robot.fieldConstants.Reef.centerFaces[self.robot.poseEstimator.calculate_closest_reef_tag()[1] - 1].rotation().degrees()
-                        #     reef_center = self.robot.fieldConstants.Reef.center
-                        #     cur_pose = self.robot.poseEstimator.curEstPose
-                        #     vector_delta = cur_pose.translation() - reef_center
-                        #     self.robot_oriented_angle = Rotation2d.fromDegrees(radiansToDegrees(math.atan2(vector_delta.y, vector_delta.x)) - 90).degrees()
-                        #     self.find_heading = False
                         if not self.cardinal_directing:
                             if self.find_heading:
                                 if self.tick_count <= self.tick_count_max:
@@ -413,15 +405,13 @@ class OI:
 
         @self.driver2.RIGHT_BUMPER.whenPressed
         def _():
-            if (not self.robot.auto_win_found) and self.can_change_auto_win:
+            if self.robot.auto_win is None and self.can_change_auto_win:
                 self.robot.auto_win = True
-                self.robot.auto_win_found = True
         
         @self.driver2.LEFT_BUMPER.whenPressed
         def _():
-            if (not self.robot.auto_win_found) and self.can_change_auto_win:
+            if self.robot.auto_win is None and self.can_change_auto_win:
                 self.robot.auto_win = False
-                self.robot.auto_win_found = True
 
         @self.driver2.POV.LEFT.whenPressed
         def _():
