@@ -171,26 +171,29 @@ class PoseEstimator(Subsystem):
             Translation3d(-0.277, 0.274, 0.491),
             Rotation3d.fromDegrees(0.0, 0.0, -165.0)
         ) # CLIMBER SIDE CAMERA
+        
         ROBOT_TO_CAM2 = Transform3d(
             Translation3d(0.165, 0.343, 0.218),
             Rotation3d.fromDegrees(0, -15, 90)
         ) # SHOOTER BACK CAMERA (TO DO)
+
         ROBOT_TO_CAM3 = Transform3d(
             Translation3d(0.0, 0.068, 0.514),
             Rotation3d.fromDegrees(0, -20, -90)
         ) # FLYWHEEL BAR CAMERA
-        ROBOT_TO_COLOR_1 = Transform3d() # TO DO
-        ROBOT_TO_COLOR_2 = Transform3d() # TO DO
+
+        # ROBOT_TO_COLOR_1 = Transform3d() # TO DO
+        # ROBOT_TO_COLOR_2 = Transform3d() # TO DO
 
         self.cams = [
-            WrapperedPhotonCameraTag("camera2", ROBOT_TO_CAM2),
-            # WrapperedPhotonCameraTag("camera3", ROBOT_TO_CAM3),
+            WrapperedPhotonCameraTag("climber", ROBOT_TO_CAM1),
+            WrapperedPhotonCameraTag("shooter", ROBOT_TO_CAM2),
+            WrapperedPhotonCameraTag("flywheel", ROBOT_TO_CAM3)
         ]
+
         # self.intake_cam = WrapperedPhotonCameraIntakeFuel("color1", ROBOT_TO_COLOR_1) # WRONG NAME MAYBE
         # self.hopper_cam = WrapperedPhotonCameraFuel("color2", ROBOT_TO_COLOR_2)
         # self.fuel_map = []
-
-
 
         self.poseConverge = True
 
