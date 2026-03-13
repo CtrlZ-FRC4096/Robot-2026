@@ -168,17 +168,17 @@ class PoseEstimator(Subsystem):
         self.thetastd_single_tag = 1000.0
 
         ROBOT_TO_CAM1 = Transform3d(
-            Translation3d(-0.317, -0.292, 0.193),
-            Rotation3d.fromDegrees(0.0, -10.0, 0.0)
-        ) # TO DO 
+            Translation3d(-0.277, 0.274, 0.491),
+            Rotation3d.fromDegrees(0.0, 0.0, -165.0)
+        ) # CLIMBER SIDE CAMERA
         ROBOT_TO_CAM2 = Transform3d(
             Translation3d(0.165, 0.343, 0.218),
             Rotation3d.fromDegrees(0, -15, 90)
-        )
+        ) # SHOOTER BACK CAMERA (TO DO)
         ROBOT_TO_CAM3 = Transform3d(
-            Translation3d(0.0254, -0.387, 0.2179),
-            Rotation3d.fromDegrees(0, -15, -90)
-        ) # DONE
+            Translation3d(0.0, 0.068, 0.514),
+            Rotation3d.fromDegrees(0, -20, -90)
+        ) # FLYWHEEL BAR CAMERA
         ROBOT_TO_COLOR_1 = Transform3d() # TO DO
         ROBOT_TO_COLOR_2 = Transform3d() # TO DO
 
