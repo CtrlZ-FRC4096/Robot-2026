@@ -353,7 +353,7 @@ class Robot(CoroutineRobot):
         if self.did_autonomous and self.did_teleop:
             self.did_autonomous = False
             self.did_teleop = False
-        
+
         self.match_timer.stop()
 
         while True: # Needs to continuously call while robot is disabled.
@@ -372,28 +372,27 @@ class Robot(CoroutineRobot):
             self.fuel_sim.running = True
 
         self.scheduler.schedule(self.auto)
-
-    def autonomousExit(self):
-        for _ in range(self.auto_win_check_attempts):
-            # print("finding auto winner: attempt", x+1)
+    
+    def disabledPeriodic(self):
+        if not self.auto_win_found:
             data = self.driverstation.getGameSpecificMessage()
             if data != "" and data in ("R", "B"):
                 self.auto_win = (data == "R")
                 self.auto_win_found = True
-                # print("found!", "RED"*self.auto_win+"BLUE"*(not self.auto_win))
-                break
+            self.wait(0.1)
+
+    # def autonomousExit(self):
+    #     for _ in range(self.auto_win_check_attempts):
+    #         # print("finding auto winner: attempt", x+1)
+    #         data = self.driverstation.getGameSpecificMessage()
+    #         if data != "" and data in ("R", "B"):
+    #             self.auto_win = (data == "R")
+    #             self.auto_win_found = True
+    #             # print("found!", "RED"*self.auto_win+"BLUE"*(not self.auto_win))
+    #             break
     
     ### TELEOPERATED ###
     def teleop_mode(self):
-        auto_winner = self.driverstation.getGameSpecificMessage()
-        if auto_winner == "R":
-            self.auto_winner_blue = False
-        elif auto_winner == "B":
-            self.auto_winner_blue = True
-        else:
-            pass
-            
-
         self.scheduler.cancelAll()
         self.running_pid_lineup = False
         self.in_autonomous_mode = False
@@ -422,13 +421,19 @@ class Robot(CoroutineRobot):
         self.match_time = self.match_timer.get()
         if self.match_time <= 10:
             self.alliance_shift = 0
-            self.alliance_shift_time_remaining = int((11-self.match_time))
+            self.alliance_shift_time_remaining = 11-self.match_time
         elif 10 < self.match_time <= 110:
             self.alliance_shift = ((self.match_time-10)//25)+1
-            self.alliance_shift_time_remaining = int(26-(self.match_time-10)%25)
+            self.alliance_shift_time_remaining = 26-(self.match_time-10)%25
         else:
             self.alliance_shift = 5
-            self.alliance_shift_time_remaining = round(141-self.match_time, 1)
+            self.alliance_shift_time_remaining = 141-self.match_time
+        if (self.alliance_shift_time_remaining < 3) and (1 <= self.alliance_shift <= 4) and self.is_hub_active:
+            self.rumble_d1 = True
+            self.rumble_d2 = True
+        else:
+            self.rumble_d1 = False
+            self.rumble_d2 = False
         self.is_hub_active = self.hub_active()
         if self.is_hub_active == None:
             if (self.timer.get() % 1) >= 0.5:
@@ -471,7 +476,7 @@ class Robot(CoroutineRobot):
 
         SmartDashboard.putBoolean("Should Flip", self.fieldConstants.shouldFlip)
 
-        wpilib.SmartDashboard.putNumber("Match Time", round(self.match_time, 1))
+        wpilib.SmartDashboard.putNumber("Match Time", 140-int(self.match_time))
 
         if self.isTeleop():
             if self.alliance_shift == 0:
@@ -484,7 +489,7 @@ class Robot(CoroutineRobot):
             wpilib.SmartDashboard.putString("Alliance Shift", "AUTO")
         else:
             wpilib.SmartDashboard.putString("Alliance Shift", "DISABLED")
-        wpilib.SmartDashboard.putNumber("Time Remaining", self.alliance_shift_time_remaining)
+        wpilib.SmartDashboard.putNumber("Time Remaining", int(self.alliance_shift_time_remaining))
         wpilib.SmartDashboard.putBoolean("Hub active?", self.is_hub_active)
         if self.auto_win == None:
             wpilib.SmartDashboard.putString("Winner of Autonomous", "UNKNOWN")
@@ -566,14 +571,13 @@ class Robot(CoroutineRobot):
             self.tick_count += 1
         for s in self.subsystems:
             s.log()
-
-        self.match_time = self.match_timer.get()
-        wpilib.SmartDashboard.putNumber("Match Time", self.match_time)
+        
         wpilib.SmartDashboard.putNumber(
             "robot oriented angle", self.oi.robot_oriented_angle
         )
 
         SmartDashboard.putBoolean("Rumble D1", self.rumble_d1)
+        SmartDashboard.putBoolean("Rumble D2", self.rumble_d2)
 
 
 ### MAIN ###

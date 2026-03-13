@@ -99,6 +99,8 @@ class OI:
         self.rumble_button_d1 = Button(lambda: self.robot.rumble_d1)
         self.rumble_button_d2 = Button(lambda: self.robot.rumble_d2)
         self.can_crash = False
+        
+        self.can_change_auto_win = True
 
         self.find_heading = True
         self.tick_count = 0
@@ -400,16 +402,26 @@ class OI:
         @self.driver2.B.whenPressed
         def _():
             self.robot.shooter.test_hood_position += 1
+        
+        @self.driver2.START.whenHeld
+        def _():
+            self.can_change_auto_win = True
+        
+        @self.driver2.START.whenReleased
+        def _():
+            self.can_change_auto_win = False
 
         @self.driver2.RIGHT_BUMPER.whenPressed
         def _():
-            if not self.robot.auto_win_found:
+            if (not self.robot.auto_win_found) and self.can_change_auto_win:
                 self.robot.auto_win = True
+                self.robot.auto_win_found = True
         
         @self.driver2.LEFT_BUMPER.whenPressed
         def _():
-            if not self.robot.auto_win_found:
+            if (not self.robot.auto_win_found) and self.can_change_auto_win:
                 self.robot.auto_win = False
+                self.robot.auto_win_found = True
 
         @self.driver2.POV.LEFT.whenPressed
         def _():
