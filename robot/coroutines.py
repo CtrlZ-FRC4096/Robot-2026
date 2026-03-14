@@ -56,9 +56,9 @@ class Coroutines:
         
 
         @commandify
-        def drive_to_zone_no_intake():
+        def drive_to_zone_trench():
             robot.is_intaking = False
-            robot.intake_at_default = True
+            robot.intake_at_default = False
             robot.final_lineup_pose = Pose2d(3.368, 8.1-0.709, Rotation2d())
             robot.running_pid_lineup = True
             robot.shoot_intent = True
@@ -67,9 +67,9 @@ class Coroutines:
                 yield
         
         @commandify
-        def drive_to_zone_no_intake_2():
+        def drive_to_zone_trench_2():
             robot.is_intaking = False
-            robot.intake_at_default = True
+            robot.intake_at_default = False
             robot.final_lineup_pose = Pose2d(3.368, 8.1-0.709, Rotation2d())
             robot.running_pid_lineup = True
             robot.shoot_intent = True
@@ -77,9 +77,29 @@ class Coroutines:
             while robot.fuel_in_hopper > 0:
                 yield
 
+        @commandify
+        def shoot_in_place():
+            robot.is_intaking = False
+            robot.intake_at_default = False
+            robot.shoot_intent = True
+            robot.shooter_at_default = False
+            while robot.fuel_in_hopper > 0:
+                yield
+        
+        @commandify
+        def shoot_in_place_2():
+            robot.is_intaking = False
+            robot.intake_at_default = False
+            robot.shoot_intent = True
+            robot.shooter_at_default = False
+            while robot.fuel_in_hopper > 0:
+                yield
 
-        self.drive_to_zone_no_intake = (drive_to_zone_no_intake)
-        self.drive_to_zone_no_intake_2 = (drive_to_zone_no_intake_2)
+        self.drive_to_zone_trench = (drive_to_zone_trench)
+        self.drive_to_zone_trench_2 = (drive_to_zone_trench_2)
         self.intake = (intake)
         self.intake_2 = (intake_2)
+
+        self.shoot_in_place = (shoot_in_place)
+        self.shoot_in_place_2 = (shoot_in_place_2)
 

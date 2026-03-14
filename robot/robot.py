@@ -259,7 +259,7 @@ class Robot(CoroutineRobot):
         self.auto_win_check_attempts = 10 # change if not checking enough
 
 
-        self.auto = self.autoroutines.test_trench_auto()
+        self.auto = self.autoroutines.bump_left_depot_outpost_auto()
 
 
         ## SIMMING STUFF ##
@@ -276,7 +276,7 @@ class Robot(CoroutineRobot):
             # self.fuel_sim.clearFuel()
             self.fuel_sim.start()
 
-        test_path = self.flip_path_cmd_across_x(self.getPathCommand(PathPlannerPath.fromPathFile("P1_B")))._originalPath
+        test_path = self.flip_path_cmd_across_x(self.getPathCommand(PathPlannerPath.fromPathFile("P1_T_L")))._originalPath
         test_path_waypoints = test_path.getWaypoints()
         for idx, waypoint in enumerate(test_path_waypoints):
             if idx == 0:

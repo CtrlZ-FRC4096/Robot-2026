@@ -89,9 +89,9 @@ class PoseEstimator(Subsystem):
         
 
         if self.robot.fieldConstants.shouldFlip:
-            self.gyro_offset = 180
+            self.gyro_offset = 90
         else:
-            self.gyro_offset = 0
+            self.gyro_offset = -90
 
         self.gyro.set_yaw(self.gyro_offset)
         # self.gyro.set_yaw(0)
@@ -157,7 +157,8 @@ class PoseEstimator(Subsystem):
         # self.curEstPose = Pose2d(4.44, 8.1-0.641, math.pi)
         # climb pose
         # self.curEstPose = Pose2d(1.003, 4.637, Rotation2d(math.pi / 2))
-        self.curEstPose = Pose2d(2, 2, self.getYaw())
+        # self.curEstPose = Pose2d(4.414, 7.587, self.getYaw())
+        self.curEstPose = Pose2d()
         self.estZ = 0
 
         self.poseEst = SwerveDrive4PoseEstimator(

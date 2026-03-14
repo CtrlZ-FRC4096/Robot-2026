@@ -10,7 +10,7 @@ import math
 from wpimath.trajectory import TrapezoidProfile
 from wpilibextra.coroutine.coroutine_command import autoroutine2command
 from wpilib import Timer
-import wpimath.geometry
+from wpimath.geometry import Rotation2d, Pose2d
 from wpimath.units import degreesToRadians
 import const
 from pathplannerlib.path import PathConstraints, PathPlannerPath
@@ -34,13 +34,42 @@ class AutoRoutines:
     def __init__(self, robot: "Robot"):
         self.robot = robot
 
-    def test_trench_auto(self):
+    def trench_left_auto(self):
         return SequentialCommandGroup(
-            ParallelCommandGroup(self.robot.getPathCommand(PathPlannerPath.fromPathFile("P1_T")),
+            ParallelCommandGroup(self.robot.getPathCommand(PathPlannerPath.fromPathFile("P1_T_L")),
                                  self.robot.coroutines.intake),
-            self.robot.coroutines.drive_to_zone_no_intake.withTimeout(4),
-            ParallelCommandGroup(self.robot.getPathCommand(PathPlannerPath.fromPathFile("P2_T")),
+            self.robot.coroutines.drive_to_zone_trench.withTimeout(4),
+            ParallelCommandGroup(self.robot.getPathCommand(PathPlannerPath.fromPathFile("P2_T_L")),
                                  self.robot.coroutines.intake_2),
-            self.robot.coroutines.drive_to_zone_no_intake_2.withTimeout(4),
+            self.robot.coroutines.drive_to_zone_trench_2.withTimeout(4),
+        )
+
+    def trench_bump_left_auto(self):
+        return SequentialCommandGroup(
+            ParallelCommandGroup(
+                self.robot.getPathCommand(PathPlannerPath.fromPathFile("P1_B_L")),
+                self.robot.coroutines.intake),
+            self.robot.coroutines.shoot_in_place.withTimeout(4),
+            ParallelCommandGroup(
+                self.robot.getPathCommand(PathPlannerPath.fromPathFile("P2_B_L")),
+                self.robot.coroutines.intake_2
+            ),
+            self.robot.coroutines.drive_to_zone_trench
+        )
+
+    def bump_left_depot_outpost_auto(self):
+        self.robot.poseEstimator.poseEst.resetPose(Pose2d(4.440, 7.587, Rotation2d.fromDegrees(-90)))
+        self.robot.poseEstimator.curEstPose = Pose2d(4.440, 7.587, Rotation2d.fromDegrees(-90))
+        return SequentialCommandGroup(
+            ParallelCommandGroup(
+                self.robot.getPathCommand(PathPlannerPath.fromPathFile("P1_B_L")),
+                self.robot.coroutines.intake
+            ),
+            self.robot.coroutines.shoot_in_place,
+            ParallelCommandGroup(
+                self.robot.getPathCommand(PathPlannerPath.fromPathFile("LB_DEPOT")),
+                self.robot.coroutines.intake_2
+            ),
+            self.robot.coroutines.shoot_in_place_2
         )
         
