@@ -236,8 +236,7 @@ class Drivetrain(Subsystem):
                     translation.y,
                     rotation,
                     self.robot.poseEstimator.getYaw()
-                )
-            ), 0.02)
+                ), 0.02))
         else:  # Robot relative
             module_states = const.SWERVE_KINEMATICS.toSwerveModuleStates(
                 ChassisSpeeds.discretize(

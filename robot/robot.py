@@ -472,12 +472,14 @@ class Robot(CoroutineRobot):
             self.alliance_shift_time_remaining = 141-self.match_time
 
         if (2.5 < self.alliance_shift_time_remaining < 3) and not self.is_hub_active:
-            self.rumble_d1 = True
-            self.rumble_d2 = True
+            # self.rumble_d1 = True
+            # self.rumble_d2 = True
+            pass
 
 
         if self.auto_win is None and self.match_time >= 4 and self.rumble_d2 == False:
-            self.rumble_d2 = True
+            # self.rumble_d2 = True
+            pass
             
 
     ### WAIT FUNCTION ###

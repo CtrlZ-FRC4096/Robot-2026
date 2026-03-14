@@ -26,24 +26,24 @@ class Intake(Subsystem):
 
         self.left_intake_motor = hardware.TalonFX(const.LEFT_INTAKE_MOTOR_ID, "rio")
         self.right_intake_motor = hardware.TalonFX(const.RIGHT_INTAKE_MOTOR_ID, "rio")
-        self.inside_track_motor = hardware.TalonFX(const.INSIDE_TRACK_MOTOR_ID, "rio")
         self.deploy_motor = hardware.TalonFX(const.INTAKE_DEPLOY_MOTOR_ID, "rio")
         self.deploy_cancoder = hardware.CANcoder(const.INTAKE_DEPLOY_CANCODER_ID, "rio")
 
         deploy_cancoder_config = configs.CANcoderConfiguration()
         #        self.talonfx.configurator.apply(configs.TalonFXConfiguration())
         deploy_cancoder_config.magnet_sensor.sensor_direction = (
-            signals.InvertedValue(1)
+            signals.InvertedValue(0)
         )
+        deploy_cancoder_config.magnet_sensor.magnet_offset = -0.27
+
         self.deploy_cancoder.configurator.apply(
             deploy_cancoder_config  # type: ignore
         )  # Apply settings to angle encoder
 
-        self.intake_motor_config = self.robot.get_motor_config(0, 5, 0, 0, 0.21, 0, 0, 11)
-        self.inside_track_motor_config = self.robot.get_motor_config(0, 1, 0, 0, 0, 0, 0, 0)
-        self.deploy_motor_config = self.robot.get_motor_config(1, 0, 0, 0, 0, 0, 0, 0)
+        self.intake_motor_config = self.robot.get_motor_config(1, 5, 0, 0, 0.21, 0, 0, 11)
+        self.deploy_motor_config = self.robot.get_motor_config(1, 100, 0, 15, 0, 0, 10, 8)
         self.deploy_motor_config.motion_magic.motion_magic_cruise_velocity = 20
-        self.deploy_motor_config.motion_magic.motion_magic_acceleration = 50
+        self.deploy_motor_config.motion_magic.motion_magic_acceleration = 40
         self.deploy_motor_config.feedback.feedback_remote_sensor_id = const.INTAKE_DEPLOY_CANCODER_ID
         self.deploy_motor_config.feedback.feedback_sensor_source = signals.FeedbackSensorSourceValue.REMOTE_CANCODER
 
@@ -53,7 +53,6 @@ class Intake(Subsystem):
 
         self.left_intake_motor.configurator.apply(self.intake_motor_config)
         self.right_intake_motor.configurator.apply(self.intake_motor_config)
-        self.inside_track_motor.configurator.apply(self.inside_track_motor_config)
         self.deploy_motor.configurator.apply(self.deploy_motor_config)
 
         self.right_intake_motor.set_control(controls.Follower(const.LEFT_INTAKE_MOTOR_ID, signals.MotorAlignmentValue(1)))
@@ -111,7 +110,7 @@ class Intake(Subsystem):
 
     def set_intake_speed(self, speed):
         self.commanded_intake_speed = speed
-        self.left_intake_motor.set_control(controls.VelocityTorqueCurrentFOC(speed))
+        self.left_intake_motor.set_control(controls.DutyCycleOut(speed))
 
     def get_intake_speed(self):
         if self.robot.isSimulation():
@@ -131,29 +130,23 @@ class Intake(Subsystem):
     def periodic(self):
         if self.robot.intake_at_default:
             self.stop_intake()
-            self.set_position(-0.23)
+            self.set_position(0.22)
         elif self.robot.is_intaking:
             # if self.robot.fieldConstants.LinesVertical.starting < self.robot.poseEstimator.curEstPose.X() < self.robot.fieldConstants.fieldLength - self.robot.fieldConstants.LinesVertical.starting: # neutral zone
-            self.set_intake_speed(self.test_intake_speed) # TUNE
-            self.set_position(-0.08) # TUNE
+            self.set_intake_speed(0.8) # TUNE
+            self.set_position(-0.05) # TUNE
         elif self.robot.pulse_pivot:
             if self.tick_count % 20 < 10:
                 # print("switch to out")
-                self.set_position(-0.08)
+                self.set_position(-0.05)
             else:
                 # print("switch to in")
-                self.set_position(-0.23)
-            self.set_intake_speed(self.test_intake_speed)
+                self.set_position(0.22)
+            self.set_intake_speed(0.8)
         else:
             self.stop_intake()
-            self.set_position(-0.08)
-        
-        if self.commanded_intake_speed >= 0.05:
-            self.inside_track_motor.set_control(controls.DutyCycleOut(0.5, enable_foc=False))
-        elif self.robot.hopper.commanded_speed >= 0.05:
-            self.inside_track_motor.set_control(controls.DutyCycleOut(0.5, enable_foc=False))
-        else:
-            self.inside_track_motor.set_control(controls.DutyCycleOut(0, enable_foc=False))
+            self.set_position(-0.05)
+
         self.tick_count += 1
 
     def log(self):
