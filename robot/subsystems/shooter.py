@@ -37,6 +37,14 @@ class Shooter(Subsystem):
         self.accelerator_motor = hardware.TalonFX(const.SHOOTER_ACCELERATOR_MOTOR_ID, "rio")
 
         self.hood_motor = hardware.TalonFX(const.SHOOTER_HOOD_MOTOR_ID, "rio")
+        self.hood_cancoder = hardware.CANcoder(const.SHOOTER_HOOD_CANCODER, "rio")
+
+        hood_cancoder_config = configs.CANcoderConfiguration()
+        hood_cancoder_config.magnet_sensor.sensor_direction = signals.InvertedValue(0)
+        hood_cancoder_config .magnet_sensor.magnet_offset = 0
+
+        self.hood_cancoder.configurator.apply(hood_cancoder_config)
+
 
         self.fly_motor_config = self.robot.get_motor_config(0, 10.0, 0, 0, 0.015, 0, 0, 3.5)
         # self.right_fly_motor_config = self.robot.get_motor_config(0, 12.0, 0.1, 0, 0, 0, 0, 0)
@@ -47,15 +55,17 @@ class Shooter(Subsystem):
         self.left_up_fly_motor.configurator.apply(self.fly_motor_config)
         self.left_down_fly_motor.configurator.apply(self.fly_motor_config)
 
-        self.accelerator_motor_config = self.robot.get_motor_config(1, 7.0, 0, 0.025, 0, 0, 0, 9) # retune when we have metal plates
+        self.accelerator_motor_config = self.robot.get_motor_config(0, 9.0, 0, 0.025, 0, 0, 0, 9) # retune when we have metal plates
         self.accelerator_motor_config.current_limits.supply_current_limit = 80
         self.accelerator_motor_config.torque_current.peak_forward_torque_current = 80
         self.accelerator_motor_config.torque_current.peak_reverse_torque_current = -80
         self.accelerator_motor.configurator.apply(self.accelerator_motor_config)
 
-        self.hood_motor_config = self.robot.get_motor_config(0, 12, 0, 0.5, 0, 0, 0, 0.6)
+        self.hood_motor_config = self.robot.get_motor_config(0, 1.5, 0, 0.15, 0, 0, 0, 0.5)
         self.hood_motor_config.motion_magic.motion_magic_acceleration = 400
         self.hood_motor_config.motion_magic.motion_magic_cruise_velocity = 400
+        # self.hood_motor_config.feedback.feedback_remote_sensor_id = const.SHOOTER_HOOD_CANCODER
+        # self.hood_motor_config.feedback.feedback_sensor_source = signals.FeedbackSensorSourceValue.REMOTE_CANCODER
         self.hood_motor.configurator.apply(self.hood_motor_config)
 
         self.right_fly_motor.set_control(controls.Follower(const.LEFT_UP_FLY_ID, signals.MotorAlignmentValue(1)))
@@ -80,7 +90,7 @@ class Shooter(Subsystem):
         # if self.get_fly_speed() <= self.commanded_fly_speed * 0.85:
         #     self.right_fly_motor.set_control(controls.DutyCycleOut(0.97))
         # else:
-        self.left_up_fly_motor.set_control(controls.VelocityTorqueCurrentFOC(-1 * speed))
+        self.left_up_fly_motor.set_control(controls.VelocityVoltage(-1 * speed, enable_foc=False))
 
     def get_accelerator_speed(self):
         if self.robot.isSimulation():
@@ -93,7 +103,7 @@ class Shooter(Subsystem):
         # if self.get_accelerator_speed() <= self.commanded_accelerator_speed * 0.85:
         #     self.accelerator_motor.set_control(controls.VelocityDutyCycle(0.97))
         # else:
-        self.accelerator_motor.set_control(controls.VelocityTorqueCurrentFOC(speed))
+        self.accelerator_motor.set_control(controls.VelocityVoltage(speed, enable_foc=False))
     
     def set_hood_position(self, position):
         
@@ -138,9 +148,6 @@ class Shooter(Subsystem):
     
     def pose_in_trench(self):
         pose = self.robot.poseEstimator.curEstPose.translation() + Translation2d(0, 0.27).rotateBy(self.robot.poseEstimator.curEstPose.rotation())
-        cur_speeds = self.robot.drivetrain.get_field_relative_speeds()
-        predicted_pose = Translation2d(self.robot.poseEstimator.curEstPose.X() + cur_speeds.vx * 0.1,
-                                       self.robot.poseEstimator.curEstPose.Y() * cur_speeds.vy * 0.1) + Translation2d(0, 0.27).rotateBy(Rotation2d(self.robot.poseEstimator.curEstPose.rotation().radians() + cur_speeds.omega))
 
         min_x_blue = inchesToMeters(156.406)
         max_x_blue = inchesToMeters(205.406)
@@ -154,11 +161,6 @@ class Shooter(Subsystem):
         or (min_x_blue <= pose.X() <= max_x_blue and min_y_left <= pose.Y() <= max_y_left) # blue left trench
         or (min_x_red <= pose.X() <= max_x_red and min_y_right <= pose.Y() <= max_y_right) # red right trench
         or (min_x_red <= pose.X() <= max_x_red and min_y_left <= pose.Y() <= max_y_left) # red left trench
-        ) or (
-            (min_x_blue <= predicted_pose.X() <= max_x_blue and min_y_right <= predicted_pose.Y() <= max_y_right) # blue right trench
-        or (min_x_blue <= predicted_pose.X() <= max_x_blue and min_y_left <= predicted_pose.Y() <= max_y_left) # blue left trench
-        or (min_x_red <= predicted_pose.X() <= max_x_red and min_y_right <= predicted_pose.Y() <= max_y_right) # red right trench
-        or (min_x_red <= predicted_pose.X() <= max_x_red and min_y_left <= predicted_pose.Y() <= max_y_left)
         ):
             return True
         else:
@@ -178,6 +180,11 @@ class Shooter(Subsystem):
             self.set_hood_position(0.0)
             self.stop_accelerator()
             self.stop_fly()
+        elif self.robot.clear_jam and not self.robot.ignore_shooter_in_jam:
+            self.set_hood_position(0.0)
+            self.set_accelerator_speed(-50)
+            self.set_fly_speed(-50)
+            self.robot.hopper.indexer_motor.set_control(controls.DutyCycleOut(-0.7, enable_foc=False))
         elif self.robot.shoot_intent or self.robot.down_bad:
                 if not self.robot.in_autonomous_mode or (self.robot.in_autonomous_mode and self.robot.poseEstimator.cur_pos_in_zone()):
                     if self.robot.down_bad:
@@ -192,7 +199,7 @@ class Shooter(Subsystem):
                     SmartDashboard.putNumber("rotation lock error", (self.robot.poseEstimator.curEstPose.rotation() - rotation).degrees())
                     if self.robot.shoot_fuel or self.ready_to_shoot() or self.shoot_ready:
                         self.set_accelerator_speed(self.test_accelerator_speed)
-                        if self.robot.shoot_fuel or (abs(abs(self.get_accelerator_speed()) - self.commanded_accelerator_speed) <= 3 or self.accel_good) and (not self.robot.in_autonomous_mode or  self.robot.poseEstimator.cur_pos_in_zone()):
+                        if self.robot.shoot_fuel or (abs(abs(self.get_accelerator_speed()) - self.commanded_accelerator_speed) <= 3 or self.accel_good or True) and (not self.robot.in_autonomous_mode or  self.robot.poseEstimator.cur_pos_in_zone()):
                             if not self.accel_good:
                                 self.robot.intake.tick_count = 0
                             self.accel_good = True
@@ -201,13 +208,14 @@ class Shooter(Subsystem):
                             self.robot.pulse_pivot = True 
 
                             # self.robot.hopper.set_speed(self.robot.hopper.test_indexer_speed) 
-                        else:
-                            self.robot.hopper.commanded_speed = -0.2
-                            self.robot.hopper.indexer_motor.set_control(controls.DutyCycleOut(-0.2, enable_foc=False))
+                        # else:
+                        #     self.robot.hopper.commanded_speed = -0.2
+                        #     self.robot.hopper.indexer_motor.set_control(controls.DutyCycleOut(-0.2, enable_foc=False))
         else:
             self.set_hood_position(0.0)
             self.stop_accelerator()
             self.stop_fly()
+            self.robot.hopper.indexer_motor.set_control(controls.DutyCycleOut(0.0, enable_foc=False))
 
     def log(self):
         SmartDashboard.putNumber("Shooter/Right Fly Speed", self.right_fly_motor.get_velocity().value)

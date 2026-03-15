@@ -187,7 +187,7 @@ class OI:
                     rotation_2d = self.robot.drivetrain.get_target_angle(self.robot.time_of_flight, self.robot.static_target)
                     rotation = rotation_2d.degrees()
                     mag_vel = Translation2d(forward_back, left_right).norm()
-                    if mag_vel <= 1e-4 and abs((self.robot.poseEstimator.curEstPose.rotation() - rotation_2d).degrees()) <= 3:
+                    if False and mag_vel <= 1e-4 and abs((self.robot.poseEstimator.curEstPose.rotation() - rotation_2d).degrees()) <= 3:
                         self.robot.poseEstimator.set_wheels_to_x()
                     else:
 
@@ -366,6 +366,23 @@ class OI:
             self.robot.running_pid_lineup = False
             self.robot_oriented_angle = self.robot.poseEstimator.curEstPose.rotation().degrees()
 
+        @self.driver1.LEFT_BUMPER.whenHeld
+        def _():
+            self.robot.final_lineup_pose = self.robot.poseEstimator.get_path_to_outpost()
+            self.robot.running_pid_lineup = True
+            self.robot.lining_with_outpost = True
+
+        @self.driver1.LEFT_BUMPER.whenReleased
+        def _():
+            self.robot.running_pid_lineup = False
+            self.robot.lining_with_outpost = False
+            self.robot.intake_at_default = False
+            self.robot.clear_jam = False
+            self.robot.ignore_shooter_in_jam = False
+            self.robot.is_intaking = False
+
+        
+
         @self.driver2.POV.RIGHT.whenHeld
         def _():
             self.robot.down_bad = True
@@ -413,6 +430,28 @@ class OI:
             if self.robot.auto_win is None and self.can_change_auto_win:
                 self.robot.auto_win = False
 
-        @self.driver2.POV.LEFT.whenPressed
+        @self.driver2.BACK.whenPressed
         def _():
             self.robot.should_hub_track = not self.robot.should_hub_track
+
+        @self.driver2.POV.LEFT.whenHeld
+        def _():
+            self.robot.clear_jam = True
+            self.robot.ignore_shooter_in_jam = False
+            self.robot.intake_at_default = False
+            self.robot.shooter_at_default = False
+            self.robot.is_intaking = False
+            self.robot.down_bad = False
+            self.robot.shoot_intent = False
+            self.robot.shoot_fuel = False
+        
+        @self.driver2.POV.LEFT.whenReleased
+        def _():
+            self.robot.clear_jam = False
+            self.robot.ignore_shooter_in_jam = False
+            self.robot.intake_at_default = False
+            self.robot.shooter_at_default = False
+            self.robot.is_intaking = False
+            self.robot.down_bad = False
+            self.robot.shoot_intent = False
+            self.robot.shoot_fuel = False

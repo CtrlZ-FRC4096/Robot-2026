@@ -210,6 +210,10 @@ class Robot(CoroutineRobot):
         self.is_intaking = False
         self.pulse_indexer = False
         self.pulse_pivot = False
+        self.clear_jam = False
+        self.ignore_shooter_in_jam = False
+        
+        self.lining_with_outpost = False
 
         self.snake_intake = False
         self.track_fuel = False
@@ -361,10 +365,10 @@ class Robot(CoroutineRobot):
             self.drivetrain.drive_robot_relative,
             PPHolonomicDriveController(
                 PIDConstants(
-                    0.5, 0, 0
+                    0, 0, 0
                 ),  # Translation PID constants
                 PIDConstants(
-                    0.5, 0, 0.1
+                    0, 0, 0
                 ),  # Rotation PID constants)
             ),
             RobotConfig.fromGUISettings(),
@@ -502,6 +506,7 @@ class Robot(CoroutineRobot):
         SmartDashboard.putBoolean("States/Should Hub Track", self.should_hub_track)
         SmartDashboard.putBoolean("States/Pulse Pivot", self.pulse_pivot)
         SmartDashboard.putBoolean("States/Down Bad", self.down_bad)
+        SmartDashboard.putBoolean("States/Clear Jam", self.clear_jam)
 
         SmartDashboard.putNumber("Shooting Values/Distance to Hub", self.distance)
         SmartDashboard.putNumber("Shooting Values/Time of Flight", self.time_of_flight)

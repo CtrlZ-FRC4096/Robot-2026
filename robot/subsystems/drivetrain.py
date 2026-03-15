@@ -369,9 +369,14 @@ class Drivetrain(Subsystem):
         if (
             self.x_controller.atSetpoint()
             and self.y_controller.atSetpoint()
-            # and self.theta_controller.atSetpoint()
+            and (self.theta_controller.atSetpoint() and not self.robot.shoot_intent)
         ):
             # self.robot.running_pid_lineup = False
+            if self.robot.lining_with_outpost:
+                self.robot.clear_jam = True
+                self.robot.ignore_shooter_in_jam = True
+                self.robot.is_intaking = False
+                self.robot.intake_at_default = False
             self.robot.running_pid_lineup = False
 
 

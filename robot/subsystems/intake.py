@@ -15,7 +15,7 @@ from wpilib import Timer
 import math
 import const
 from wpilib import SmartDashboard
-from wpimath.units import radiansToDegrees
+from wpimath.units import radiansToDegrees, inchesToMeters
 from wpimath.controller import PIDController
 
 class Intake(Subsystem):
@@ -82,17 +82,16 @@ class Intake(Subsystem):
         '''
             position is in degrees
         '''
-        # output = self.deploy_pid_controller.calculate(self.get_position(), self.commanded_position)
-        # self.deploy_motor.set_control(controls.TorqueCurrentFOC(output))
-
-        # if abs(self.get_position() - position) <= 0.02:
-        #     return
-        self.commanded_position = position
-        # rotations = position * 25.0 # ADD GEAR RATIOS STUFF
-        # #self.deploy_motor.set_control(controls.PositionTorqueCurrentFOC(rotations)) # USE MOTION MAGIC
         if abs(self.get_position() - self.commanded_position) <= 0.02:
+            self.stop_deploy()
             return 
-        self.deploy_motor.set_control(self.request.with_position(position)) # USING MOTION MAGIC
+        
+        if self.intake_pose_in_trench():
+            self.commanded_position = -0.05
+            self.deploy_motor.set_control(self.request.with_position(-0.05))
+        else:
+            self.commanded_position = position
+            self.deploy_motor.set_control(self.request.with_position(position)) # USING MOTION MAGIC
 
     def get_position(self):
         if self.robot.isSimulation():
@@ -101,6 +100,26 @@ class Intake(Subsystem):
             rotations = self.deploy_motor.get_position().value
             position = rotations# ADD GEAR RATIOS STUFF
             return position
+
+    def intake_pose_in_trench(self):
+        pose = self.robot.poseEstimator.curEstPose.translation() + Translation2d(0, -0.4).rotateBy(self.robot.poseEstimator.curEstPose.rotation())
+
+        min_x_blue = inchesToMeters(156.406)
+        max_x_blue = inchesToMeters(205.406)
+        min_x_red = inchesToMeters(446.156)
+        max_x_red = inchesToMeters(494.844)
+        min_y_right = inchesToMeters(0)
+        max_y_right = inchesToMeters(51.219)
+        min_y_left = inchesToMeters(267.268)
+        max_y_left = inchesToMeters(318.111)
+        if ((min_x_blue <= pose.X() <= max_x_blue and min_y_right <= pose.Y() <= max_y_right) # blue right trench
+        or (min_x_blue <= pose.X() <= max_x_blue and min_y_left <= pose.Y() <= max_y_left) # blue left trench
+        or (min_x_red <= pose.X() <= max_x_red and min_y_right <= pose.Y() <= max_y_right) # red right trench
+        or (min_x_red <= pose.X() <= max_x_red and min_y_left <= pose.Y() <= max_y_left) # red left trench
+        ):
+            return True
+        else:
+            return False
 
     def can_intake_sim(self):
         return self.robot.is_intaking and self.robot.fuel_in_hopper < 24
@@ -131,6 +150,9 @@ class Intake(Subsystem):
         if self.robot.intake_at_default:
             self.stop_intake()
             self.set_position(0.22)
+        elif self.robot.clear_jam:
+            self.set_intake_speed(-0.8)
+            self.set_position(-0.05)
         elif self.robot.is_intaking:
             # if self.robot.fieldConstants.LinesVertical.starting < self.robot.poseEstimator.curEstPose.X() < self.robot.fieldConstants.fieldLength - self.robot.fieldConstants.LinesVertical.starting: # neutral zone
             self.set_intake_speed(0.8) # TUNE

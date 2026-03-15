@@ -91,7 +91,7 @@ class PoseEstimator(Subsystem):
         if self.robot.fieldConstants.shouldFlip:
             self.gyro_offset = 90
         else:
-            self.gyro_offset = -90
+            self.gyro_offset = 0
 
         self.gyro.set_yaw(self.gyro_offset)
         # self.gyro.set_yaw(0)
@@ -158,7 +158,7 @@ class PoseEstimator(Subsystem):
         # climb pose
         # self.curEstPose = Pose2d(1.003, 4.637, Rotation2d(math.pi / 2))
         # self.curEstPose = Pose2d(4.414, 7.587, self.getYaw())
-        self.curEstPose = Pose2d(1, 1, Rotation2d.fromDegrees(-90))
+        self.curEstPose = Pose2d(1, 1, Rotation2d())
         self.estZ = 0
 
         self.poseEst = SwerveDrive4PoseEstimator(
@@ -187,9 +187,9 @@ class PoseEstimator(Subsystem):
         # ROBOT_TO_COLOR_2 = Transform3d() # TO DO
 
         self.cams = [
-            WrapperedPhotonCameraTag("climber", ROBOT_TO_CAM1),
+            WrapperedPhotonCameraTag("flywheel", ROBOT_TO_CAM1),
             WrapperedPhotonCameraTag("shooter", ROBOT_TO_CAM2),
-            WrapperedPhotonCameraTag("flywheel", ROBOT_TO_CAM3)
+            WrapperedPhotonCameraTag("climber", ROBOT_TO_CAM3)
         ]
 
         # self.intake_cam = WrapperedPhotonCameraIntakeFuel("color1", ROBOT_TO_COLOR_1) # WRONG NAME MAYBE
@@ -228,6 +228,10 @@ class PoseEstimator(Subsystem):
             else:
                 good_rotation = Rotation2d.fromDegrees(90)
                 target_pose = Pose2d(self.robot.fieldConstants.flip_X_coord(4.621 + 1.25), self.robot.fieldConstants.fieldWidth - 7.44, (good_rotation if can_rotate else self.curEstPose.rotation()))
+        return target_pose
+    
+    def get_path_to_outpost(self):
+        target_pose = self.robot.fieldConstants.flip_Pose2d(Pose2d(0.742, 0.649, Rotation2d.fromDegrees(-90)))
         return target_pose
 
     def update_fuel_intake_tgt(self):
@@ -427,8 +431,8 @@ class PoseEstimator(Subsystem):
                 tgt_id = combined[1]
                 ambiguity = combined[2]
                 tgtZEst = combined[3]
-                print(f"tgtZEst: {tgtZEst}")
-                print(f"ambiguity : {ambiguity}")
+                # print(f"tgtZEst: {tgtZEst}")
+                # print(f"ambiguity : {ambiguity}")
                 tag_pose = self.tag_layout.getTagPose(tgt_id)
                 distance = tag_pose.translation().toTranslation2d().distance(pose.translation())
                 self.camera_X[cam.camName] = pose.X()
