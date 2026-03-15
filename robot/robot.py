@@ -142,7 +142,7 @@ class Robot(CoroutineRobot):
         self.scheduler = CommandScheduler.getInstance()
         
         # subsystems
-        self.leds = subsystems.leds.LEDs(self)
+        # self.leds = subsystems.leds.LEDs(self)
         self.poseEstimator = subsystems.poseEstimator.PoseEstimator(self)
         self.drivetrain = subsystems.drivetrain.Drivetrain(self)
         self.intake = subsystems.intake.Intake(self)
@@ -152,7 +152,7 @@ class Robot(CoroutineRobot):
 
         self.subsystems = [
             self.drivetrain,
-            self.leds,
+            # self.leds,
             self.poseEstimator,
             self.intake,
             self.shooter,

@@ -16,7 +16,7 @@ from wpilib import Timer
 import math
 import const
 from wpilib import SmartDashboard
-import shot_calc
+# import shot_calc
 import numpy as np
 from lookup_table import LookupTableAll, LookupTableAngle, LookupTableVel
 
@@ -27,7 +27,7 @@ class Shooter(Subsystem):
         self.commanded_fly_speed = 0.0
         self.commanded_hood_position = 0.0
         self.commanded_accelerator_speed = 0.0
-        self.request = controls.MotionMagicVoltage(0, enable_foc=True)
+        self.request = controls.MotionMagicVoltage(0, enable_foc=False)
 
         # Flywheel motors
         self.right_fly_motor = hardware.TalonFX(const.RIGHT_FLY_ID, "rio")
@@ -115,12 +115,12 @@ class Shooter(Subsystem):
         # else:
         if self.pose_in_trench():
             self.commanded_hood_position = 0
-            self.hood_motor.set_control(self.request.with_position(0))
+            self.hood_motor.set_control(controls.MotionMagicVoltage(0, enable_foc=False))
             self.shoot_ready = False
         else:
             self.commanded_hood_position = position
             rotations = position # ADD GEAR RATIOS STUFF
-            self.hood_motor.set_control(self.request.with_position(rotations)) # USING MOTION MAGIC
+            self.hood_motor.set_control(controls.MotionMagicVoltage(rotations, enable_foc=False)) # USING MOTION MAGIC
     
     def get_hood_position(self):
         if self.robot.isSimulation():
@@ -131,15 +131,15 @@ class Shooter(Subsystem):
             return position
 
     def stop_hood(self):
-        self.hood_motor.set_control(controls.DutyCycleOut(0.0))
+        self.hood_motor.set_control(controls.DutyCycleOut(0.0, enable_foc=False))
     
     def stop_fly(self):
         self.commanded_fly_speed = 0.0
-        self.left_up_fly_motor.set_control(controls.DutyCycleOut(0.0))
+        self.left_up_fly_motor.set_control(controls.DutyCycleOut(0.0, enable_foc=False))
 
     def stop_accelerator(self):
         self.commanded_accelerator_speed = 0.0
-        self.accelerator_motor.set_control(controls.DutyCycleOut(0.0))
+        self.accelerator_motor.set_control(controls.DutyCycleOut(0.0, enable_foc=False))
 
     def stop(self):
         self.stop_hood()

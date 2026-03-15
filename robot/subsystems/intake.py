@@ -22,7 +22,7 @@ class Intake(Subsystem):
     def __init__(self, robot: "Robot"):
         super().__init__()
         self.robot = robot
-        self.request = controls.MotionMagicTorqueCurrentFOC(0)
+        self.request = controls.MotionMagicVoltage(0, enable_foc=False)
 
         self.left_intake_motor = hardware.TalonFX(const.LEFT_INTAKE_MOTOR_ID, "rio")
         self.right_intake_motor = hardware.TalonFX(const.RIGHT_INTAKE_MOTOR_ID, "rio")
@@ -73,10 +73,10 @@ class Intake(Subsystem):
 
     def stop_intake(self):
         self.commanded_intake_speed = 0.0
-        self.left_intake_motor.set_control(controls.DutyCycleOut(0.0))
+        self.left_intake_motor.set_control(controls.DutyCycleOut(0.0, enable_foc=False))
 
     def stop_deploy(self):
-        self.deploy_motor.set_control(controls.DutyCycleOut(0.0))
+        self.deploy_motor.set_control(controls.DutyCycleOut(0.0, enable_foc=False))
 
     def set_position(self, position):
         '''
@@ -88,10 +88,10 @@ class Intake(Subsystem):
         
         if self.intake_pose_in_trench():
             self.commanded_position = -0.05
-            self.deploy_motor.set_control(self.request.with_position(-0.05))
+            self.deploy_motor.set_control(controls.MotionMagicVoltage(-0.05, enable_foc=False))
         else:
             self.commanded_position = position
-            self.deploy_motor.set_control(self.request.with_position(position)) # USING MOTION MAGIC
+            self.deploy_motor.set_control(controls.MotionMagicVoltage(position, enable_foc=False)) # USING MOTION MAGIC
 
     def get_position(self):
         if self.robot.isSimulation():
@@ -129,7 +129,7 @@ class Intake(Subsystem):
 
     def set_intake_speed(self, speed):
         self.commanded_intake_speed = speed
-        self.left_intake_motor.set_control(controls.DutyCycleOut(speed))
+        self.left_intake_motor.set_control(controls.DutyCycleOut(speed, enable_foc=False))
 
     def get_intake_speed(self):
         if self.robot.isSimulation():

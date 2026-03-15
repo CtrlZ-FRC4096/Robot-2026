@@ -44,7 +44,7 @@ class Hopper(Subsystem):
                     
     def set_speed(self, speed):
         self.commanded_speed = speed
-        self.indexer_motor.set_control(controls.VelocityTorqueCurrentFOC(speed))
+        self.indexer_motor.set_control(controls.VelocityVoltage(speed, enable_foc=False))
 
     def stop(self):
         self.commanded_speed = 0.0
