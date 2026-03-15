@@ -192,6 +192,11 @@ class PoseEstimator(Subsystem):
             WrapperedPhotonCameraTag("climber", ROBOT_TO_CAM3)
         ]
 
+        # camera4 - spare1
+        # camera5 - spare2
+        # camera6 - spare3
+        # camera7 - spare4
+
         # self.intake_cam = WrapperedPhotonCameraIntakeFuel("color1", ROBOT_TO_COLOR_1) # WRONG NAME MAYBE
         # self.hopper_cam = WrapperedPhotonCameraFuel("color2", ROBOT_TO_COLOR_2)
         # self.fuel_map = []
