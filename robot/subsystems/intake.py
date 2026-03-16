@@ -41,7 +41,7 @@ class Intake(Subsystem):
         )  # Apply settings to angle encoder
 
         self.intake_motor_config = self.robot.get_motor_config(1, 5, 0, 0, 0.21, 0, 0, 11)
-        self.deploy_motor_config = self.robot.get_motor_config(1, 100, 0, 15, 0, 0, 10, 8)
+        self.deploy_motor_config = self.robot.get_motor_config(1, 80, 0, 15, 0, 0, 10, 8)
         self.deploy_motor_config.motion_magic.motion_magic_cruise_velocity = 20
         self.deploy_motor_config.motion_magic.motion_magic_acceleration = 40
         self.deploy_motor_config.feedback.feedback_remote_sensor_id = const.INTAKE_DEPLOY_CANCODER_ID
@@ -82,16 +82,19 @@ class Intake(Subsystem):
         '''
             position is in degrees
         '''
-        if abs(self.get_position() - self.commanded_position) <= 0.02:
-            self.stop_deploy()
-            return 
         
         if self.intake_pose_in_trench():
             self.commanded_position = -0.05
-            self.deploy_motor.set_control(controls.MotionMagicVoltage(-0.05, enable_foc=False))
+            if abs(self.get_position() - 0.05) <= 0.02:
+                self.stop_deploy()
+            else:
+                self.deploy_motor.set_control(controls.MotionMagicTorqueCurrentFOC(-0.05))
         else:
             self.commanded_position = position
-            self.deploy_motor.set_control(controls.MotionMagicVoltage(position, enable_foc=False)) # USING MOTION MAGIC
+            if abs(self.get_position() - self.commanded_position) <= 0.02:
+                self.stop_deploy()
+            else:
+                self.deploy_motor.set_control(controls.MotionMagicTorqueCurrentFOC(position)) # USING MOTION MAGIC
 
     def get_position(self):
         if self.robot.isSimulation():
@@ -149,7 +152,7 @@ class Intake(Subsystem):
     def periodic(self):
         if self.robot.intake_at_default:
             self.stop_intake()
-            self.set_position(0.22)
+            self.set_position(0.19)
         elif self.robot.clear_jam:
             self.set_intake_speed(-0.8)
             self.set_position(-0.05)
@@ -163,7 +166,7 @@ class Intake(Subsystem):
                 self.set_position(-0.05)
             else:
                 # print("switch to in")
-                self.set_position(0.22)
+                self.set_position(0.19)
             self.set_intake_speed(0.8)
         else:
             self.stop_intake()

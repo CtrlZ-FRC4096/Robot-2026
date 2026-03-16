@@ -46,7 +46,7 @@ class Shooter(Subsystem):
         self.hood_cancoder.configurator.apply(hood_cancoder_config)
 
 
-        self.fly_motor_config = self.robot.get_motor_config(0, 10.0, 0, 0, 0.015, 0, 0, 3.5)
+        self.fly_motor_config = self.robot.get_motor_config(0, 1.15, 0, 0, 0.122, 0, 0, 0.3)
         # self.right_fly_motor_config = self.robot.get_motor_config(0, 12.0, 0.1, 0, 0, 0, 0, 0)
         self.fly_motor_config.current_limits.supply_current_limit = 80
         self.fly_motor_config.torque_current.peak_forward_torque_current = 80
@@ -55,7 +55,7 @@ class Shooter(Subsystem):
         self.left_up_fly_motor.configurator.apply(self.fly_motor_config)
         self.left_down_fly_motor.configurator.apply(self.fly_motor_config)
 
-        self.accelerator_motor_config = self.robot.get_motor_config(0, 9.0, 0, 0.025, 0, 0, 0, 9) # retune when we have metal plates
+        self.accelerator_motor_config = self.robot.get_motor_config(1, 0.85, 0, 0.121, 0, 0, 0, 0.25) # retune when we have metal plates
         self.accelerator_motor_config.current_limits.supply_current_limit = 80
         self.accelerator_motor_config.torque_current.peak_forward_torque_current = 80
         self.accelerator_motor_config.torque_current.peak_reverse_torque_current = -80
@@ -72,7 +72,7 @@ class Shooter(Subsystem):
         self.left_down_fly_motor.set_control(controls.Follower(const.LEFT_UP_FLY_ID, signals.MotorAlignmentValue(0)))
 
         self.test_fly_speed = 60
-        self.test_accelerator_speed = 80
+        self.test_accelerator_speed = 70
         self.test_hood_position = 36
 
         self.shoot_ready = False
@@ -199,7 +199,7 @@ class Shooter(Subsystem):
                     SmartDashboard.putNumber("rotation lock error", (self.robot.poseEstimator.curEstPose.rotation() - rotation).degrees())
                     if self.robot.shoot_fuel or self.ready_to_shoot() or self.shoot_ready:
                         self.set_accelerator_speed(self.test_accelerator_speed)
-                        if self.robot.shoot_fuel or (abs(abs(self.get_accelerator_speed()) - self.commanded_accelerator_speed) <= 3 or self.accel_good or True) and (not self.robot.in_autonomous_mode or  self.robot.poseEstimator.cur_pos_in_zone()):
+                        if self.robot.shoot_fuel or (abs(abs(self.get_accelerator_speed()) - self.commanded_accelerator_speed) <= 10 or self.accel_good) and (not self.robot.in_autonomous_mode or  self.robot.poseEstimator.cur_pos_in_zone()):
                             if not self.accel_good:
                                 self.robot.intake.tick_count = 0
                             self.accel_good = True

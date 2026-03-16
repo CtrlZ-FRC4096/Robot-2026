@@ -277,22 +277,22 @@ class OI:
         @self.driver1.A.whenPressed
         def _():
             self.cardinal_directing = True
-            self.robot_oriented_angle = self.robot.fieldConstants.flip_Rotation2d(Rotation2d.fromDegrees(180)).degrees()
+            self.robot_oriented_angle = self.robot.fieldConstants.flip_Rotation2d(Rotation2d.fromDegrees(-90)).degrees()
         
         @self.driver1.B.whenPressed
         def _():
             self.cardinal_directing = True
-            self.robot_oriented_angle = self.robot.fieldConstants.flip_Rotation2d(Rotation2d.fromDegrees(-90)).degrees()
+            self.robot_oriented_angle = self.robot.fieldConstants.flip_Rotation2d(Rotation2d.fromDegrees(0)).degrees()
         
         @self.driver1.X.whenPressed
         def _():
             self.cardinal_directing = True
-            self.robot_oriented_angle = self.robot.fieldConstants.flip_Rotation2d(Rotation2d.fromDegrees(90)).degrees()
+            self.robot_oriented_angle = self.robot.fieldConstants.flip_Rotation2d(Rotation2d.fromDegrees(180)).degrees()
 
         @self.driver1.Y.whenPressed
         def _():
             self.cardinal_directing = True
-            self.robot_oriented_angle = self.robot.fieldConstants.flip_Rotation2d(Rotation2d.fromDegrees(0)).degrees()
+            self.robot_oriented_angle = self.robot.fieldConstants.flip_Rotation2d(Rotation2d.fromDegrees(90)).degrees()
 
 
         @self.driver1.POV.DOWN.whenPressed

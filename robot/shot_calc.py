@@ -390,7 +390,7 @@
 #             shooter_vel=shooter_vel,
 #             min_v=1.5,
 #             max_v=9.2,
-#             min_angle_deg=65,
+#             min_angle_deg=61,
 #             max_angle_deg=87.0
 #         )
         
