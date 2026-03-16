@@ -322,7 +322,6 @@ class OI:
             self.robot.shoot_fuel = False
             self.robot.shoot_intent = False
         
-
         @self.driver1.POV.RIGHT.whenHeld
         def _():
             self.robot.shoot_fuel = True
@@ -354,7 +353,7 @@ class OI:
             self.robot.shooter.shoot_ready = False
             self.robot.shooter.accel_good = False
             self.robot.pulse_pivot = False
-            self.robot.intake_at_default = True
+            self.robot.intake_at_default = False
 
         @self.driver1.RIGHT_BUMPER.whenHeld
         def _():
@@ -392,6 +391,12 @@ class OI:
         def _():
             self.robot.down_bad = False
             self.robot.shooter_at_default = True
+            self.robot.pulse_pivot  = False
+            self.robot.shooter.shoot_ready = False
+            self.robot.shooter.accel_good = False
+            self.robot.shoot_intent = False
+            self.robot.shoot_fuel = False
+
 
         @self.driver2.POV.UP.whenPressed
         def _():
@@ -403,15 +408,19 @@ class OI:
 
         @self.driver2.Y.whenPressed
         def _():
-            self.robot.shooter.test_fly_speed += 1
+            self.robot.down_bad_hood_angle += 1
         @self.driver2.A.whenPressed
         def _():
-            self.robot.shooter.test_fly_speed -= 1
+            self.robot.down_bad_hood_angle -= 1
         
         @self.driver2.B.whenPressed
         def _():
-            self.robot.shooter.test_hood_position += 1
+            self.robot.down_bad_fly_speed += 1
         
+        @self.driver2.X.whenPressed
+        def _():
+            self.robot.down_bad_fly_speed -= 1
+
         @self.driver2.START.whenHeld
         def _():
             self.can_change_auto_win = True

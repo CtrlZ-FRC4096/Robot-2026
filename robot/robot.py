@@ -366,10 +366,10 @@ class Robot(CoroutineRobot):
             self.drivetrain.drive_robot_relative,
             PPHolonomicDriveController(
                 PIDConstants(
-                    0.5, 0, 0
+                    0, 0, 0
                 ),  # Translation PID constants
                 PIDConstants(
-                    0.5, 0, 0.07
+                    0, 0, 0
                 ),  # Rotation PID constants)
             ),
             RobotConfig.fromGUISettings(),
@@ -515,6 +515,8 @@ class Robot(CoroutineRobot):
         SmartDashboard.putNumber("Shooting Values/Hood Angle", self.hood_angle)
         SmartDashboard.putNumber("Shooting Values/Fly Speed", self.fly_speed)
         SmartDashboard.putNumber("Shooting Values/Hood Fudge Value", self.hood_fudge_value)
+        SmartDashboard.putNumber("Shooting Values/Down Bad Fly Speed", self.down_bad_fly_speed)
+        SmartDashboard.putNumber("Shooting Values/Down Bad Hood Angle", self.down_bad_hood_angle)
 
         SmartDashboard.putBoolean("Should Flip", self.fieldConstants.shouldFlip)
 

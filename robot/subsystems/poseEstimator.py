@@ -415,7 +415,6 @@ class PoseEstimator(Subsystem):
         self.set_module_states(desired_states)        
 
     def periodic(self):
-        allianceColor = DriverStation.getAlliance()
         self.single_tag_IDs = set()
         single_tag_poses = []
 

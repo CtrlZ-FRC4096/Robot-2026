@@ -86,15 +86,19 @@ class Intake(Subsystem):
         if self.intake_pose_in_trench():
             self.commanded_position = -0.05
             if abs(self.get_position() - 0.05) <= 0.02:
-                self.stop_deploy()
+                # self.stop_deploy()
+                pass
             else:
-                self.deploy_motor.set_control(controls.MotionMagicTorqueCurrentFOC(-0.05))
+                # self.deploy_motor.set_control(controls.MotionMagicTorqueCurrentFOC(-0.05))
+                pass
         else:
             self.commanded_position = position
             if abs(self.get_position() - self.commanded_position) <= 0.02:
-                self.stop_deploy()
+                # self.stop_deploy()
+                pass
             else:
-                self.deploy_motor.set_control(controls.MotionMagicTorqueCurrentFOC(position)) # USING MOTION MAGIC
+                # self.deploy_motor.set_control(controls.MotionMagicTorqueCurrentFOC(position)) # USING MOTION MAGIC
+                pass
 
     def get_position(self):
         if self.robot.isSimulation():
