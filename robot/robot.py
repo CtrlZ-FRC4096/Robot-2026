@@ -281,24 +281,24 @@ class Robot(CoroutineRobot):
             # self.fuel_sim.clearFuel()
             self.fuel_sim.start()
 
-        # test_path = self.flip_path_cmd_across_x(self.getPathCommand(PathPlannerPath.fromPathFile("P1_T_L")))._originalPath
-        # test_path_waypoints = test_path.getWaypoints()
-        # for idx, waypoint in enumerate(test_path_waypoints):
-        #     if idx == 0:
-        #         next_control_dist = (waypoint.anchor - waypoint.nextControl).norm()
-        #         next_control_heading = Rotation2d((waypoint.nextControl - waypoint.anchor).X(), (waypoint.nextControl - waypoint.anchor).Y()).degrees()
-        #         print(f"Start: anchor: {waypoint.anchor}, next_controldist: {next_control_dist}, next_control_head: {next_control_heading}")
-        #     elif idx == len(test_path_waypoints) - 1:
-        #         prev_control_dist = (waypoint.prevControl - waypoint.anchor).norm()
-        #         prev_control_heading = Rotation2d((waypoint.anchor - waypoint.prevControl).X(), (waypoint.anchor - waypoint.prevControl).Y()).degrees()
-        #         print(f"End: anchor: {waypoint.anchor}, prev_controldist: {prev_control_dist}, prev_control_head: {prev_control_heading}")
-        #     else:
-        #         next_control_dist = (waypoint.anchor - waypoint.nextControl).norm()
-        #         next_control_heading = Rotation2d((waypoint.nextControl - waypoint.anchor).X(), (waypoint.nextControl - waypoint.anchor).Y()).degrees()
-        #         prev_control_dist = (waypoint.prevControl - waypoint.anchor).norm()
-        #         prev_control_heading = Rotation2d((waypoint.anchor - waypoint.prevControl).X(), (waypoint.anchor - waypoint.prevControl).Y()).degrees()
-        #         print(f"{idx}: anchor: {waypoint.anchor}, heading: {prev_control_heading}, prevdist: {prev_control_dist}, next_controldist: {next_control_dist}")
-        # print(test_path.getRotationTargets())
+        test_path = self.flip_path_cmd_across_x(self.getPathCommand(PathPlannerPath.fromPathFile("P1_T_L")))._originalPath
+        test_path_waypoints = test_path.getWaypoints()
+        for idx, waypoint in enumerate(test_path_waypoints):
+            if idx == 0:
+                next_control_dist = (waypoint.anchor - waypoint.nextControl).norm()
+                next_control_heading = Rotation2d((waypoint.nextControl - waypoint.anchor).X(), (waypoint.nextControl - waypoint.anchor).Y()).degrees()
+                print(f"Start: anchor: {waypoint.anchor}, next_controldist: {next_control_dist}, next_control_head: {next_control_heading}")
+            elif idx == len(test_path_waypoints) - 1:
+                prev_control_dist = (waypoint.prevControl - waypoint.anchor).norm()
+                prev_control_heading = Rotation2d((waypoint.anchor - waypoint.prevControl).X(), (waypoint.anchor - waypoint.prevControl).Y()).degrees()
+                print(f"End: anchor: {waypoint.anchor}, prev_controldist: {prev_control_dist}, prev_control_head: {prev_control_heading}")
+            else:
+                next_control_dist = (waypoint.anchor - waypoint.nextControl).norm()
+                next_control_heading = Rotation2d((waypoint.nextControl - waypoint.anchor).X(), (waypoint.nextControl - waypoint.anchor).Y()).degrees()
+                prev_control_dist = (waypoint.prevControl - waypoint.anchor).norm()
+                prev_control_heading = Rotation2d((waypoint.anchor - waypoint.prevControl).X(), (waypoint.anchor - waypoint.prevControl).Y()).degrees()
+                print(f"{idx}: anchor: {waypoint.anchor}, heading: {prev_control_heading}, prevdist: {prev_control_dist}, next_controldist: {next_control_dist}")
+        print(test_path.getRotationTargets())
 
         while True:
             yield

@@ -197,8 +197,8 @@ class OI:
                             direction = Translation2d(0, 0)
 
                         if mag_vel >= 0.25:
-                            forward_back = (forward_back / mag_vel) * 0.25
-                            left_right = (left_right / mag_vel) * 0.25
+                            forward_back = (forward_back / mag_vel) * 0.1
+                            left_right = (left_right / mag_vel) * 0.1
                         new_mag_vel = Translation2d(forward_back, left_right).norm()
 
                         limit_mag = self.accel_shoot_limiter.calculate(new_mag_vel)
