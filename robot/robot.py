@@ -264,6 +264,11 @@ class Robot(CoroutineRobot):
         self.auto_win_check_attempts = 10 # change if not checking enough
 
 
+        self.auto_chooser = wpilib.SendableChooser()
+        self.auto_chooser.addOption("Trench Left Auto", 1)
+        self.auto_chooser.addOption("Trench Bump Left Auto", 2)
+        SmartDashboard.putData("Auto Chooser", self.auto_chooser)
+
         self.auto = self.autoroutines.trench_left_auto()
 
 
@@ -432,6 +437,15 @@ class Robot(CoroutineRobot):
         self.in_autonomous_mode = True
         self.intake_at_default = False
 
+        # self.fieldConstants.shouldFlip = self.driverstation.getAlliance() == self.driverstation.Alliance.kRed
+        # auto_chosen = self.auto_chooser.getSelected()
+        # if auto_chosen == 1:
+        #     self.auto = self.autoroutines.trench_left_auto()
+        # elif auto_chosen == 2:
+        #     self.auto = self.autoroutines.trench_bump_left_auto()
+        # else:
+        #     self.auto = SequentialCommandGroup()
+
         # if self.isSimulation():
         #     self.fuel_sim.running = True
 
@@ -500,6 +514,7 @@ class Robot(CoroutineRobot):
         Logs some info to shuffleboard, and standard output
         """
         # SmartDashboard.putString("Shooting Values/")
+        SmartDashboard.putNumber("Auto Currently Chosen", self.auto_chooser.getSelected())
         SmartDashboard.putNumberArray("Empty Pose", [0,0,0,1,0,0,0])
         wpilib.SmartDashboard.putBoolean("Connected to FMS", self.driverstation.isFMSAttached())
         SmartDashboard.putBoolean("States/Running Pid Lineup", self.running_pid_lineup)
