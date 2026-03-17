@@ -158,7 +158,7 @@ class PoseEstimator(Subsystem):
         # climb pose
         # self.curEstPose = Pose2d(1.003, 4.637, Rotation2d(math.pi / 2))
         # self.curEstPose = Pose2d(4.414, 7.587, self.getYaw())
-        self.curEstPose = Pose2d(4.471, 7.381, Rotation2d.fromDegrees(-90.000))
+        self.curEstPose = Pose2d(self.robot.fieldConstants.flip_Translation2d(Translation2d(4.471, 7.381)), self.getYaw())
         self.estZ = 0
 
         self.poseEst = SwerveDrive4PoseEstimator(
@@ -174,8 +174,8 @@ class PoseEstimator(Subsystem):
         ) # CLIMBER SIDE CAMERA
         
         ROBOT_TO_CAM2 = Transform3d(
-            Translation3d(0.165, 0.343, 0.218),
-            Rotation3d.fromDegrees(0, -15, 90)
+            Translation3d(0.130, 0.335, 0.311),
+            Rotation3d.fromDegrees(0, -10, 90)
         ) # SHOOTER BACK CAMERA (TO DO)
 
         ROBOT_TO_CAM3 = Transform3d(
@@ -188,7 +188,7 @@ class PoseEstimator(Subsystem):
 
         self.cams = [
             WrapperedPhotonCameraTag("flywheel", ROBOT_TO_CAM1),
-            WrapperedPhotonCameraTag("shooter", ROBOT_TO_CAM2),
+            # WrapperedPhotonCameraTag("shooter", ROBOT_TO_CAM2),
             WrapperedPhotonCameraTag("climber", ROBOT_TO_CAM3)
         ]
 

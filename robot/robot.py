@@ -231,7 +231,7 @@ class Robot(CoroutineRobot):
         self.fuel_in_hopper = 8
 
         self.down_bad_fly_speed = 55 # TODO: TUNE
-        self.down_bad_hood_angle = 35 # TODO: TUNE
+        self.down_bad_hood_angle = 40 # TODO: TUNE
 
         self.hood_fudge_value = 0
 
@@ -366,11 +366,11 @@ class Robot(CoroutineRobot):
             self.drivetrain.drive_robot_relative,
             PPHolonomicDriveController(
                 PIDConstants(
-                    0, 0, 0
+                    1, 0, 0.025
                 ),  # Translation PID constants
                 PIDConstants(
-                    0, 0, 0
-                ),  # Rotation PID constants)
+                    0.8, 0, 0.05 # 0.8, 0, 0.05
+                ),  # Rotation PID constants
             ),
             RobotConfig.fromGUISettings(),
             self.drivetrain.should_flip_path,

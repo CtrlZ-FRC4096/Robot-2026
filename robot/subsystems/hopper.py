@@ -26,6 +26,9 @@ class Hopper(Subsystem):
         # Flywheel motors
         self.indexer_motor = hardware.TalonFX(const.INDEXER_MOTOR_ID, "rio")  
         self.indexer_motor_config = self.robot.get_motor_config(1, 15.0, 0.0, 0.0, 0.55, 0, 0, 26.5)
+        self.indexer_motor_config.current_limits.supply_current_limit = 80
+        self.indexer_motor_config.torque_current.peak_forward_torque_current = 80
+        self.indexer_motor_config.torque_current.peak_reverse_torque_current = -80
         self.indexer_motor.configurator.apply(self.indexer_motor_config)
         self.test_indexer_speed = 80
 

@@ -67,7 +67,7 @@ class Drivetrain(Subsystem):
 
         self.angle_pid = PIDController(0.0275, 0.0, 0.0001)
         self.angle_pid.enableContinuousInput(0, 360)
-        self.angle_pid.setTolerance(3)  # Set position tolerance to 0.5 degrees
+        self.angle_pid.setTolerance(2)  # Set position tolerance to 0.5 degrees
 
         self.x_controller = PIDController(1.75, 0, 0.1) #0.01
         self.y_controller = PIDController(1.75, 0, 0.1) #0.01
@@ -524,6 +524,7 @@ class Drivetrain(Subsystem):
         self.dist_lookup_table.add_entry(3.99, 68, 44, 1.107)
         self.dist_lookup_table.add_entry(4.25, 71, 45, 1.16)
         self.dist_lookup_table.add_entry(4.88, 83, 45, 1.265)
+        self.dist_lookup_table.add_entry(15, 83, 45, 2)
         # Safe Lookup Table
                 # Good table
         # self.dist_lookup_table.add_entry(0.7, 5.404, 79.295, 0.655)
@@ -630,8 +631,8 @@ class Drivetrain(Subsystem):
 
             self.robot.fly_speed = vals[0]
             self.robot.hood_angle = vals[1]
-            if self.robot.fly_speed >= 85:
-                self.robot.fly_speed = 85
+            if self.robot.fly_speed >= 70:
+                self.robot.fly_speed = 70
 
             if self.robot.hood_angle >= 45:
                 self.robot.hood_angle = 45

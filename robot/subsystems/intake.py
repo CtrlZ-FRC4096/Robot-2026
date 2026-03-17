@@ -41,15 +41,11 @@ class Intake(Subsystem):
         )  # Apply settings to angle encoder
 
         self.intake_motor_config = self.robot.get_motor_config(1, 5, 0, 0, 0.21, 0, 0, 11)
-        self.deploy_motor_config = self.robot.get_motor_config(1, 80, 0, 15, 0, 0, 10, 8)
+        self.deploy_motor_config = self.robot.get_motor_config(1, 80, 0, 15, 0, 0, 9, 8)
         self.deploy_motor_config.motion_magic.motion_magic_cruise_velocity = 20
         self.deploy_motor_config.motion_magic.motion_magic_acceleration = 40
         self.deploy_motor_config.feedback.feedback_remote_sensor_id = const.INTAKE_DEPLOY_CANCODER_ID
         self.deploy_motor_config.feedback.feedback_sensor_source = signals.FeedbackSensorSourceValue.REMOTE_CANCODER
-
-        self.deploy_motor_config.current_limits.supply_current_limit = 80
-        self.deploy_motor_config.torque_current.peak_forward_torque_current = 80
-        self.deploy_motor_config.torque_current.peak_reverse_torque_current = -80
 
         self.left_intake_motor.configurator.apply(self.intake_motor_config)
         self.right_intake_motor.configurator.apply(self.intake_motor_config)
@@ -83,22 +79,22 @@ class Intake(Subsystem):
             position is in degrees
         '''
         
-        if self.intake_pose_in_trench():
+        if self.intake_pose_in_trench() and False:
             self.commanded_position = -0.05
             if abs(self.get_position() - 0.05) <= 0.02:
-                # self.stop_deploy()
-                pass
+                self.stop_deploy()
             else:
-                # self.deploy_motor.set_control(controls.MotionMagicTorqueCurrentFOC(-0.05))
-                pass
-        else:
+                self.deploy_motor.set_control(controls.MotionMagicTorqueCurrentFOC(-0.05))
+        elif False:
             self.commanded_position = position
             if abs(self.get_position() - self.commanded_position) <= 0.02:
-                # self.stop_deploy()
-                pass
+                self.stop_deploy()
             else:
-                # self.deploy_motor.set_control(controls.MotionMagicTorqueCurrentFOC(position)) # USING MOTION MAGIC
-                pass
+                self.deploy_motor.set_control(controls.MotionMagicTorqueCurrentFOC(position)) # USING MOTION MAGIC
+        else:
+            # self.commanded_position = -0.05
+            # self.deploy_motor.set_control(controls.MotionMagicTorqueCurrentFOC(-0.05))
+            pass
 
     def get_position(self):
         if self.robot.isSimulation():

@@ -59,8 +59,8 @@ class Coroutines:
         def drive_to_zone_trench():
             robot.is_intaking = False
             robot.intake_at_default = False
-            robot.final_lineup_pose = Pose2d(3.368, 8.1-0.709, Rotation2d.fromDegrees(-90))
-            robot.running_pid_lineup = True
+            # robot.final_lineup_pose = Pose2d(3.368, 8.1-0.709, Rotation2d.fromDegrees(-90))
+            # robot.running_pid_lineup = True
             robot.shoot_intent = True
             robot.shooter_at_default = False
             while robot.fuel_in_hopper > 0:
@@ -70,8 +70,8 @@ class Coroutines:
         def drive_to_zone_trench_2():
             robot.is_intaking = False
             robot.intake_at_default = False
-            robot.final_lineup_pose = Pose2d(3.368, 8.1-0.709, Rotation2d.fromDegrees(-90))
-            robot.running_pid_lineup = True
+            # robot.final_lineup_pose = Pose2d(3.368, 8.1-0.709, Rotation2d.fromDegrees(-90))
+            # robot.running_pid_lineup = True
             robot.shoot_intent = True
             robot.shooter_at_default = False
             while robot.fuel_in_hopper > 0:
