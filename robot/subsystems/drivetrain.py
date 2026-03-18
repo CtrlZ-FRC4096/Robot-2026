@@ -107,6 +107,9 @@ class Drivetrain(Subsystem):
         self.final_velo = Translation2d()
         self.accel_shoot_limiter = SlewRateLimiter(0.2, -3)
 
+        self.blue_hub = self.robot.fieldConstants.Hub.topCenterPoint.toTranslation2d()
+        self.red_hub = Translation2d(self.robot.fieldConstants.fieldLength - self.blue_hub.X(), self.robot.fieldConstants.fieldWidth - self.robot.fieldConstants.fieldWidth - self.blue_hub.Y())
+
         # SIM STUFF
 
         blue_hub_pts = [
@@ -594,7 +597,7 @@ class Drivetrain(Subsystem):
             cur_rot = cur_pos.rotation().radians()
             shooter_pos = cur_pos.translation() + Translation2d(0, 0.196).rotateBy(Rotation2d(cur_rot))
             if self.robot.poseEstimator.cur_pos_in_zone(4.55) or self.robot.in_autonomous_mode:
-                self.robot.static_target = self.robot.fieldConstants.flip_Translation2d(self.robot.fieldConstants.Hub.topCenterPoint.toTranslation2d())
+                self.robot.static_target = self.red_hub if self.robot.fieldConstants.shouldFlip else self.blue_hub
             elif 4.43 < cur_pos.X() < self.robot.fieldConstants.fieldLength - 4.4 or True:
                 if not self.robot.fieldConstants.shouldFlip:
                     if cur_pos.Y() <= self.robot.fieldConstants.fieldWidth / 2: #shoot to right corner blue

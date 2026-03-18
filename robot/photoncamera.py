@@ -26,7 +26,7 @@ import numpy as np
 import math
 
 # Distance threshold in meters - tags farther than this are ignored
-DISTANCE_THRESHOLD = 4.0
+DISTANCE_THRESHOLD = 5
 # Ambiguity threshold - tags with higher ambiguity are ignored
 AMBIGUITY_THRESHOLD = 0.3
 

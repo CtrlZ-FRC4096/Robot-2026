@@ -393,25 +393,39 @@ class PoseEstimator(Subsystem):
             zEstimates = cam.getZEstimates()
             z_sum += sum(zEstimates)
             z_count += len(zEstimates)
+
+            valid_poses = []
            
             for combined in single_tag_poses:
                 pose = combined[0]
-                tgt_id = combined[1]
-                tag_pose = self.tag_layout.getTagPose(tgt_id)
-                distance = tag_pose.translation().toTranslation2d().distance(pose.translation())
-                self.camera_X[cam.camName] = pose.X()
-                self.camera_Y[cam.camName] = pose.Y()
-                self.camera_theta[cam.camName] = pose.rotation()
-                distance_modifier = 1 if distance > 5 else 1
+                valid_poses.append(pose)
+                
+
+            length = len(valid_poses)
+            if length > 0:
+                avg_x = sum(pose.X() for pose in valid_poses) / length
+                avg_y = sum(pose.Y() for pose in valid_poses) / length
+
+                avg_cos = sum(pose.rotation().cos() for pose in valid_poses) / length
+                avg_sin = sum(pose.rotation().sin() for pose in valid_poses) / length
+
+                avg_rot = Rotation2d(avg_cos, avg_sin)
+                avg_pose = Pose2d(avg_x, avg_y, avg_rot)
+
+                self.camera_X[cam.camName] = avg_pose.X()
+                self.camera_Y[cam.camName] = avg_pose.Y()
+                self.camera_theta[cam.camName] = avg_pose.rotation()
+
                 self.poseEst.addVisionMeasurement(
-                    pose,
+                    avg_pose,
                     cam.getObsTime(),
                     (
-                        self.xystd_single_tag * (distance ** 2) * distance_modifier,
-                        self.xystd_single_tag * (distance ** 2) * distance_modifier,
-                        self.thetastd_single_tag * (distance ** 2) * distance_modifier,
+                        self.xystd_single_tag,
+                        self.xystd_single_tag,
+                        self.thetastd_single_tag,
                     ),
                 )
+
         if z_count > 0:
             self.estZ = z_sum / z_count
         
