@@ -159,7 +159,7 @@ class PoseEstimator(Subsystem):
         # self.curEstPose = Pose2d(self.robot.fieldConstants.flip_Translation2d(Translation2d(3.524, 4.064)), Rotation2d())
         
         # self.curEstPose = Pose2d(4.414, 7.587, self.getYaw())
-        self.curEstPose = Pose2d(self.robot.fieldConstants.flip_Translation2d(Translation2d(4.471, 7.381)), self.getYaw())
+        self.curEstPose = Pose2d(self.robot.fieldConstants.flip_Translation2d(Translation2d(4.471, 4.411)), self.getYaw()) # subtract by field width if right side
         self.estZ = 0
 
         self.poseEst = SwerveDrive4PoseEstimator(
@@ -466,14 +466,15 @@ class PoseEstimator(Subsystem):
                 self.camera_X[cam.camName] = avg_x
                 self.camera_Y[cam.camName] = avg_y
                 self.camera_theta[cam.camName] = avg_pose.rotation()
-
+                cur_speeds = self.robot.drivetrain.get_field_relative_speeds()
+                omega = abs(cur_speeds.omega)
                 self.poseEst.addVisionMeasurement(
                     avg_pose,
                     cam.getObsTime(),
                     (
-                        self.xystd_single_tag,  # * (min_ambiguity / 0.4),
-                        self.xystd_single_tag,  # * (min_ambiguity / 0.4),
-                        self.thetastd_single_tag,  # * (min_ambiguity / 0.4),
+                        self.xystd_single_tag * (omega * 5),  # * (min_ambiguity / 0.4),
+                        self.xystd_single_tag * (omega * 5),  # * (min_ambiguity / 0.4),
+                        self.thetastd_single_tag * (omega * 5),  # * (min_ambiguity / 0.4),
                     ),
                 )
                     

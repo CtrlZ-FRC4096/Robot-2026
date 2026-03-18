@@ -43,14 +43,24 @@ class AutoRoutines:
                                  self.robot.coroutines.intake_2),
             self.robot.coroutines.drive_to_zone_trench_2.withTimeout(3),
         )
+    def trench_right_safe_auto(self):
+        return SequentialCommandGroup(
+            ParallelCommandGroup(self.robot.P1_T_R_SAFE,
+                                 self.robot.coroutines.intake),
+            self.robot.coroutines.drive_to_zone_trench.withTimeout(4),
+            # self.robot.coroutines.spin_for_trench.withTimeout(0.3).andThen(self.robot.coroutines.stop_drive),
+            ParallelCommandGroup(self.robot.P2_T_R,
+                                 self.robot.coroutines.intake_2),
+            self.robot.coroutines.drive_to_zone_trench_2
+        )
     def trench_left_safe_auto(self):
-        if self.robot.fieldConstants.shouldFlip:
-            gyro_offset = 90
-        else:
-            gyro_offset = -90
-        self.robot.poseEstimator.gyro.set_yaw(gyro_offset)
-        self.robot.poseEstimator.poseEst.resetPose(Pose2d(self.robot.fieldConstants.flip_Translation2d(Translation2d(4.471, 7.381)), Rotation2d.fromDegrees(gyro_offset)))
-        self.robot.poseEstimator.curEstPose = Pose2d(self.robot.fieldConstants.flip_Translation2d(Translation2d(4.471, 7.381)), Rotation2d.fromDegrees(gyro_offset))
+        # if self.robot.fieldConstants.shouldFlip:
+        #     gyro_offset = 90
+        # else:
+        #     gyro_offset = -90
+        # self.robot.poseEstimator.gyro.set_yaw(gyro_offset)
+        # self.robot.poseEstimator.poseEst.resetPose(Pose2d(self.robot.fieldConstants.flip_Translation2d(Translation2d(4.471, 7.381)), Rotation2d.fromDegrees(gyro_offset)))
+        # self.robot.poseEstimator.curEstPose = Pose2d(self.robot.fieldConstants.flip_Translation2d(Translation2d(4.471, 7.381)), Rotation2d.fromDegrees(gyro_offset))
         return SequentialCommandGroup(
             ParallelCommandGroup(self.robot.P1_T_L_SAFE,
                                  self.robot.coroutines.intake),

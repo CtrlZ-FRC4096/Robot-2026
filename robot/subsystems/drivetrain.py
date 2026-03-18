@@ -631,8 +631,8 @@ class Drivetrain(Subsystem):
 
             self.robot.fly_speed = vals[0]
             self.robot.hood_angle = vals[1]
-            if self.robot.fly_speed >= 70:
-                self.robot.fly_speed = 70
+            if self.robot.fly_speed >= 85:
+                self.robot.fly_speed = 85
 
             if self.robot.hood_angle >= 45:
                 self.robot.hood_angle = 45

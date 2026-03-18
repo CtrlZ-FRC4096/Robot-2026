@@ -134,7 +134,7 @@ class Robot(CoroutineRobot):
                     break
             # time.sleep(1.0) # Give enough time to make sure the FMS has told the Driver Station the Alliance 
         self.fieldConstants = FieldConstants()
-        self.fieldConstants.shouldFlip = DriverStation.getAlliance() == DriverStation.Alliance.kRed # false = BLUE, true = RED
+        # self.fieldConstants.shouldFlip = DriverStation.getAlliance() == DriverStation.Alliance.kRed # false = BLUE, true = RED
         # Match Stuff
         self.match_time = -1
 
@@ -185,7 +185,7 @@ class Robot(CoroutineRobot):
         self.remote_shell = RemoteShell(self)
 
 		# PATHS
-        self.LB_DEPOT = self.getPathCommand(PathPlannerPath.fromPathFile("LB_DEPOT"))
+        # self.LB_DEPOT = self.getPathCommand(PathPlannerPath.fromPathFile("LB_DEPOT"))
         self.P1_B_L = self.getPathCommand(PathPlannerPath.fromPathFile("P1_B_L"))
         self.P1_B_R = self.getPathCommand(PathPlannerPath.fromPathFile("P1_B_R"))
         self.P1_T_L = self.getPathCommand(PathPlannerPath.fromPathFile("P1_T_L"))
@@ -193,6 +193,7 @@ class Robot(CoroutineRobot):
         self.P2_B_L = self.getPathCommand(PathPlannerPath.fromPathFile("P2_B_L"))
         self.P2_T_L = self.getPathCommand(PathPlannerPath.fromPathFile("P2_T_L"))
         self.P2_T_R = self.getPathCommand(PathPlannerPath.fromPathFile("P2_T_R"))
+        self.P1_T_R_SAFE = self.getPathCommand(PathPlannerPath.fromPathFile("P1_T_R_Safe"))
 
         self.autoroutines = autoroutines.AutoRoutines(self)
 
@@ -282,11 +283,14 @@ class Robot(CoroutineRobot):
         self.auto_win = None  # false = BLUE, true = RED
         # self.auto_win_found = False
 
-        self.auto = self.autoroutines.trench_left_safe_auto()
+        
+        self.auto = self.autoroutines.trench_right_safe_auto()
+        self.poseEstimator.poseEst.resetPose(Pose2d(self.fieldConstants.flip_Translation2d(Translation2d(4.47, 0.6)), self.poseEstimator.getYaw())) # for right auto
+        # self.poseEstimator.poseEst.resetPose(Pose2d(self.fieldConstants.flip_Translation2d(Translation2d(4.471, 7.587)), self.poseEstimator.getYaw())) # for left auto
 
 
         ## SIMMING STUFF ##
-        if self.isSimulation() and False:
+        if self.isSimulation():
             self.max_fuel_in_hopper = 24
             self.x_hopper_max = inchesToMeters(25)
             self.y_hopper_max = inchesToMeters(18)
@@ -299,6 +303,25 @@ class Robot(CoroutineRobot):
             # self.fuel_sim.clearFuel()
             self.fuel_sim.start()
 
+       
+        # test_path = self.flip_path_cmd_across_x(self.getPathCommand(PathPlannerPath.fromPathFile("P2_T_L")))._originalPath
+        # test_path_waypoints = test_path.getWaypoints()
+        # for idx, waypoint in enumerate(test_path_waypoints):
+        #     if idx == 0:
+        #         next_control_dist = (waypoint.anchor - waypoint.nextControl).norm()
+        #         next_control_heading = Rotation2d((waypoint.nextControl - waypoint.anchor).X(), (waypoint.nextControl - waypoint.anchor).Y()).degrees()
+        #         print(f"Start: anchor: {waypoint.anchor}, next_controldist: {next_control_dist}, next_control_head: {next_control_heading}")
+        #     elif idx == len(test_path_waypoints) - 1:
+        #         prev_control_dist = (waypoint.prevControl - waypoint.anchor).norm()
+        #         prev_control_heading = Rotation2d((waypoint.anchor - waypoint.prevControl).X(), (waypoint.anchor - waypoint.prevControl).Y()).degrees()
+        #         print(f"End: anchor: {waypoint.anchor}, prev_controldist: {prev_control_dist}, prev_control_head: {prev_control_heading}")
+        #     else:
+        #         next_control_dist = (waypoint.anchor - waypoint.nextControl).norm()
+        #         next_control_heading = Rotation2d((waypoint.nextControl - waypoint.anchor).X(), (waypoint.nextControl - waypoint.anchor).Y()).degrees()
+        #         prev_control_dist = (waypoint.prevControl - waypoint.anchor).norm()
+        #         prev_control_heading = Rotation2d((waypoint.anchor - waypoint.prevControl).X(), (waypoint.anchor - waypoint.prevControl).Y()).degrees()
+        #         print(f"{idx}: anchor: {waypoint.anchor}, heading: {prev_control_heading}, prevdist: {prev_control_dist}, next_controldist: {next_control_dist}")
+        # print(test_path.getRotationTargets())
 
         while True:
             yield
@@ -419,6 +442,7 @@ class Robot(CoroutineRobot):
         self.match_timer.stop()
 
         while True: # Needs to continuously call while robot is disabled.
+            # self.fieldConstants.shouldFlip = self.driverstation.getAlliance() == self.driverstation.Alliance.kRed
             yield
     
     ### AUTONOMOUS ###
@@ -426,11 +450,12 @@ class Robot(CoroutineRobot):
     def autonomous_mode(self):
         self.scheduler.cancelAll()
         if self.in_autonomous_mode == False:
-            self.fieldConstants.shouldFlip = self.driverstation.getAlliance() == self.driverstation.Alliance.kRed
+            # self.fieldConstants.shouldFlip = self.driverstation.getAlliance() == self.driverstation.Alliance.kRed
             if self.fieldConstants.shouldFlip:
                 self.auto_rotation_trench = -90
             else:
                 self.auto_rotation_trench = 90
+            
             # auto_chosen = self.auto_chooser.getSelected()
             # if auto_chosen == 1:
                 # if self.fieldConstants.shouldFlip:
@@ -450,9 +475,11 @@ class Robot(CoroutineRobot):
             #     self.auto = SequentialCommandGroup()
             # else:
             #     self.auto = SequentialCommandGroup()
+        
         self.in_teleop_mode = False
         self.in_autonomous_mode = True
         self.intake_at_default = False
+        
 
         
 
