@@ -146,6 +146,10 @@ class OI:
 
                 rotate = -self.driver1.RIGHT_JOY_X()
 
+                SmartDashboard.putNumber("Forward_Back", forward_back)
+                SmartDashboard.putNumber("Left_Right", left_right)
+                SmartDashboard.putNumber("Rotate", rotate)
+
                 if not self.robot.shoot_intent:
                     cur_speeds = self.robot.drivetrain.get_field_relative_speeds()
                     raw_mag = Translation2d(cur_speeds.vx, cur_speeds.vy).norm()
@@ -156,8 +160,6 @@ class OI:
                     raw_mag_2 = Translation2d(cur_speeds.vx, cur_speeds.vy).norm()
                     dummy_val_2 = self.robot.drivetrain.accel_shoot_limiter.calculate(raw_mag_2)
 
-                # if self.robot.wheels_at_x:
-                #     self.robot.drivetrain.turn_wheels_to_x()
                 SmartDashboard.putNumber("Test/Limit accel", self.accel_shoot_limiter.lastValue())
                 if self.robot.running_pid_lineup:
                     # Cancel drive with pid if robot is moving manually
@@ -187,7 +189,9 @@ class OI:
                     rotation_2d = self.robot.drivetrain.get_target_angle(self.robot.time_of_flight, self.robot.static_target)
                     rotation = rotation_2d.degrees()
                     mag_vel = Translation2d(forward_back, left_right).norm()
-                    if False and mag_vel <= 1e-4 and abs((self.robot.poseEstimator.curEstPose.rotation() - rotation_2d).degrees()) <= 3:
+                    wheels_to_x = mag_vel <= 0.02 and abs((self.robot.poseEstimator.curEstPose.rotation().degrees() - rotation_2d.degrees())) <= 5
+                    SmartDashboard.putBoolean("Wheels to X", wheels_to_x)
+                    if mag_vel <= 0.02 and wheels_to_x:
                         self.robot.poseEstimator.set_wheels_to_x()
                     else:
 
@@ -210,7 +214,7 @@ class OI:
                                 Translation2d(forward_back, left_right)
                                 * const.SWERVE_MAX_SPEED,
                                 rotation)
-                elif False and self.robot.is_intaking and ((self.robot.snake_intake and abs(rotate) <= 0.02) or (self.robot.track_fuel and self.robot.poseEstimator.active_intake_tgt is not None and False)):
+                elif  False and self.robot.is_intaking and ((self.robot.snake_intake and abs(rotate) <= 0.02)): #or (self.robot.track_fuel and self.robot.poseEstimator.active_intake_tgt is not None and False)):
                     if self.robot.snake_intake and abs(rotate) <= 0.02:
                         self.robot.drivetrain.drive_with_pid(
                                 Translation2d(forward_back, left_right)
@@ -367,20 +371,15 @@ class OI:
 
         @self.driver1.LEFT_BUMPER.whenHeld
         def _():
-            self.robot.final_lineup_pose = self.robot.poseEstimator.get_path_to_outpost()
-            self.robot.running_pid_lineup = True
-            self.robot.lining_with_outpost = True
+            self.robot.snake_intake = True
+            self.robot.is_intaking = True
+            self.robot.intake_at_default = False
 
         @self.driver1.LEFT_BUMPER.whenReleased
         def _():
-            self.robot.running_pid_lineup = False
-            self.robot.lining_with_outpost = False
-            self.robot.intake_at_default = False
-            self.robot.clear_jam = False
-            self.robot.ignore_shooter_in_jam = False
+            self.robot.snake_intake = False
             self.robot.is_intaking = False
 
-        
 
         @self.driver2.POV.RIGHT.whenHeld
         def _():

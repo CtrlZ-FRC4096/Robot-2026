@@ -231,17 +231,17 @@ class Drivetrain(Subsystem):
         
         if field_relative and not self.robot.isSimulation():
             module_states = const.SWERVE_KINEMATICS.toSwerveModuleStates(
-                ChassisSpeeds.fromFieldRelativeSpeeds(
+                ChassisSpeeds.discretize(ChassisSpeeds.fromFieldRelativeSpeeds(
                     translation.x,
                     translation.y,
                     rotation,
                     self.robot.poseEstimator.getYaw()
-                ))
+                ), 0.02))
         else:  # Robot relative
             module_states = const.SWERVE_KINEMATICS.toSwerveModuleStates(
-                    ChassisSpeeds(translation.x,
+                    ChassisSpeeds.discretize(translation.x,
                     translation.y,
-                    rotation)
+                    rotation, 0.02)
             )
         if self.robot.in_autonomous_mode:
             max_speed = 4.0
@@ -250,14 +250,14 @@ class Drivetrain(Subsystem):
         module_states = SwerveDrive4Kinematics.desaturateWheelSpeeds(
                 module_states, max_speed
             )
-        self.log_chassis = const.SWERVE_KINEMATICS.toChassisSpeeds(module_states)
-        SmartDashboard.putNumber("translation x", translation.x / 20)
-        SmartDashboard.putNumber("translation y", translation.y / 20)
-        SmartDashboard.putNumber("translation omega", radiansToDegrees(rotation) / 20)
+        # self.log_chassis = const.SWERVE_KINEMATICS.toChassisSpeeds(module_states)
+        # SmartDashboard.putNumber("translation x", translation.x / 20)
+        # SmartDashboard.putNumber("translation y", translation.y / 20)
+        # SmartDashboard.putNumber("translation omega", radiansToDegrees(rotation) / 20)
 
-        SmartDashboard.putNumber("chassis log vx", self.log_chassis.vx / 45)
-        SmartDashboard.putNumber("chassis log vy", self.log_chassis.vy / 45)
-        SmartDashboard.putNumber("chassis log omega dps", self.log_chassis.omega_dps / 20)
+        # SmartDashboard.putNumber("chassis log vx", self.log_chassis.vx / 45)
+        # SmartDashboard.putNumber("chassis log vy", self.log_chassis.vy / 45)
+        # SmartDashboard.putNumber("chassis log omega dps", self.log_chassis.omega_dps / 20)
         if self.robot.isSimulation():
             curPose = self.robot.poseEstimator.curEstPose
             
@@ -602,10 +602,10 @@ class Drivetrain(Subsystem):
                     else: #pass to left corner blue
                         self.robot.static_target = Translation2d(1.694, self.robot.fieldConstants.fieldWidth - 1.417)
                 else:
-                    if cur_pos.Y() <= self.robot.fieldConstants.fieldWidth / 2: # pass to left corner red (red relative)
-                        self.robot.static_target = Translation2d(1.694, self.robot.fieldConstants.fieldWidth - 1.417)
+                    if cur_pos.Y() >= self.robot.fieldConstants.fieldWidth / 2: # pass to left corner red (red relative)
+                        self.robot.static_target = Translation2d(self.robot.fieldConstants.fieldLength - 1.694, self.robot.fieldConstants.fieldWidth - 1.417)
                     else: #pass to right corner 
-                        self.robot.static_target = Translation2d(1.694, 1.417)
+                        self.robot.static_target = Translation2d(self.robot.fieldConstants.fieldLength - 1.694, 1.417)
             
             dist_from_shooter = shooter_pos.distance(self.robot.static_target)           
             
@@ -614,7 +614,7 @@ class Drivetrain(Subsystem):
             field_relative_speeds = self.get_field_relative_speeds()
             SmartDashboard.putNumber("Test/ Field Rel X", field_relative_speeds.vx)
             SmartDashboard.putNumber("Test/ Field Rel Y", field_relative_speeds.vy)
-            for _ in range(5):
+            for _ in range(2):
                 if True: # CHANGE TO CASES ON ALLIANCE ZONE AND NEUTRAL ZONE
                     temp_virtual_goal = Translation2d(
                         self.robot.static_target.X() - (temp_time_of_flight+0.2) * field_relative_speeds.vx, self.robot.static_target.Y() - (temp_time_of_flight + 0.2) * field_relative_speeds.vy 

@@ -38,12 +38,20 @@ class AutoRoutines:
         return SequentialCommandGroup(
             ParallelCommandGroup(self.robot.getPathCommand(PathPlannerPath.fromPathFile("P1_T_L")),
                                  self.robot.coroutines.intake),
-            self.robot.coroutines.drive_to_zone_trench.withTimeout(4),
+            self.robot.coroutines.drive_to_zone_trench.withTimeout(3),
             ParallelCommandGroup(self.robot.getPathCommand(PathPlannerPath.fromPathFile("P2_T_L")),
                                  self.robot.coroutines.intake_2),
-            self.robot.coroutines.drive_to_zone_trench_2.withTimeout(4),
+            self.robot.coroutines.drive_to_zone_trench_2.withTimeout(3),
         )
-
+    def trench_left_wynd_auto(self):
+        return SequentialCommandGroup(
+            ParallelCommandGroup(self.robot.getPathCommand(PathPlannerPath.fromPathFile("P1_T_L_Safe")),
+                                 self.robot.coroutines.intake),
+            self.robot.coroutines.drive_to_zone_trench.withTimeout(3),
+            ParallelCommandGroup(self.robot.getPathCommand(PathPlannerPath.fromPathFile("P2_T_L")),
+                                 self.robot.coroutines.intake_2),
+            self.robot.coroutines.drive_to_zone_trench_2
+        )
     def trench_bump_left_auto(self):
         return SequentialCommandGroup(
             ParallelCommandGroup(

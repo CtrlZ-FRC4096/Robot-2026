@@ -142,7 +142,7 @@ class Robot(CoroutineRobot):
         self.scheduler = CommandScheduler.getInstance()
         
         # subsystems
-        self.leds = subsystems.leds.LEDs(self)
+        # self.leds = subsystems.leds.LEDs(self)
         self.poseEstimator = subsystems.poseEstimator.PoseEstimator(self)
         self.drivetrain = subsystems.drivetrain.Drivetrain(self)
         self.intake = subsystems.intake.Intake(self)
@@ -152,7 +152,7 @@ class Robot(CoroutineRobot):
 
         self.subsystems = [
             self.drivetrain,
-            self.leds,
+            # self.leds,
             self.poseEstimator,
             self.intake,
             self.shooter,
@@ -247,10 +247,10 @@ class Robot(CoroutineRobot):
             self.log()
             pass
 
-        @self.addPeriodic(period=0.05, offset=-0.01)
-        def _leds():
-            self.leds.periodicX()
-            pass
+        # @self.addPeriodic(period=0.05, offset=-0.01)
+        # def _leds():
+        #     self.leds.periodicX()
+        #     pass
 
         self.in_autonomous_mode = False
         self.in_teleop_mode = False
@@ -261,10 +261,8 @@ class Robot(CoroutineRobot):
         self.alliance_shift_time_remaining = 0
         self.auto_win = None  # false = BLUE, true = RED
         # self.auto_win_found = False
-        self.auto_win_check_attempts = 10 # change if not checking enough
 
-
-        self.auto = self.autoroutines.trench_left_auto()
+        self.auto = self.autoroutines.trench_left_wynd_auto()
 
 
         ## SIMMING STUFF ##
@@ -478,9 +476,8 @@ class Robot(CoroutineRobot):
             self.alliance_shift_time_remaining = 141-self.match_time
 
         if (2.5 < self.alliance_shift_time_remaining < 3) and not self.is_hub_active:
-            # self.rumble_d1 = True
-            # self.rumble_d2 = True
-            pass
+            self.rumble_d1 = True
+            self.rumble_d2 = True
 
 
         if self.auto_win is None and self.match_time >= 4 and self.rumble_d2 == False:
@@ -536,6 +533,8 @@ class Robot(CoroutineRobot):
         wpilib.SmartDashboard.putNumber("Time Remaining", int(self.alliance_shift_time_remaining))
         wpilib.SmartDashboard.putBoolean("Hub active?", self.is_hub_active)
         SmartDashboard.putString("Auto Win", str(self.auto_win))
+        if self.isTeleop():
+            self.update_hub_status()
         if self.auto_win is None:
             wpilib.SmartDashboard.putString("Winner of Autonomous", "UNKNOWN")
         else:

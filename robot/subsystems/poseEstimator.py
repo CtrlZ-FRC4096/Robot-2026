@@ -149,9 +149,9 @@ class PoseEstimator(Subsystem):
         time.sleep(1.0)
         self.reset_modules_to_absolute()
 
-        self.odometry = SwerveDrive4Odometry(
-            const.SWERVE_KINEMATICS, self.getYaw(), self.get_module_positions()  # type: ignore
-        )
+        # self.odometry = SwerveDrive4Odometry(
+        #     const.SWERVE_KINEMATICS, self.getYaw(), self.get_module_positions()  # type: ignore
+        # )
 
 
         # self.curEstPose = Pose2d(4.44, 8.1-0.641, math.pi)
@@ -188,7 +188,7 @@ class PoseEstimator(Subsystem):
 
         self.cams = [
             WrapperedPhotonCameraTag("flywheel", ROBOT_TO_CAM1),
-            # WrapperedPhotonCameraTag("shooter", ROBOT_TO_CAM2),
+            WrapperedPhotonCameraTag("shooter", ROBOT_TO_CAM2),
             WrapperedPhotonCameraTag("climber", ROBOT_TO_CAM3)
         ]
 
@@ -476,7 +476,7 @@ class PoseEstimator(Subsystem):
 
         self.poseConverge = True
 
-        self.odometry.update(self.getYaw(), self.get_module_positions())
+        # self.odometry.update(self.getYaw(), self.get_module_positions())
 
 
     def log(self):
@@ -497,15 +497,15 @@ class PoseEstimator(Subsystem):
         )
         SmartDashboard.putNumber("Est Z", self.estZ)
 
-        SmartDashboard.putNumber(
-            "Swerve/Odometry X", self.odometry.getPose().x_feet * 0.305
-        )
-        SmartDashboard.putNumber(
-            "Swerve/Odometry Y", self.odometry.getPose().y_feet * 0.305
-        )
-        SmartDashboard.putNumber(
-            "Swerve/Odometry Theta", self.odometry.getPose().rotation().degrees()
-        )
+        # SmartDashboard.putNumber(
+        #     "Swerve/Odometry X", self.odometry.getPose().x_feet * 0.305
+        # )
+        # SmartDashboard.putNumber(
+        #     "Swerve/Odometry Y", self.odometry.getPose().y_feet * 0.305
+        # )
+        # SmartDashboard.putNumber(
+        #     "Swerve/Odometry Theta", self.odometry.getPose().rotation().degrees()
+        # )
         SmartDashboard.putNumber("Gyro/Yaw", self.getYaw().degrees())
         SmartDashboard.putNumber("Gyro/Roll", self.gyro.get_roll().value)
 
@@ -516,7 +516,7 @@ class PoseEstimator(Subsystem):
 
         SmartDashboard.putNumber("Skidding Ratio", self.get_skidding_ratio())
         for module in self.modules:
-            SmartDashboard.putNumber(f"Swerve/{module.module_name}/Cancoder Angle", module.get_angle_CANcoder().degrees())  # type: ignore
+            SmartDashboard.putNumber(f"Swerve/{module.module_name}/Cancoder Angle", (module.get_angle_CANcoder().degrees() - module.angle_offset.degrees()) % 360)  # type: ignore
             SmartDashboard.putNumber(f"Swerve/{module.module_name}/Motor Angle", module.get_position().angle.degrees())  # type: ignore
             SmartDashboard.putNumber(
                 f"Swerve/{module.module_name}/Velcoity", module.get_state().speed
