@@ -10,7 +10,7 @@ import math
 from wpimath.trajectory import TrapezoidProfile
 from wpilibextra.coroutine.coroutine_command import autoroutine2command
 from wpilib import Timer
-from wpimath.geometry import Rotation2d, Pose2d
+from wpimath.geometry import Rotation2d, Pose2d, Translation2d
 from wpimath.units import degreesToRadians
 import const
 from pathplannerlib.path import PathConstraints, PathPlannerPath
@@ -44,6 +44,13 @@ class AutoRoutines:
             self.robot.coroutines.drive_to_zone_trench_2.withTimeout(3),
         )
     def trench_left_safe_auto(self):
+        if self.robot.fieldConstants.shouldFlip:
+            gyro_offset = 90
+        else:
+            gyro_offset = -90
+        self.robot.poseEstimator.gyro.set_yaw(gyro_offset)
+        self.robot.poseEstimator.poseEst.resetPose(Pose2d(self.robot.fieldConstants.flip_Translation2d(Translation2d(4.471, 7.381)), Rotation2d.fromDegrees(gyro_offset)))
+        self.robot.poseEstimator.curEstPose = Pose2d(self.robot.fieldConstants.flip_Translation2d(Translation2d(4.471, 7.381)), Rotation2d.fromDegrees(gyro_offset))
         return SequentialCommandGroup(
             ParallelCommandGroup(self.robot.P1_T_L_SAFE,
                                  self.robot.coroutines.intake),

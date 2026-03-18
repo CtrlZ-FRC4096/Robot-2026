@@ -79,7 +79,9 @@ class Intake(Subsystem):
             position is in degrees
         '''
         
-        if self.intake_pose_in_trench():
+        if True:
+            pass
+        elif self.intake_pose_in_trench():
             self.commanded_position = -0.05
             if abs(self.get_position() - 0.05) <= 0.02:
                 self.stop_deploy()

@@ -197,11 +197,11 @@ class Robot(CoroutineRobot):
         self.autoroutines = autoroutines.AutoRoutines(self)
 
 
-        self.auto_chooser = wpilib.SendableChooser()
-        self.auto_chooser.addOption("Left Trench Safe", 1)
-        self.auto_chooser.addOption("Left Trench Aggressive", 2)
-        self.auto_chooser.addOption("Left Trench-Bump Aggresive", 3)
-        self.auto_chooser.setDefaultOption("Default (no auto)", 0)
+        # self.auto_chooser = wpilib.SendableChooser()
+        # self.auto_chooser.addOption("Left Trench Safe", 1)
+        # self.auto_chooser.addOption("Left Trench Aggressive", 2)
+        # self.auto_chooser.addOption("Left Trench-Bump Aggresive", 3)
+        # self.auto_chooser.setDefaultOption("Default (no auto)", 0)
         
 
         DataLogManager.start()
@@ -277,11 +277,11 @@ class Robot(CoroutineRobot):
         self.auto_win = None  # false = BLUE, true = RED
         # self.auto_win_found = False
 
-        # self.auto = self.autoroutines.trench_left_wynd_auto()
+        self.auto = self.autoroutines.trench_left_safe_auto()
 
 
         ## SIMMING STUFF ##
-        if self.isSimulation():
+        if self.isSimulation() and False:
             self.max_fuel_in_hopper = 24
             self.x_hopper_max = inchesToMeters(25)
             self.y_hopper_max = inchesToMeters(18)
@@ -294,24 +294,6 @@ class Robot(CoroutineRobot):
             # self.fuel_sim.clearFuel()
             self.fuel_sim.start()
 
-        test_path = self.flip_path_cmd_across_x(self.getPathCommand(PathPlannerPath.fromPathFile("P1_T_L")))._originalPath
-        test_path_waypoints = test_path.getWaypoints()
-        for idx, waypoint in enumerate(test_path_waypoints):
-            if idx == 0:
-                next_control_dist = (waypoint.anchor - waypoint.nextControl).norm()
-                next_control_heading = Rotation2d((waypoint.nextControl - waypoint.anchor).X(), (waypoint.nextControl - waypoint.anchor).Y()).degrees()
-                print(f"Start: anchor: {waypoint.anchor}, next_controldist: {next_control_dist}, next_control_head: {next_control_heading}")
-            elif idx == len(test_path_waypoints) - 1:
-                prev_control_dist = (waypoint.prevControl - waypoint.anchor).norm()
-                prev_control_heading = Rotation2d((waypoint.anchor - waypoint.prevControl).X(), (waypoint.anchor - waypoint.prevControl).Y()).degrees()
-                print(f"End: anchor: {waypoint.anchor}, prev_controldist: {prev_control_dist}, prev_control_head: {prev_control_heading}")
-            else:
-                next_control_dist = (waypoint.anchor - waypoint.nextControl).norm()
-                next_control_heading = Rotation2d((waypoint.nextControl - waypoint.anchor).X(), (waypoint.nextControl - waypoint.anchor).Y()).degrees()
-                prev_control_dist = (waypoint.prevControl - waypoint.anchor).norm()
-                prev_control_heading = Rotation2d((waypoint.anchor - waypoint.prevControl).X(), (waypoint.anchor - waypoint.prevControl).Y()).degrees()
-                print(f"{idx}: anchor: {waypoint.anchor}, heading: {prev_control_heading}, prevdist: {prev_control_dist}, next_controldist: {next_control_dist}")
-        print(test_path.getRotationTargets())
 
         while True:
             yield
@@ -440,25 +422,25 @@ class Robot(CoroutineRobot):
         self.scheduler.cancelAll()
         if self.in_autonomous_mode == False:
             self.fieldConstants.shouldFlip = self.driverstation.getAlliance() == self.driverstation.Alliance.kRed
-            auto_chosen = self.auto_chooser.getSelected()
-            if auto_chosen == 1:
-                if self.fieldConstants.shouldFlip:
-                    gyro_offset = 90
-                else:
-                    gyro_offset = -90
-                self.poseEstimator.gyro.set_yaw(gyro_offset)
-                self.poseEstimator.poseEst.resetPose(Pose2d(self.fieldConstants.flip_Translation2d(Translation2d(4.471, 7.381)), gyro_offset))
-                self.poseEstimator.curEstPose = Pose2d(self.fieldConstants.flip_Translation2d(Translation2d(4.471, 7.381)), gyro_offset)
+            # auto_chosen = self.auto_chooser.getSelected()
+            # if auto_chosen == 1:
+                # if self.fieldConstants.shouldFlip:
+                #     gyro_offset = 90
+                # else:
+                #     gyro_offset = -90
+                # self.poseEstimator.gyro.set_yaw(gyro_offset)
+                # self.poseEstimator.poseEst.resetPose(Pose2d(self.fieldConstants.flip_Translation2d(Translation2d(4.471, 7.381)), Rotation2d.fromDegrees(gyro_offset)))
+                # self.poseEstimator.curEstPose = Pose2d(self.fieldConstants.flip_Translation2d(Translation2d(4.471, 7.381)), Rotation2d.fromDegrees(gyro_offset))
 
-                self.auto = self.autoroutines.trench_left_safe_auto()
-            elif auto_chosen == 2:
-                self.auto = self.autoroutines.trench_left_auto()
-            elif auto_chosen == 3:
-                self.auto = self.autoroutines.trench_bump_left_auto()
-            elif auto_chosen == 0:
-                self.auto = SequentialCommandGroup()
-            else:
-                self.auto = SequentialCommandGroup()
+            #     self.auto = self.autoroutines.trench_left_safe_auto()
+            # elif auto_chosen == 2:
+            #     self.auto = self.autoroutines.trench_left_auto()
+            # elif auto_chosen == 3:
+            #     self.auto = self.autoroutines.trench_bump_left_auto()
+            # elif auto_chosen == 0:
+            #     self.auto = SequentialCommandGroup()
+            # else:
+            #     self.auto = SequentialCommandGroup()
         self.in_teleop_mode = False
         self.in_autonomous_mode = True
         self.intake_at_default = False
@@ -533,10 +515,10 @@ class Robot(CoroutineRobot):
         """
         # SmartDashboard.putString("Shooting Values/")
         SmartDashboard.putNumberArray("Empty Pose", [0,0,0,1,0,0,0])
-        if self.isDisabled():
-            SmartDashboard.putData("Auto Chooser", self.auto_chooser)
-            SmartDashboard.putNumber("Current Auto Chosen", self.auto_chooser.getSelected())
-        wpilib.SmartDashboard.putBoolean("Connected to FMS", self.driverstation.isFMSAttached())
+        # if self.isDisabled():
+        #     SmartDashboard.putData("Auto Chooser", self.auto_chooser)
+        #     SmartDashboard.putNumber("Current Auto Chosen", self.auto_chooser.getSelected())
+        # wpilib.SmartDashboard.putBoolean("Connected to FMS", self.driverstation.isFMSAttached())
         SmartDashboard.putBoolean("States/Running Pid Lineup", self.running_pid_lineup)
         SmartDashboard.putBoolean("States/Intake at Default", self.intake_at_default)
         SmartDashboard.putBoolean("States/Shooter at Default", self.shooter_at_default)

@@ -158,8 +158,8 @@ class PoseEstimator(Subsystem):
 
         # self.curEstPose = Pose2d(self.robot.fieldConstants.flip_Translation2d(Translation2d(3.524, 4.064)), Rotation2d())
         
-        self.curEstPose = Pose2d(4.414-1, 7.587-2, self.getYaw())
-        # self.curEstPose = Pose2d(self.robot.fieldConstants.flip_Translation2d(Translation2d(4.471, 7.381)), self.getYaw())
+        # self.curEstPose = Pose2d(4.414, 7.587, self.getYaw())
+        self.curEstPose = Pose2d(self.robot.fieldConstants.flip_Translation2d(Translation2d(4.471, 7.381)), self.getYaw())
         self.estZ = 0
 
         self.poseEst = SwerveDrive4PoseEstimator(
