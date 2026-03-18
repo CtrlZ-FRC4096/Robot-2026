@@ -641,16 +641,16 @@ class Drivetrain(Subsystem):
         
         
         
-        self.chassis_accel = (
-            self.get_robot_relative_speeds() - self.previous_chassisspeeds
-        ) / 0.05
-        self.previous_chassisspeeds = self.get_robot_relative_speeds()
+        # self.chassis_accel = (
+        #     self.get_robot_relative_speeds() - self.previous_chassisspeeds
+        # ) / 0.05
+        # self.previous_chassisspeeds = self.get_robot_relative_speeds()
 
         if self.robot.in_autonomous_mode:
-            if self.robot.poseEstimator.curEstPose.X() >= 5.172:
-                # self.robot.is_intaking = True
-                # self.robot.intake_at_default = False
-                pass
+            # if self.robot.poseEstimator.curEstPose.X() >= 5.172:
+            #     # self.robot.is_intaking = True
+            #     # self.robot.intake_at_default = False
+            #     pass
             # if self.robot.fuel_in_hopper >= 9 and self:
             #     pass
 
