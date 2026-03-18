@@ -665,6 +665,8 @@ class Drivetrain(Subsystem):
             elif not self.robot.running_pid_lineup and self.robot.shoot_intent:
                 rotation = self.get_hub_angle(self.robot.time_of_flight)
                 self.drive_with_pid(Translation2d(0, 0), rotation.degrees())
+            elif self.robot.should_rotate_trench_auto:
+                self.drive_with_pid(Translation2d(0, 0), self.robot.auto_rotation_trench)
             # self.go_to_pose_profiled_pid(self.robot.final_lineup_pose)
 
     def log(self):

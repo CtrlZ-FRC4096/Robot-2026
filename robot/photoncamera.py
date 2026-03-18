@@ -83,7 +83,12 @@ class WrapperedPhotonCameraTag:
 
         # Grab whatever the camera last reported for observations in a camera frame
         # Note: Results simply report "I processed a frame". There may be 0 or more targets seen in a frame
-        res = self.cam.getLatestResult()
+        all_results = self.cam.getAllUnreadResults()
+
+        if len(all_results) == 0:
+            return
+        
+        res = all_results[-1]
 
         # MiniHack - results also have a more accurate "getTimestamp()", but this is
         # broken in photonvision 2.4.2. Hack with the non-broken latency calcualtion
@@ -103,11 +108,7 @@ class WrapperedPhotonCameraTag:
         # don't make sense.
 
         for target in res.getTargets():
-            if abs(res.getTimestampSeconds() - prevObsTime) <= 0.001:
-                break 
-            distance_3d = target.getBestCameraToTarget().translation().norm()
-            if (distance_3d > 4.5):
-                continue
+           
             # Transform both poses to on-field poses
             tgtID = target.getFiducialId()
 
@@ -115,6 +116,14 @@ class WrapperedPhotonCameraTag:
 
             target_x_angle = math.radians(target.getYaw())
             target_y_angle = -1 * math.radians(target.getPitch())
+
+            distance_3d = target.getBestCameraToTarget().translation().norm()
+            
+            if distance_3d > 5:
+                continue
+            ambiguity = target.getPoseAmbiguity()
+            if ambiguity > 0.3:
+                continue
 
             distance_2d_to_tag = distance_3d * math.cos(
                 (-1 * self.robotToCam.rotation().Y()) - target_y_angle
@@ -162,7 +171,7 @@ class WrapperedPhotonCameraTag:
             )
             # zEst = tagFieldPose.Z() - self.robotToCam.Z() - math.sin(self.robotToCam.rotation().Y() +  target_y_angle) * distance_3d
             # self.zEstimates.append(zEst)
-            self.poseSingleTag.append([robot_pose, tgtID, target.getPoseAmbiguity()])
+            self.poseSingleTag.append([robot_pose, tgtID, ambiguity])
             self.singleTagIDs.append(tgtID)
             
 

@@ -435,24 +435,23 @@ class PoseEstimator(Subsystem):
            
             for combined in single_tag_poses:
                 pose : Pose2d = combined[0]
-                tgt_id = combined[1]
-                ambiguity = combined[2]
-                # print(f"tgtZEst: {tgtZEst}")
-                # print(f"ambiguity : {ambiguity}")
-                tag_pose = self.tag_layout.getTagPose(tgt_id)
-                distance = tag_pose.translation().toTranslation2d().distance(pose.translation())
-                
-                if ambiguity <= 0.3 and distance < 4:
-                    # self.poseEst.addVisionMeasurement(
-                    #     pose,
-                    #     cam.getObsTime(),
-                    #     (
-                    #         self.xystd_single_tag * (distance ** 2),  # * (min_ambiguity / 0.4),
-                    #         self.xystd_single_tag * (distance ** 2),  # * (min_ambiguity / 0.4),
-                    #         self.thetastd_single_tag * (distance ** 2),  # * (min_ambiguity / 0.4),
-                    #     ),
-                    # )
-                    valid_poses.append(pose)
+                # tgt_id = combined[1]
+                # ambiguity = combined[2]
+                # # print(f"tgtZEst: {tgtZEst}")
+                # # print(f"ambiguity : {ambiguity}")
+                # tag_pose = self.tag_layout.getTagPose(tgt_id)
+                # distance = tag_pose.translation().toTranslation2d().distance(pose.translation())
+            
+                # self.poseEst.addVisionMeasurement(
+                #     pose,
+                #     cam.getObsTime(),
+                #     (
+                #         self.xystd_single_tag * (distance ** 2),  # * (min_ambiguity / 0.4),
+                #         self.xystd_single_tag * (distance ** 2),  # * (min_ambiguity / 0.4),
+                #         self.thetastd_single_tag * (distance ** 2),  # * (min_ambiguity / 0.4),
+                #     ),
+                # )
+                valid_poses.append(pose)
                 
             if len(valid_poses) > 0:
                 avg_x = sum(pose.X() for pose in valid_poses) / len(valid_poses)

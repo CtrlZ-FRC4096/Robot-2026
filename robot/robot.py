@@ -233,6 +233,11 @@ class Robot(CoroutineRobot):
         self.snake_intake = False
         self.track_fuel = False
 
+        self.done_rotation_auto = False
+
+        self.should_rotate_trench_auto = False
+        self.auto_rotation_trench = 90
+
         #TESTING
         self.should_hub_track = False
         self.is_hub_active = True
@@ -361,10 +366,10 @@ class Robot(CoroutineRobot):
             self.drivetrain.drive_robot_relative,
             PPHolonomicDriveController(
                 PIDConstants(
-                    1, 0, 0.025
+                    0.95, 0, 0.05 #1 , 0, 0.025
                 ),  # Translation PID constants
                 PIDConstants(
-                    0.8, 0, 0.05 # 0.8, 0, 0.05
+                    0.75, 0, 0.04 # 0.8, 0, 0.05
                 ),  # Rotation PID constants
             ),
             RobotConfig.fromGUISettings(),
@@ -422,6 +427,10 @@ class Robot(CoroutineRobot):
         self.scheduler.cancelAll()
         if self.in_autonomous_mode == False:
             self.fieldConstants.shouldFlip = self.driverstation.getAlliance() == self.driverstation.Alliance.kRed
+            if self.fieldConstants.shouldFlip:
+                self.auto_rotation_trench = -90
+            else:
+                self.auto_rotation_trench = 90
             # auto_chosen = self.auto_chooser.getSelected()
             # if auto_chosen == 1:
                 # if self.fieldConstants.shouldFlip:
@@ -522,6 +531,7 @@ class Robot(CoroutineRobot):
         SmartDashboard.putBoolean("States/Running Pid Lineup", self.running_pid_lineup)
         SmartDashboard.putBoolean("States/Intake at Default", self.intake_at_default)
         SmartDashboard.putBoolean("States/Shooter at Default", self.shooter_at_default)
+        SmartDashboard.putNumber("Auto Rotation Trench", self.auto_rotation_trench)
         SmartDashboard.putBoolean("States/Should Hub Track", self.should_hub_track)
         SmartDashboard.putBoolean("States/Pulse Pivot", self.pulse_pivot)
         SmartDashboard.putBoolean("States/Down Bad", self.down_bad)

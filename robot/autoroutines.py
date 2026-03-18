@@ -54,7 +54,8 @@ class AutoRoutines:
         return SequentialCommandGroup(
             ParallelCommandGroup(self.robot.P1_T_L_SAFE,
                                  self.robot.coroutines.intake),
-            self.robot.coroutines.drive_to_zone_trench.withTimeout(3),
+            self.robot.coroutines.drive_to_zone_trench.withTimeout(4),
+            # self.robot.coroutines.spin_for_trench.withTimeout(0.3).andThen(self.robot.coroutines.stop_drive),
             ParallelCommandGroup(self.robot.P2_T_L,
                                  self.robot.coroutines.intake_2),
             self.robot.coroutines.drive_to_zone_trench_2

@@ -79,9 +79,7 @@ class Intake(Subsystem):
             position is in degrees
         '''
         
-        if True:
-            pass
-        elif self.intake_pose_in_trench():
+        if self.intake_pose_in_trench():
             self.commanded_position = -0.05
             if abs(self.get_position() - 0.05) <= 0.02:
                 self.stop_deploy()
@@ -103,7 +101,7 @@ class Intake(Subsystem):
             return position
 
     def intake_pose_in_trench(self):
-        pose = self.robot.poseEstimator.curEstPose.translation() + Translation2d(0, -0.4).rotateBy(self.robot.poseEstimator.curEstPose.rotation())
+        pose = self.robot.poseEstimator.curEstPose.translation() + Translation2d(0, 0.3).rotateBy(self.robot.poseEstimator.curEstPose.rotation())
 
         min_x_blue = inchesToMeters(156.406)
         max_x_blue = inchesToMeters(205.406)
@@ -159,7 +157,7 @@ class Intake(Subsystem):
             self.set_intake_speed(0.8) # TUNE
             self.set_position(-0.05) # TUNE
         elif self.robot.pulse_pivot :
-            if not self.robot.in_autonomous_mode:
+            if not self.robot.in_autonomous_mode or True:
                 self.set_position(0.21)
             self.set_intake_speed(0.8)
         else:
