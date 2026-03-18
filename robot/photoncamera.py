@@ -72,12 +72,20 @@ class WrapperedPhotonCameraTag:
         self.singleTagIDs = []
         self.tagDistances = []
 
-        # Use getAllUnreadResults() to only process new frames since last call
-        res = self.cam.getAllUnreadResults()
-
+        # Get all unread results and take only the LATEST one
+        # This discards older queued results to minimize latency
+        all_results = self.cam.getAllUnreadResults()
+        
+        # Only process if there are results available
+        if len(all_results) == 0:
+            return
+        
+        # Take the latest (most recent) result, discard older ones
+        res = all_results[-1]
+        
         self.obsTime = res.getTimestampSeconds()
 
-        # Process each target, filtering by distance and ambiguity
+        # Process each target from the latest result, filtering by distance and ambiguity
         for target in res.getTargets():
             tgtID = target.getFiducialId()
             tagFieldPose = self.tag_map.getTagPose(tgtID)
