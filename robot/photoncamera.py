@@ -53,6 +53,7 @@ class WrapperedPhotonCameraTag:
         self.poseEstimates : list[Pose2d] = []
         self.zEstimates = []
         self.robotToCam: Transform3d = robotToCam
+        self.obsTime = 0
         self.counter = 0
         self.tag_map = AprilTagFieldLayout.loadField(AprilTagField.k2026RebuiltWelded)
 
@@ -63,6 +64,7 @@ class WrapperedPhotonCameraTag:
     def update(
         self,
         prevEstPoseSingleTag: Pose2d,
+        prevObsTime : float
     ):
         # self.counter += 1
         self.poseEstimates = []
@@ -101,7 +103,11 @@ class WrapperedPhotonCameraTag:
         # don't make sense.
 
         for target in res.getTargets():
-
+            if abs(res.getTimestampSeconds() - prevObsTime) <= 0.001:
+                break 
+            distance_3d = target.getBestCameraToTarget().translation().norm()
+            if (distance_3d > 4.5):
+                continue
             # Transform both poses to on-field poses
             tgtID = target.getFiducialId()
 
@@ -110,8 +116,6 @@ class WrapperedPhotonCameraTag:
             target_x_angle = math.radians(target.getYaw())
             target_y_angle = -1 * math.radians(target.getPitch())
 
-            distance_3d = target.getBestCameraToTarget().translation().norm()
- 
             distance_2d_to_tag = distance_3d * math.cos(
                 (-1 * self.robotToCam.rotation().Y()) - target_y_angle
             )  # cosine is even so we don't need to negate both
@@ -156,9 +160,9 @@ class WrapperedPhotonCameraTag:
             robot_pose = Pose2d(
                 robot_pose.translation(), prevEstPoseSingleTag.rotation()
             )
-            zEst = tagFieldPose.Z() - self.robotToCam.Z() - math.sin(self.robotToCam.rotation().Y() +  target_y_angle) * distance_3d
-            self.zEstimates.append(zEst)
-            self.poseSingleTag.append([robot_pose, tgtID, target.getPoseAmbiguity(), zEst])
+            # zEst = tagFieldPose.Z() - self.robotToCam.Z() - math.sin(self.robotToCam.rotation().Y() +  target_y_angle) * distance_3d
+            # self.zEstimates.append(zEst)
+            self.poseSingleTag.append([robot_pose, tgtID, target.getPoseAmbiguity()])
             self.singleTagIDs.append(tgtID)
             
 

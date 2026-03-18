@@ -101,7 +101,7 @@ class Intake(Subsystem):
             return position
 
     def intake_pose_in_trench(self):
-        pose = self.robot.poseEstimator.curEstPose.translation() + Translation2d(0, 0.4).rotateBy(self.robot.poseEstimator.curEstPose.rotation())
+        pose = self.robot.poseEstimator.curEstPose.translation() + Translation2d(0, -0.4).rotateBy(self.robot.poseEstimator.curEstPose.rotation())
 
         min_x_blue = inchesToMeters(156.406)
         max_x_blue = inchesToMeters(205.406)
