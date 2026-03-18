@@ -73,7 +73,7 @@ from wpimath.filter import LinearFilter
 from pathplannerlib.path import PathPlannerTrajectory
 from pathplannerlib.path import PathPlannerPath, PathConstraints
 from wpimath.estimator import SwerveDrive4PoseEstimator
-from photoncamera import WrapperedPhotonCameraTag, WrapperedPhotonCameraIntakeFuel
+from photoncamera import WrapperedPhotonCameraTag
 from wpimath.units import degreesToRadians, inchesToMeters
 from robotpy_apriltag import AprilTagField, AprilTagFieldLayout
 
@@ -209,9 +209,6 @@ class PoseEstimator(Subsystem):
         self.temp_rotation_check = Rotation2d()
 
         self.tag_layout = AprilTagFieldLayout.loadField(AprilTagField.k2026RebuiltWelded)
-        
-        self.active_intake_tgt = Translation2d()
-        self.active_intake_tgt_score = 0
 
     def cur_pos_in_zone(self, alt_pos=4.4):
         cur_pos = self.curEstPose
@@ -238,39 +235,6 @@ class PoseEstimator(Subsystem):
     def get_path_to_outpost(self):
         target_pose = self.robot.fieldConstants.flip_Pose2d(Pose2d(0.742, 0.649, Rotation2d.fromDegrees(-90)))
         return target_pose
-
-    def update_fuel_intake_tgt(self):
-        res = self.intake_cam.getBestPtIntake(self.curEstPose)
-        if res is None:
-            return None
-        else:
-            cur_best_pt = res[0]
-            cur_best_score = res[1]
-        
-        if self.active_intake_tgt is None:
-            self.active_intake_tgt = cur_best_pt
-            self.active_intake_tgt_score = cur_best_score
-            return self.active_intake_tgt
-        
-        still_exists = False
-        for pos, timestamp in self.intake_cam.getFuelMemory():
-            if pos.distance(self.active_intake_tgt) < 0.4:
-                still_exists = True
-                self.active_intake_tgt_score = self.intake_cam.calculate_single_score(pos, self.curEstPose)
-                break
-        
-        if not still_exists: # all balls in 0.4 meers are poofed
-            self.active_intake_tgt = cur_best_pt
-            self.active_intake_tgt_score = cur_best_score
-        elif cur_best_pt is not None:
-            if cur_best_score > (self.active_intake_tgt_score * 4):
-                self.active_intake_tgt = cur_best_pt
-                self.active_intake_tgt_score = cur_best_score
-        
-        if self.active_intake_tgt and (self.curEstPose.translation().distance(self.active_intake_tgt)) < 0.2:
-            self.active_intake_tgt = None
-        
-        return self.active_intake_tgt
 
     def stop(self):
         pass
@@ -424,48 +388,33 @@ class PoseEstimator(Subsystem):
             cam.update(
                 self.curEstPose
             )
-            single_tag_poses : list[(Pose2d, int)] = cam.getPoseSingleTag()
+            single_tag_poses = cam.getPoseSingleTag()
             self.single_tag_IDs.update(cam.getSingleTagIDs())
             zEstimates = cam.getZEstimates()
             z_sum += sum(zEstimates)
             z_count += len(zEstimates)
            
             for combined in single_tag_poses:
-                pose : Pose2d = combined[0]
+                pose = combined[0]
                 tgt_id = combined[1]
-                ambiguity = combined[2]
-                tgtZEst = combined[3]
-                # print(f"tgtZEst: {tgtZEst}")
-                # print(f"ambiguity : {ambiguity}")
                 tag_pose = self.tag_layout.getTagPose(tgt_id)
                 distance = tag_pose.translation().toTranslation2d().distance(pose.translation())
                 self.camera_X[cam.camName] = pose.X()
                 self.camera_Y[cam.camName] = pose.Y()
                 self.camera_theta[cam.camName] = pose.rotation()
-                # if not(abs(self.gyro.get_pitch()) >= 10 or abs(self.gyro.get_roll()) >= 10):
-                if not(ambiguity >= 0.3) or True:# or tgtZEst > 0.75):
-                    distance_modifier = 1 if distance > 5 else 1
-                    self.poseEst.addVisionMeasurement(
-                        pose,
-                        cam.getObsTime(),
-                        (
-                            self.xystd_single_tag * (distance ** 2) * distance_modifier,  # * (min_ambiguity / 0.4),
-                            self.xystd_single_tag * (distance ** 2) * distance_modifier,  # * (min_ambiguity / 0.4),
-                            self.thetastd_single_tag * (distance ** 2) * distance_modifier,  # * (min_ambiguity / 0.4),
-                        ),
-                    )
+                distance_modifier = 1 if distance > 5 else 1
+                self.poseEst.addVisionMeasurement(
+                    pose,
+                    cam.getObsTime(),
+                    (
+                        self.xystd_single_tag * (distance ** 2) * distance_modifier,
+                        self.xystd_single_tag * (distance ** 2) * distance_modifier,
+                        self.thetastd_single_tag * (distance ** 2) * distance_modifier,
+                    ),
+                )
         if z_count > 0:
             self.estZ = z_sum / z_count
         
-        # UPDATING OBJECT DETECTION CAMERAS
-        # self.intake_cam.update(self.curEstPose, self.estZ, self.gyro.getRotation3d())
-        # self.fuel_map = [pose for (pose, timestamp) in self.intake_cam.getFuelMemory()]
-        # if self.robot.is_intaking:
-        #     self.update_fuel_intake_tgt()
-
-
-
-
         # Update poses with drivetrain information
         self.poseEst.update(self.getYaw(), self.get_module_positions())
 
