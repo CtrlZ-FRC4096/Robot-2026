@@ -231,17 +231,17 @@ class Drivetrain(Subsystem):
         
         if field_relative and not self.robot.isSimulation():
             module_states = const.SWERVE_KINEMATICS.toSwerveModuleStates(
-                ChassisSpeeds.discretize(ChassisSpeeds.fromFieldRelativeSpeeds(
+                ChassisSpeeds.fromFieldRelativeSpeeds(
                     translation.x,
                     translation.y,
                     rotation,
                     self.robot.poseEstimator.getYaw()
-                ), 0.02))
+                ))
         else:  # Robot relative
             module_states = const.SWERVE_KINEMATICS.toSwerveModuleStates(
-                    ChassisSpeeds.discretize(translation.x,
+                    ChassisSpeeds(translation.x,
                     translation.y,
-                    rotation, 0.02)
+                    rotation)
             )
         if self.robot.in_autonomous_mode:
             max_speed = 4.0
@@ -318,7 +318,7 @@ class Drivetrain(Subsystem):
         module_states = const.SWERVE_KINEMATICS.desaturateWheelSpeeds(module_states, 4)
 
         SmartDashboard.putNumber("pathplanner omega", chassis_speeds.omega_dps)
-        SmartDashboard.putNumber("pose yaw", self.robot.poseEstimator.curEstPose.rotation().degrees())
+        SmartDashboard.putNumber("Pathplanner curPose yaw", self.robot.poseEstimator.curEstPose.rotation().degrees())
 
         mag_vel_dummy = Translation2d(chassis_speeds.vx, chassis_speeds.vy).norm()
         dummy_val = self.accel_shoot_limiter.calculate(mag_vel_dummy)

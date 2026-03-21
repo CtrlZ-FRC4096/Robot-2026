@@ -47,9 +47,9 @@ class AutoRoutines:
         return SequentialCommandGroup(
             ParallelCommandGroup(self.robot.P1_T_R_SAFE,
                                  self.robot.coroutines.intake),
-            self.robot.coroutines.drive_to_zone_trench.withTimeout(4),
+            self.robot.coroutines.drive_to_zone_trench.withTimeout(6.5),
             # self.robot.coroutines.spin_for_trench.withTimeout(0.3).andThen(self.robot.coroutines.stop_drive),
-            ParallelCommandGroup(self.robot.P2_T_R,
+            ParallelCommandGroup(self.robot.P2_B_R,
                                  self.robot.coroutines.intake_2),
             self.robot.coroutines.drive_to_zone_trench_2
         )
@@ -64,9 +64,9 @@ class AutoRoutines:
         return SequentialCommandGroup(
             ParallelCommandGroup(self.robot.P1_T_L_SAFE,
                                  self.robot.coroutines.intake),
-            self.robot.coroutines.drive_to_zone_trench.withTimeout(4),
+            self.robot.coroutines.drive_to_zone_trench.withTimeout(6.5),
             # self.robot.coroutines.spin_for_trench.withTimeout(0.3).andThen(self.robot.coroutines.stop_drive),
-            ParallelCommandGroup(self.robot.P2_T_L,
+            ParallelCommandGroup(self.robot.P2_B_L,
                                  self.robot.coroutines.intake_2),
             self.robot.coroutines.drive_to_zone_trench_2
         )

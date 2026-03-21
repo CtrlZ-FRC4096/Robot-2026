@@ -82,6 +82,8 @@ from wpilib import SmartDashboard
 from pathplannerlib.controller import PathFollowingController, PPHolonomicDriveController
 from pathplannerlib.path import DriveFeedforwards
 
+from wpimath.kinematics import ChassisSpeeds, SwerveModuleState
+
 from fuel_sim import FuelSim
 
 log = logging.getLogger("robot")
@@ -191,6 +193,7 @@ class Robot(CoroutineRobot):
         self.P1_T_L = self.getPathCommand(PathPlannerPath.fromPathFile("P1_T_L"))
         self.P1_T_L_SAFE = self.getPathCommand(PathPlannerPath.fromPathFile("P1_T_L_Safe"))
         self.P2_B_L = self.getPathCommand(PathPlannerPath.fromPathFile("P2_B_L"))
+        self.P2_B_R = self.getPathCommand(PathPlannerPath.fromPathFile("P2_B_R"))
         self.P2_T_L = self.getPathCommand(PathPlannerPath.fromPathFile("P2_T_L"))
         self.P2_T_R = self.getPathCommand(PathPlannerPath.fromPathFile("P2_T_R"))
         self.P1_T_R_SAFE = self.getPathCommand(PathPlannerPath.fromPathFile("P1_T_R_Safe"))
@@ -284,9 +287,9 @@ class Robot(CoroutineRobot):
         # self.auto_win_found = False
 
         
-        self.auto = self.autoroutines.trench_right_safe_auto()
-        self.poseEstimator.poseEst.resetPose(Pose2d(self.fieldConstants.flip_Translation2d(Translation2d(4.47, 0.6)), self.poseEstimator.getYaw())) # for right auto
-        # self.poseEstimator.poseEst.resetPose(Pose2d(self.fieldConstants.flip_Translation2d(Translation2d(4.471, 7.587)), self.poseEstimator.getYaw())) # for left auto
+        self.auto = self.autoroutines.trench_left_safe_auto()
+        # self.poseEstimator.poseEst.resetPose(Pose2d(self.fieldConstants.flip_Translation2d(Translation2d(4.47, 0.6)), self.poseEstimator.getYaw())) # for right auto
+        self.poseEstimator.poseEst.resetPose(Pose2d(self.fieldConstants.flip_Translation2d(Translation2d(4.471, 7.587)), self.poseEstimator.getYaw())) # for left auto
 
 
         ## SIMMING STUFF ##
@@ -304,7 +307,7 @@ class Robot(CoroutineRobot):
             self.fuel_sim.start()
 
        
-        # test_path = self.flip_path_cmd_across_x(self.getPathCommand(PathPlannerPath.fromPathFile("P2_T_L")))._originalPath
+        # test_path = self.flip_path_cmd_across_x(self.getPathCommand(PathPlannerPath.fromPathFile("P1_T_R_Safe")))._originalPath
         # test_path_waypoints = test_path.getWaypoints()
         # for idx, waypoint in enumerate(test_path_waypoints):
         #     if idx == 0:
@@ -322,6 +325,9 @@ class Robot(CoroutineRobot):
         #         prev_control_heading = Rotation2d((waypoint.anchor - waypoint.prevControl).X(), (waypoint.anchor - waypoint.prevControl).Y()).degrees()
         #         print(f"{idx}: anchor: {waypoint.anchor}, heading: {prev_control_heading}, prevdist: {prev_control_dist}, next_controldist: {next_control_dist}")
         # print(test_path.getRotationTargets())
+
+        # chassis = const.SWERVE_KINEMATICS.toChassisSpeeds(SwerveModuleState(-2.847, Rotation2d.fromDegrees(272.373)), SwerveModuleState(-2.668, Rotation2d.fromDegrees(268.330), SwerveModuleState(-2.282, Rotation2d.fromDegrees(268.737)), SwerveModuleState(1.220, Rotation2d.fromDegrees(66.530))))
+        # print(chassis)
 
         while True:
             yield
@@ -492,6 +498,11 @@ class Robot(CoroutineRobot):
     ### TELEOPERATED ###
     def teleop_mode(self):
         self.scheduler.cancelAll()
+
+        self.shoot_intent = False
+        self.shooter_at_default = True
+        self.shoot_fuel = False
+
         self.running_pid_lineup = False
         self.in_autonomous_mode = False
         self.oi.robot_oriented_angle = self.poseEstimator.curEstPose.rotation().degrees()
@@ -534,8 +545,7 @@ class Robot(CoroutineRobot):
 
 
         if self.auto_win is None and self.match_time >= 4 and self.rumble_d2 == False:
-            # self.rumble_d2 = True
-            pass
+            self.rumble_d2 = True
             
 
     ### WAIT FUNCTION ###
@@ -589,13 +599,13 @@ class Robot(CoroutineRobot):
             wpilib.SmartDashboard.putString("Alliance Shift", "DISABLED")
         wpilib.SmartDashboard.putNumber("Time Remaining", int(self.alliance_shift_time_remaining))
         wpilib.SmartDashboard.putBoolean("Hub active?", self.is_hub_active)
-        SmartDashboard.putString("Auto Win", str(self.auto_win))
+        # SmartDashboard.putString("Auto Win", str(self.auto_win))
         if self.isTeleop():
             self.update_hub_status()
         if self.auto_win is None:
-            wpilib.SmartDashboard.putString("Winner of Autonomous", "UNKNOWN")
+            wpilib.SmartDashboard.putString("Auto Win", "UNKNOWN")
         else:
-            wpilib.SmartDashboard.putString("Winner of Autonomous", "RED"*self.auto_win+"BLUE"*(not self.auto_win))
+            wpilib.SmartDashboard.putString("Auto Win", "RED"*self.auto_win+"BLUE"*(not self.auto_win))
 
         if self.in_teleop_mode and self.auto_win is None and self.match_timer.get() <= 4:
             game_message = self.driverstation.getGameSpecificMessage()

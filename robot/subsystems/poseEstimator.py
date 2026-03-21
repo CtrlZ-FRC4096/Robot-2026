@@ -170,7 +170,7 @@ class PoseEstimator(Subsystem):
         self.thetastd_single_tag = 1000.0
 
         ROBOT_TO_CAM1 = Transform3d(
-            Translation3d(-0.277, 0.274, 0.491),
+            Translation3d(-0.274, 0.277, 0.491),
             Rotation3d.fromDegrees(0.0, 0.0, -165.0)
         ) # CLIMBER SIDE CAMERA
         

@@ -168,7 +168,7 @@ class Shooter(Subsystem):
 
     def ready_to_shoot(self):
         rotation = self.robot.drivetrain.get_target_angle(self.robot.time_of_flight, self.robot.static_target)
-        if (abs(abs(self.get_fly_speed()) - self.commanded_fly_speed <= 3)) and (abs(abs(self.get_hood_position()) - self.commanded_hood_position) < 2) and (self.robot.down_bad or abs((self.robot.poseEstimator.curEstPose.rotation() - rotation).degrees()) <= 5): #and pointed at hub   
+        if (abs(abs(self.get_fly_speed()) - self.commanded_fly_speed <= 3)) and (abs(abs(self.get_hood_position()) - self.commanded_hood_position) < 2) and (self.robot.down_bad or abs((self.robot.poseEstimator.curEstPose.rotation() - rotation).degrees()) <= 5.5): #and pointed at hub   
             self.shoot_ready = True
             return True
         else:
@@ -190,7 +190,7 @@ class Shooter(Subsystem):
                     if self.robot.down_bad:
                         fly_speed = self.robot.down_bad_fly_speed
                         hood_angle = self.robot.down_bad_hood_angle
-                    else:
+                    else:   
                         fly_speed = self.robot.fly_speed
                         hood_angle = self.robot.hood_angle
                     self.set_fly_speed(fly_speed)

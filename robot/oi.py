@@ -191,7 +191,7 @@ class OI:
                     mag_vel = Translation2d(forward_back, left_right).norm()
                     wheels_to_x = mag_vel <= 0.02 and abs((self.robot.poseEstimator.curEstPose.rotation().degrees() - rotation_2d.degrees())) <= 5
                     SmartDashboard.putBoolean("Wheels to X", wheels_to_x)
-                    if mag_vel <= 0.02 and wheels_to_x:
+                    if mag_vel <= 0.02 and wheels_to_x and False:
                         self.robot.poseEstimator.set_wheels_to_x()
                     else:
 
@@ -405,20 +405,20 @@ class OI:
         def _():
             self.robot.hood_fudge_value -= 1
 
-        @self.driver2.Y.whenPressed
-        def _():
-            self.robot.down_bad_hood_angle += 1
-        @self.driver2.A.whenPressed
-        def _():
-            self.robot.down_bad_hood_angle -= 1
+        # @self.driver2.Y.whenPressed
+        # def _():
+        #     self.robot.down_bad_hood_angle += 1
+        # @self.driver2.A.whenPressed
+        # def _():
+        #     self.robot.down_bad_hood_angle -= 1
         
-        @self.driver2.B.whenPressed
-        def _():
-            self.robot.down_bad_fly_speed += 1
+        # @self.driver2.B.whenPressed
+        # def _():
+        #     self.robot.down_bad_fly_speed += 1
         
-        @self.driver2.X.whenPressed
-        def _():
-            self.robot.down_bad_fly_speed -= 1
+        # @self.driver2.X.whenPressed
+        # def _():
+        #     self.robot.down_bad_fly_speed -= 1
 
         @self.driver2.START.whenHeld
         def _():
@@ -438,9 +438,9 @@ class OI:
             if self.robot.auto_win is None and self.can_change_auto_win:
                 self.robot.auto_win = False
 
-        @self.driver2.BACK.whenPressed
-        def _():
-            self.robot.should_hub_track = not self.robot.should_hub_track
+        # @self.driver2.BACK.whenPressed
+        # def _():
+        #     self.robot.should_hub_track = not self.robot.should_hub_track
 
         @self.driver2.POV.LEFT.whenHeld
         def _():
