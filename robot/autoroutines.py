@@ -81,6 +81,15 @@ class AutoRoutines:
                                  self.robot.coroutines.intake_2),
             self.robot.coroutines.drive_to_zone_trench_2
         )
+    def trench_left_shoot_on_move_auto(self):
+        return SequentialCommandGroup(
+            ParallelCommandGroup(self.robot.P1_T_L_SOM,
+                                 self.robot.coroutines.intake),
+            self.robot.coroutines.drive_to_zone_trench,
+            self.robot.coroutines.spin_for_trench,
+            self.robot.P1_T_L_SOM_2,
+            self.robot.P1_T_L_SOM_3
+        )
     def trench_bump_left_auto(self):
         return SequentialCommandGroup(
             ParallelCommandGroup(
@@ -94,19 +103,24 @@ class AutoRoutines:
             self.robot.coroutines.drive_to_zone_trench
         )
 
-    def bump_left_depot_outpost_auto(self):
-        # self.robot.poseEstimator.poseEst.resetPose(Pose2d(4.440, 7.587, Rotation2d.fromDegrees(-90)))
-        # self.robot.poseEstimator.curEstPose = Pose2d(4.440, 7.587, Rotation2d.fromDegrees(-90))
-        return SequentialCommandGroup(
-            ParallelCommandGroup(
-                self.robot.P1_B_L,
-                self.robot.coroutines.intake
-            ),
-            self.robot.coroutines.shoot_in_place,
-            ParallelCommandGroup(
-                self.robot.LB_DEPOT,
-                self.robot.coroutines.intake_2
-            ),
-            self.robot.coroutines.shoot_in_place_2
-        )
+    # def bump_left_depot_outpost_auto(self):
+    #     # self.robot.poseEstimator.poseEst.resetPose(Pose2d(4.440, 7.587, Rotation2d.fromDegrees(-90)))
+    #     # self.robot.poseEstimator.curEstPose = Pose2d(4.440, 7.587, Rotation2d.fromDegrees(-90))
+    #     return SequentialCommandGroup(
+    #         ParallelCommandGroup(
+    #             self.robot.P1_B_L,
+    #             self.robot.coroutines.intake
+    #         ),
+    #         self.robot.coroutines.shoot_in_place,
+    #         ParallelCommandGroup(
+    #             self.robot.LB_DEPOT,
+    #             self.robot.coroutines.intake_2
+    #         ),
+    #         self.robot.coroutines.shoot_in_place_2
+    #     )
         
+    def right_trench_pid_auto(self):
+        return SequentialCommandGroup(
+            self.robot.coroutines.p1_right_trench,
+            self.robot.coroutines.p2_right_trench
+        )

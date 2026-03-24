@@ -199,6 +199,9 @@ class Robot(CoroutineRobot):
         self.P1_T_R_SAFE = self.getPathCommand(PathPlannerPath.fromPathFile("P1_T_R_Safe"))
         self.P1_T_R_ROBUST_1 = self.getPathCommand(PathPlannerPath.fromPathFile("P1_T_R_Robust_1"))
         self.P1_T_R_ROBUST_2 = self.getPathCommand(PathPlannerPath.fromPathFile("P1_T_R_Robust_2"))
+        self.P1_T_L_SOM = self.getPathCommand(PathPlannerPath.fromPathFile("P1_T_L_SOM"))
+        self.P1_T_L_SOM_2 = self.getPathCommand(PathPlannerPath.fromPathFile("P1_T_L_SOM_2"))
+        self.P1_T_L_SOM_3 = self.getPathCommand(PathPlannerPath.fromPathFile("P1_T_L_SOM_3"))
 
         self.autoroutines = autoroutines.AutoRoutines(self)
 
@@ -237,6 +240,19 @@ class Robot(CoroutineRobot):
         
         self.lining_with_outpost = False
         self.lining_with_trench = False
+        # AUTO FLAGS
+        self.run_p1 = False
+        self.done_p1 = False
+
+        self.run_p2 = False
+        self.done_p2 = False
+
+        self.run_p3 = False
+        self.done_p3 = False
+
+        self.run_p4 = False
+        self.done_p4 = False
+
 
         self.snake_intake = False
         self.track_fuel = False
@@ -561,6 +577,7 @@ class Robot(CoroutineRobot):
         Logs some info to shuffleboard, and standard output
         """
         # SmartDashboard.putString("Shooting Values/")
+        # SmartDashboard.putNumber("Auto Currently Chosen", self.auto_chooser.getSelected())
         SmartDashboard.putNumberArray("Empty Pose", [0,0,0,1,0,0,0])
         # if self.isDisabled():
         #     SmartDashboard.putData("Auto Chooser", self.auto_chooser)
