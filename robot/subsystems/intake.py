@@ -41,7 +41,7 @@ class Intake(Subsystem):
         )  # Apply settings to angle encoder
 
         self.intake_motor_config = self.robot.get_motor_config(1, 5, 0, 0, 0.21, 0, 0, 11)
-        self.deploy_motor_config = self.robot.get_motor_config(1, 80, 0, 15, 0, 0, 9, 8)
+        self.deploy_motor_config = self.robot.get_motor_config(1, 110, 0, 15, 0, 0, 9, 8)
         self.deploy_motor_config.motion_magic.motion_magic_cruise_velocity = 20
         self.deploy_motor_config.motion_magic.motion_magic_acceleration = 40
         self.deploy_motor_config.feedback.feedback_remote_sensor_id = const.INTAKE_DEPLOY_CANCODER_ID

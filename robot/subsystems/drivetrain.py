@@ -95,8 +95,8 @@ class Drivetrain(Subsystem):
 
 
         ## Need to check these tolerances
-        self.x_controller.setTolerance(0.25, 0.1) #0.025, 0.1
-        self.y_controller.setTolerance(0.25, 0.1) #0.025, 0.1
+        self.x_controller.setTolerance(0.5, 1) #0.025, 0.1
+        self.y_controller.setTolerance(0.5, 1) #0.025, 0.1
         self.xy_controller.setTolerance(0.0225, 0.15)
         self.theta_controller.enableContinuousInput(0, 360)
         self.theta_controller.setTolerance(2.8, 2.0) #3.0, 0.1
@@ -298,8 +298,8 @@ class Drivetrain(Subsystem):
     def drive_with_pid(self, translation: Translation2d, target_angle):
         pid_output = self.angle_pid.calculate(self.robot.poseEstimator.curEstPose.rotation().degrees(), target_angle)  # type: ignore
 
-        if self.angle_pid.atSetpoint():
-            pid_output = 0
+        # if self.angle_pid.atSetpoint():
+        #     pid_output = 0
 
         # if not in_motion:
         #     pid_output += math.copysign(0.2, pid_output)
@@ -366,14 +366,16 @@ class Drivetrain(Subsystem):
         if (
             self.x_controller.atSetpoint()
             and self.y_controller.atSetpoint()
-            and (self.theta_controller.atSetpoint() and not self.robot.shoot_intent)
-        ) or (self.robot.poseEstimator.cur_pos_in_zone(4.1) and self.robot.in_autonomous_mode):
+            #and (self.theta_controller.atSetpoint() or self.robot.in_autonomous_mode)
+        ):
             # self.robot.running_pid_lineup = False
             if self.robot.lining_with_outpost:
                 self.robot.clear_jam = True
                 self.robot.ignore_shooter_in_jam = True
                 self.robot.is_intaking = False
                 self.robot.intake_at_default = False
+            if self.robot.lining_with_trench:
+                self.robot.at_trench_position = True
             self.robot.running_pid_lineup = False
 
 

@@ -197,6 +197,8 @@ class Robot(CoroutineRobot):
         self.P2_T_L = self.getPathCommand(PathPlannerPath.fromPathFile("P2_T_L"))
         self.P2_T_R = self.getPathCommand(PathPlannerPath.fromPathFile("P2_T_R"))
         self.P1_T_R_SAFE = self.getPathCommand(PathPlannerPath.fromPathFile("P1_T_R_Safe"))
+        self.P1_T_R_ROBUST_1 = self.getPathCommand(PathPlannerPath.fromPathFile("P1_T_R_Robust_1"))
+        self.P1_T_R_ROBUST_2 = self.getPathCommand(PathPlannerPath.fromPathFile("P1_T_R_Robust_2"))
 
         self.autoroutines = autoroutines.AutoRoutines(self)
 
@@ -231,8 +233,10 @@ class Robot(CoroutineRobot):
         self.pulse_pivot = False
         self.clear_jam = False
         self.ignore_shooter_in_jam = False
+        self.at_trench_position = False
         
         self.lining_with_outpost = False
+        self.lining_with_trench = False
 
         self.snake_intake = False
         self.track_fuel = False
@@ -287,9 +291,9 @@ class Robot(CoroutineRobot):
         # self.auto_win_found = False
 
         
-        self.auto = self.autoroutines.trench_left_safe_auto()
-        # self.poseEstimator.poseEst.resetPose(Pose2d(self.fieldConstants.flip_Translation2d(Translation2d(4.47, 0.6)), self.poseEstimator.getYaw())) # for right auto
-        self.poseEstimator.poseEst.resetPose(Pose2d(self.fieldConstants.flip_Translation2d(Translation2d(4.471, 7.587)), self.poseEstimator.getYaw())) # for left auto
+        self.auto = self.autoroutines.trench_right_counter_auto()
+        self.poseEstimator.poseEst.resetPose(Pose2d(self.fieldConstants.flip_Translation2d(Translation2d(4.47, 0.6)), self.poseEstimator.getYaw())) # for right auto
+        # self.poseEstimator.poseEst.resetPose(Pose2d(self.fieldConstants.flip_Translation2d(Translation2d(4.471, 7.587)), self.poseEstimator.getYaw())) # for left auto
 
 
         ## SIMMING STUFF ##
@@ -307,7 +311,7 @@ class Robot(CoroutineRobot):
             self.fuel_sim.start()
 
        
-        # test_path = self.flip_path_cmd_across_x(self.getPathCommand(PathPlannerPath.fromPathFile("P1_T_R_Safe")))._originalPath
+        # test_path = self.flip_path_cmd_across_x(self.getPathCommand(PathPlannerPath.fromPathFile("P2_B_L")))._originalPath
         # test_path_waypoints = test_path.getWaypoints()
         # for idx, waypoint in enumerate(test_path_waypoints):
         #     if idx == 0:
@@ -325,9 +329,6 @@ class Robot(CoroutineRobot):
         #         prev_control_heading = Rotation2d((waypoint.anchor - waypoint.prevControl).X(), (waypoint.anchor - waypoint.prevControl).Y()).degrees()
         #         print(f"{idx}: anchor: {waypoint.anchor}, heading: {prev_control_heading}, prevdist: {prev_control_dist}, next_controldist: {next_control_dist}")
         # print(test_path.getRotationTargets())
-
-        # chassis = const.SWERVE_KINEMATICS.toChassisSpeeds(SwerveModuleState(-2.847, Rotation2d.fromDegrees(272.373)), SwerveModuleState(-2.668, Rotation2d.fromDegrees(268.330), SwerveModuleState(-2.282, Rotation2d.fromDegrees(268.737)), SwerveModuleState(1.220, Rotation2d.fromDegrees(66.530))))
-        # print(chassis)
 
         while True:
             yield

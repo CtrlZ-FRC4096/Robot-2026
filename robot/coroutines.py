@@ -54,6 +54,19 @@ class Coroutines:
             robot.is_intaking = True
             yield
 
+        @commandify
+        def reline_up_with_right_trench():
+            robot.final_lineup_pose = robot.fieldConstants.flip_Pose2d(Pose2d(5.844, 0.628, Rotation2d.fromDegrees(90)))
+            robot.is_intaking = False
+            robot.intake_at_default = False
+            robot.shoot_intent = False
+            robot.pulse_pivot = False
+            robot.running_pid_lineup = True
+            robot.lining_with_trench = True
+            while not robot.at_trench_position:
+                yield
+
+
         
         @commandify
         def spin_for_trench():
@@ -122,4 +135,6 @@ class Coroutines:
 
         self.spin_for_trench = (spin_for_trench)
         self.stop_drive = (stop_drive)
+
+        self.reline_up_with_right_trench = (reline_up_with_right_trench)
 

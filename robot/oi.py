@@ -261,15 +261,16 @@ class OI:
                         #             self.find_heading = False
                         #         else:
                         #             self.wait_one_tick = True
-                        if not self.cardinal_directing:
-                            if self.find_heading:
-                                if self.tick_count <= self.tick_count_max:
-                                    self.robot_oriented_angle = (
-                                        self.robot.poseEstimator.getYaw().degrees()
-                                    )
-                                    self.tick_count += 1
-                                else:
-                                    self.find_heading = False
+                        # if not self.cardinal_directing:
+                        #     if self.find_heading:
+                        #         if self.tick_count <= self.tick_count_max:
+                        #             self.robot_oriented_angle = (
+                        #                 self.robot.poseEstimator.getYaw().degrees()
+                        #             )
+                        #             self.tick_count += 1
+                        #         else:
+                        #             self.find_heading = False\[]
+
                         self.robot.drivetrain.drive_with_pid(
                             Translation2d(forward_back, left_right)
                             * const.SWERVE_MAX_SPEED,
@@ -369,16 +370,13 @@ class OI:
             self.robot.running_pid_lineup = False
             self.robot_oriented_angle = self.robot.poseEstimator.curEstPose.rotation().degrees()
 
-        @self.driver1.LEFT_BUMPER.whenHeld
+        @self.driver1.LEFT_BUMPER.whenPressed
         def _():
-            self.robot.snake_intake = True
-            self.robot.is_intaking = True
-            self.robot.intake_at_default = False
-
-        @self.driver1.LEFT_BUMPER.whenReleased
-        def _():
-            self.robot.snake_intake = False
+            self.robot.shooter_at_default = True
+            self.robot.intake_at_default = True
             self.robot.is_intaking = False
+            self.robot.shoot_fuel = False
+            self.robot.shoot_intent = False
 
 
         @self.driver2.POV.RIGHT.whenHeld
