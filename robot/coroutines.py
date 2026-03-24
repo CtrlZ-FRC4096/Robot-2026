@@ -120,6 +120,10 @@ class Coroutines:
 
         self.shoot_in_place = (shoot_in_place)
         self.shoot_in_place_2 = (shoot_in_place_2)
+
+        self.spin_for_trench = (spin_for_trench)
+        self.stop_drive = (stop_drive)
+
         
 
 
@@ -133,7 +137,8 @@ class Coroutines:
             robot.is_intaking = True
 
             robot.final_lineup_pose = robot.fieldConstants.flip_Pose2d(Pose2d(5.842, 0.652, Rotation2d.fromDegrees(-90)))
-            robot.running_pid_lineup = True
+            # robot.running_pid_lineup = True
+            robot.run_p1 = True
             while not robot.done_p1:
                 yield
             robot.run_p1 = False
@@ -149,7 +154,6 @@ class Coroutines:
             robot.run_p2 = False
             robot.done_p2 = False
 
-
-        self.spin_for_trench = (spin_for_trench)
-        self.stop_drive = (stop_drive)
-
+        self.p1_right_trench = (p1_right_trench)
+        self.p2_right_trench = (p2_right_trench)
+        

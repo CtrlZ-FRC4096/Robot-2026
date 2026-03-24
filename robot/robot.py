@@ -299,9 +299,10 @@ class Robot(CoroutineRobot):
         # self.auto_win_found = False
 
         
-        self.auto = self.autoroutines.trench_left_safe_auto()
-        # self.poseEstimator.poseEst.resetPose(Pose2d(self.fieldConstants.flip_Translation2d(Translation2d(4.47, 0.6)), self.poseEstimator.getYaw())) # for right auto
-        self.poseEstimator.poseEst.resetPose(Pose2d(self.fieldConstants.flip_Translation2d(Translation2d(4.471, 7.587)), self.poseEstimator.getYaw())) # for left auto
+        self.auto = self.autoroutines.right_trench_pid_auto()
+        self.poseEstimator.poseEst.resetPose(Pose2d(self.fieldConstants.flip_Translation2d(Translation2d(4.47, 0.6)), self.poseEstimator.getYaw())) # for right auto
+        self.poseEstimator.curEstPose = Pose2d(self.fieldConstants.flip_Translation2d(Translation2d(4.47, 0.6)), self.poseEstimator.getYaw())
+        # self.poseEstimator.poseEst.resetPose(Pose2d(self.fieldConstants.flip_Translation2d(Translation2d(4.471, 7.587)), self.poseEstimator.getYaw())) # for left auto
 
 
         ## SIMMING STUFF ##
@@ -572,7 +573,7 @@ class Robot(CoroutineRobot):
         Logs some info to shuffleboard, and standard output
         """
         # SmartDashboard.putString("Shooting Values/")
-        SmartDashboard.putNumber("Auto Currently Chosen", self.auto_chooser.getSelected())
+        # SmartDashboard.putNumber("Auto Currently Chosen", self.auto_chooser.getSelected())
         SmartDashboard.putNumberArray("Empty Pose", [0,0,0,1,0,0,0])
         # if self.isDisabled():
         #     SmartDashboard.putData("Auto Chooser", self.auto_chooser)

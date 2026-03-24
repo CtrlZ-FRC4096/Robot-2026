@@ -70,8 +70,8 @@ class Drivetrain(Subsystem):
         self.angle_pid.enableContinuousInput(0, 360)
         self.angle_pid.setTolerance(2)  # Set position tolerance to 0.5 degrees
 
-        self.x_controller = PIDController(1.75, 0, 0.1) #0.01
-        self.y_controller = PIDController(1.75, 0, 0.1) #0.01
+        self.x_controller = PIDController(3, 0, 0) #0.01
+        self.y_controller = PIDController(3, 0, 0) #0.01
         self.xy_controller = ProfiledPIDController(2.3, 0.0, 0.025, TrapezoidProfile.Constraints(4.0, 4.0))
         self.theta_controller = PIDController(0.07, 0.01, 0.0015)
         
@@ -96,8 +96,8 @@ class Drivetrain(Subsystem):
 
 
         ## Need to check these tolerances
-        self.x_controller.setTolerance(0.25, 0.1) #0.025, 0.1
-        self.y_controller.setTolerance(0.25, 0.1) #0.025, 0.1
+        self.x_controller.setTolerance(0.8, 1.5) #0.025, 0.1
+        self.y_controller.setTolerance(0.8, 1.5) #0.025, 0.1
         self.xy_controller.setTolerance(0.0225, 0.15)
         self.theta_controller.enableContinuousInput(0, 360)
         self.theta_controller.setTolerance(2.8, 2.0) #3.0, 0.1
@@ -251,7 +251,7 @@ class Drivetrain(Subsystem):
         module_states = SwerveDrive4Kinematics.desaturateWheelSpeeds(
                 module_states, max_speed
             )
-        # self.log_chassis = const.SWERVE_KINEMATICS.toChassisSpeeds(module_states)
+        self.log_chassis = const.SWERVE_KINEMATICS.toChassisSpeeds(module_states)
         # SmartDashboard.putNumber("translation x", translation.x / 20)
         # SmartDashboard.putNumber("translation y", translation.y / 20)
         # SmartDashboard.putNumber("translation omega", radiansToDegrees(rotation) / 20)
@@ -364,6 +364,7 @@ class Drivetrain(Subsystem):
         #     vy = direction.Y() * limit_mag
 
         # Check if the controllers are at their setpoints
+
         if (
             self.x_controller.atSetpoint()
             and self.y_controller.atSetpoint()
@@ -524,31 +525,31 @@ class Drivetrain(Subsystem):
         # self.angle_lookup_table.add_entry(85, 0)
 
     def periodic(self):
-        # 6328 INSPIRED SHOT CALC
-        cur_robot_pose = self.robot.poseEstimator.curEstPose
-        robot_relative_vel = self.get_robot_relative_speeds()
-        est_pose = cur_robot_pose.exp(Twist2d(
-            robot_relative_vel.vx * 0.03,
-            robot_relative_vel.vy * 0.03,
-            robot_relative_vel.omega * 0.03
-        ))
+        # # 6328 INSPIRED SHOT CALC
+        # cur_robot_pose = self.robot.poseEstimator.curEstPose
+        # robot_relative_vel = self.get_robot_relative_speeds()
+        # est_pose = cur_robot_pose.exp(Twist2d(
+        #     robot_relative_vel.vx * 0.03,
+        #     robot_relative_vel.vy * 0.03,
+        #     robot_relative_vel.omega * 0.03
+        # ))
 
-        if self.robot.shoot_intent:
-            if self.robot.poseEstimator.cur_pos_in_zone(4.55) or self.robot.in_autonomous_mode:
-                self.robot.static_target = self.robot.fieldConstants.flip_Translation2d(self.robot.fieldConstants.Hub.topCenterPoint.toTranslation2d())
-            else:
-                if not self.robot.fieldConstants.shouldFlip:
-                    if cur_pos.Y() <= self.robot.fieldConstants.fieldWidth / 2: #shoot to right corner blue
-                        self.robot.static_target = Translation2d(1.694, 1.417)
-                    else: #pass to left corner blue
-                        self.robot.static_target = Translation2d(1.694, self.robot.fieldConstants.fieldWidth - 1.417)
-                else:
-                    if cur_pos.Y() <= self.robot.fieldConstants.fieldWidth / 2: # pass to left corner red (red relative)
-                        self.robot.static_target = Translation2d(1.694, self.robot.fieldConstants.fieldWidth - 1.417)
-                    else: #pass to right corner 
-                        self.robot.static_target = Translation2d(1.694, 1.417)
+        # if self.robot.shoot_intent:
+        #     if self.robot.poseEstimator.cur_pos_in_zone(4.55) or self.robot.in_autonomous_mode:
+        #         self.robot.static_target = self.robot.fieldConstants.flip_Translation2d(self.robot.fieldConstants.Hub.topCenterPoint.toTranslation2d())
+        #     else:
+        #         if not self.robot.fieldConstants.shouldFlip:
+        #             if cur_pos.Y() <= self.robot.fieldConstants.fieldWidth / 2: #shoot to right corner blue
+        #                 self.robot.static_target = Translation2d(1.694, 1.417)
+        #             else: #pass to left corner blue
+        #                 self.robot.static_target = Translation2d(1.694, self.robot.fieldConstants.fieldWidth - 1.417)
+        #         else:
+        #             if cur_pos.Y() <= self.robot.fieldConstants.fieldWidth / 2: # pass to left corner red (red relative)
+        #                 self.robot.static_target = Translation2d(1.694, self.robot.fieldConstants.fieldWidth - 1.417)
+        #             else: #pass to right corner 
+        #                 self.robot.static_target = Translation2d(1.694, 1.417)
             
-            shooter_pos = est_pose.transformBy(Transform2d())
+        #     shooter_pos = est_pose.transformBy(Transform2d())
 
 
 

@@ -83,19 +83,24 @@ class AutoRoutines:
             self.robot.coroutines.drive_to_zone_trench
         )
 
-    def bump_left_depot_outpost_auto(self):
-        # self.robot.poseEstimator.poseEst.resetPose(Pose2d(4.440, 7.587, Rotation2d.fromDegrees(-90)))
-        # self.robot.poseEstimator.curEstPose = Pose2d(4.440, 7.587, Rotation2d.fromDegrees(-90))
-        return SequentialCommandGroup(
-            ParallelCommandGroup(
-                self.robot.P1_B_L,
-                self.robot.coroutines.intake
-            ),
-            self.robot.coroutines.shoot_in_place,
-            ParallelCommandGroup(
-                self.robot.LB_DEPOT,
-                self.robot.coroutines.intake_2
-            ),
-            self.robot.coroutines.shoot_in_place_2
-        )
+    # def bump_left_depot_outpost_auto(self):
+    #     # self.robot.poseEstimator.poseEst.resetPose(Pose2d(4.440, 7.587, Rotation2d.fromDegrees(-90)))
+    #     # self.robot.poseEstimator.curEstPose = Pose2d(4.440, 7.587, Rotation2d.fromDegrees(-90))
+    #     return SequentialCommandGroup(
+    #         ParallelCommandGroup(
+    #             self.robot.P1_B_L,
+    #             self.robot.coroutines.intake
+    #         ),
+    #         self.robot.coroutines.shoot_in_place,
+    #         ParallelCommandGroup(
+    #             self.robot.LB_DEPOT,
+    #             self.robot.coroutines.intake_2
+    #         ),
+    #         self.robot.coroutines.shoot_in_place_2
+    #     )
         
+    def right_trench_pid_auto(self):
+        return SequentialCommandGroup(
+            self.robot.coroutines.p1_right_trench,
+            self.robot.coroutines.p2_right_trench
+        )
