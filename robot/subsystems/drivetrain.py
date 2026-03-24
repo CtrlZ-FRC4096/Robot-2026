@@ -319,7 +319,7 @@ class Drivetrain(Subsystem):
         module_states = const.SWERVE_KINEMATICS.desaturateWheelSpeeds(module_states, 4)
 
         SmartDashboard.putNumber("pathplanner omega", chassis_speeds.omega_dps)
-        SmartDashboard.putNumber("pose yaw", self.robot.poseEstimator.curEstPose.rotation().degrees())
+        SmartDashboard.putNumber("Pathplanner curPose yaw", self.robot.poseEstimator.curEstPose.rotation().degrees())
 
         mag_vel_dummy = Translation2d(chassis_speeds.vx, chassis_speeds.vy).norm()
         dummy_val = self.accel_shoot_limiter.calculate(mag_vel_dummy)
@@ -569,10 +569,10 @@ class Drivetrain(Subsystem):
                     else: #pass to left corner blue
                         self.robot.static_target = Translation2d(1.694, self.robot.fieldConstants.fieldWidth - 1.417)
                 else:
-                    if cur_pos.Y() <= self.robot.fieldConstants.fieldWidth / 2: # pass to left corner red (red relative)
-                        self.robot.static_target = Translation2d(1.694, self.robot.fieldConstants.fieldWidth - 1.417)
+                    if cur_pos.Y() >= self.robot.fieldConstants.fieldWidth / 2: # pass to left corner red (red relative)
+                        self.robot.static_target = Translation2d(self.robot.fieldConstants.fieldLength - 1.694, self.robot.fieldConstants.fieldWidth - 1.417)
                     else: #pass to right corner 
-                        self.robot.static_target = Translation2d(1.694, 1.417)
+                        self.robot.static_target = Translation2d(self.robot.fieldConstants.fieldLength - 1.694, 1.417)
             
             dist_from_shooter = shooter_pos.distance(self.robot.static_target)           
             
@@ -581,7 +581,7 @@ class Drivetrain(Subsystem):
             field_relative_speeds = self.get_field_relative_speeds()
             SmartDashboard.putNumber("Test/ Field Rel X", field_relative_speeds.vx)
             SmartDashboard.putNumber("Test/ Field Rel Y", field_relative_speeds.vy)
-            for _ in range(5):
+            for _ in range(2):
                 if True: # CHANGE TO CASES ON ALLIANCE ZONE AND NEUTRAL ZONE
                     temp_virtual_goal = Translation2d(
                         self.robot.static_target.X() - (temp_time_of_flight) * field_relative_speeds.vx, self.robot.static_target.Y() - (temp_time_of_flight) * field_relative_speeds.vy 
@@ -598,8 +598,8 @@ class Drivetrain(Subsystem):
 
             self.robot.fly_speed = vals[0]
             self.robot.hood_angle = vals[1]
-            if self.robot.fly_speed >= 70:
-                self.robot.fly_speed = 70
+            if self.robot.fly_speed >= 85:
+                self.robot.fly_speed = 85
 
             if self.robot.hood_angle >= 45:
                 self.robot.hood_angle = 45
@@ -608,16 +608,16 @@ class Drivetrain(Subsystem):
         
         
         
-        self.chassis_accel = (
-            self.get_robot_relative_speeds() - self.previous_chassisspeeds
-        ) / 0.05
-        self.previous_chassisspeeds = self.get_robot_relative_speeds()
+        # self.chassis_accel = (
+        #     self.get_robot_relative_speeds() - self.previous_chassisspeeds
+        # ) / 0.05
+        # self.previous_chassisspeeds = self.get_robot_relative_speeds()
 
         if self.robot.in_autonomous_mode:
-            if self.robot.poseEstimator.curEstPose.X() >= 5.172:
-                # self.robot.is_intaking = True
-                # self.robot.intake_at_default = False
-                pass
+            # if self.robot.poseEstimator.curEstPose.X() >= 5.172:
+            #     # self.robot.is_intaking = True
+            #     # self.robot.intake_at_default = False
+            #     pass
             # if self.robot.fuel_in_hopper >= 9 and self:
             #     pass
 
@@ -632,6 +632,8 @@ class Drivetrain(Subsystem):
             elif not self.robot.running_pid_lineup and self.robot.shoot_intent:
                 rotation = self.get_hub_angle(self.robot.time_of_flight)
                 self.drive_with_pid(Translation2d(0, 0), rotation.degrees())
+            elif self.robot.should_rotate_trench_auto:
+                self.drive_with_pid(Translation2d(0, 0), self.robot.auto_rotation_trench)
             # self.go_to_pose_profiled_pid(self.robot.final_lineup_pose)
 
     def log(self):

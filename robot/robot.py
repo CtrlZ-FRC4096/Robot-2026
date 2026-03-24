@@ -82,6 +82,8 @@ from wpilib import SmartDashboard
 from pathplannerlib.controller import PathFollowingController, PPHolonomicDriveController
 from pathplannerlib.path import DriveFeedforwards
 
+from wpimath.kinematics import ChassisSpeeds, SwerveModuleState
+
 from fuel_sim import FuelSim
 
 log = logging.getLogger("robot")
@@ -134,7 +136,7 @@ class Robot(CoroutineRobot):
                     break
             # time.sleep(1.0) # Give enough time to make sure the FMS has told the Driver Station the Alliance 
         self.fieldConstants = FieldConstants()
-        self.fieldConstants.shouldFlip = DriverStation.getAlliance() == DriverStation.Alliance.kRed # false = BLUE, true = RED
+        # self.fieldConstants.shouldFlip = DriverStation.getAlliance() == DriverStation.Alliance.kRed # false = BLUE, true = RED
         # Match Stuff
         self.match_time = -1
 
@@ -142,7 +144,7 @@ class Robot(CoroutineRobot):
         self.scheduler = CommandScheduler.getInstance()
         
         # subsystems
-        self.leds = subsystems.leds.LEDs(self)
+        # self.leds = subsystems.leds.LEDs(self)
         self.poseEstimator = subsystems.poseEstimator.PoseEstimator(self)
         self.drivetrain = subsystems.drivetrain.Drivetrain(self)
         self.intake = subsystems.intake.Intake(self)
@@ -152,7 +154,7 @@ class Robot(CoroutineRobot):
 
         self.subsystems = [
             self.drivetrain,
-            self.leds,
+            # self.leds,
             self.poseEstimator,
             self.intake,
             self.shooter,
@@ -184,10 +186,27 @@ class Robot(CoroutineRobot):
         ### LOGGING ###
         self.remote_shell = RemoteShell(self)
 
-		# PATH CONSTRAINTS
-        # self.path_constraints = PathConstraints(4.0, 4.0, degreesToRadians(540), degreesToRadians(540))
+		# PATHS
+        # self.LB_DEPOT = self.getPathCommand(PathPlannerPath.fromPathFile("LB_DEPOT"))
+        self.P1_B_L = self.getPathCommand(PathPlannerPath.fromPathFile("P1_B_L"))
+        self.P1_B_R = self.getPathCommand(PathPlannerPath.fromPathFile("P1_B_R"))
+        self.P1_T_L = self.getPathCommand(PathPlannerPath.fromPathFile("P1_T_L"))
+        self.P1_T_L_SAFE = self.getPathCommand(PathPlannerPath.fromPathFile("P1_T_L_Safe"))
+        self.P2_B_L = self.getPathCommand(PathPlannerPath.fromPathFile("P2_B_L"))
+        self.P2_B_R = self.getPathCommand(PathPlannerPath.fromPathFile("P2_B_R"))
+        self.P2_T_L = self.getPathCommand(PathPlannerPath.fromPathFile("P2_T_L"))
+        self.P2_T_R = self.getPathCommand(PathPlannerPath.fromPathFile("P2_T_R"))
+        self.P1_T_R_SAFE = self.getPathCommand(PathPlannerPath.fromPathFile("P1_T_R_Safe"))
+
         self.autoroutines = autoroutines.AutoRoutines(self)
 
+
+        # self.auto_chooser = wpilib.SendableChooser()
+        # self.auto_chooser.addOption("Left Trench Safe", 1)
+        # self.auto_chooser.addOption("Left Trench Aggressive", 2)
+        # self.auto_chooser.addOption("Left Trench-Bump Aggresive", 3)
+        # self.auto_chooser.setDefaultOption("Default (no auto)", 0)
+        
 
         DataLogManager.start()
         DriverStation.startDataLog(DataLogManager.getLog())
@@ -230,6 +249,11 @@ class Robot(CoroutineRobot):
         self.snake_intake = False
         self.track_fuel = False
 
+        self.done_rotation_auto = False
+
+        self.should_rotate_trench_auto = False
+        self.auto_rotation_trench = 90
+
         #TESTING
         self.should_hub_track = False
         self.is_hub_active = True
@@ -259,10 +283,10 @@ class Robot(CoroutineRobot):
             self.log()
             pass
 
-        @self.addPeriodic(period=0.05, offset=-0.01)
-        def _leds():
-            self.leds.periodicX()
-            pass
+        # @self.addPeriodic(period=0.05, offset=-0.01)
+        # def _leds():
+        #     self.leds.periodicX()
+        #     pass
 
         self.in_autonomous_mode = False
         self.in_teleop_mode = False
@@ -273,19 +297,15 @@ class Robot(CoroutineRobot):
         self.alliance_shift_time_remaining = 0
         self.auto_win = None  # false = BLUE, true = RED
         # self.auto_win_found = False
-        self.auto_win_check_attempts = 10 # change if not checking enough
 
-
-        self.auto_chooser = wpilib.SendableChooser()
-        self.auto_chooser.addOption("Trench Left Auto", 1)
-        self.auto_chooser.addOption("Trench Bump Left Auto", 2)
-        SmartDashboard.putData("Auto Chooser", self.auto_chooser)
-
-        self.auto = self.autoroutines.trench_left_auto()
+        
+        self.auto = self.autoroutines.trench_left_safe_auto()
+        # self.poseEstimator.poseEst.resetPose(Pose2d(self.fieldConstants.flip_Translation2d(Translation2d(4.47, 0.6)), self.poseEstimator.getYaw())) # for right auto
+        self.poseEstimator.poseEst.resetPose(Pose2d(self.fieldConstants.flip_Translation2d(Translation2d(4.471, 7.587)), self.poseEstimator.getYaw())) # for left auto
 
 
         ## SIMMING STUFF ##
-        if self.isSimulation() and False:
+        if self.isSimulation():
             self.max_fuel_in_hopper = 24
             self.x_hopper_max = inchesToMeters(25)
             self.y_hopper_max = inchesToMeters(18)
@@ -298,24 +318,28 @@ class Robot(CoroutineRobot):
             # self.fuel_sim.clearFuel()
             self.fuel_sim.start()
 
-        test_path = self.flip_path_cmd_across_x(self.getPathCommand(PathPlannerPath.fromPathFile("P1_T_L")))._originalPath
-        test_path_waypoints = test_path.getWaypoints()
-        for idx, waypoint in enumerate(test_path_waypoints):
-            if idx == 0:
-                next_control_dist = (waypoint.anchor - waypoint.nextControl).norm()
-                next_control_heading = Rotation2d((waypoint.nextControl - waypoint.anchor).X(), (waypoint.nextControl - waypoint.anchor).Y()).degrees()
-                print(f"Start: anchor: {waypoint.anchor}, next_controldist: {next_control_dist}, next_control_head: {next_control_heading}")
-            elif idx == len(test_path_waypoints) - 1:
-                prev_control_dist = (waypoint.prevControl - waypoint.anchor).norm()
-                prev_control_heading = Rotation2d((waypoint.anchor - waypoint.prevControl).X(), (waypoint.anchor - waypoint.prevControl).Y()).degrees()
-                print(f"End: anchor: {waypoint.anchor}, prev_controldist: {prev_control_dist}, prev_control_head: {prev_control_heading}")
-            else:
-                next_control_dist = (waypoint.anchor - waypoint.nextControl).norm()
-                next_control_heading = Rotation2d((waypoint.nextControl - waypoint.anchor).X(), (waypoint.nextControl - waypoint.anchor).Y()).degrees()
-                prev_control_dist = (waypoint.prevControl - waypoint.anchor).norm()
-                prev_control_heading = Rotation2d((waypoint.anchor - waypoint.prevControl).X(), (waypoint.anchor - waypoint.prevControl).Y()).degrees()
-                print(f"{idx}: anchor: {waypoint.anchor}, heading: {prev_control_heading}, prevdist: {prev_control_dist}, next_controldist: {next_control_dist}")
-        print(test_path.getRotationTargets())
+       
+        # test_path = self.flip_path_cmd_across_x(self.getPathCommand(PathPlannerPath.fromPathFile("P1_T_R_Safe")))._originalPath
+        # test_path_waypoints = test_path.getWaypoints()
+        # for idx, waypoint in enumerate(test_path_waypoints):
+        #     if idx == 0:
+        #         next_control_dist = (waypoint.anchor - waypoint.nextControl).norm()
+        #         next_control_heading = Rotation2d((waypoint.nextControl - waypoint.anchor).X(), (waypoint.nextControl - waypoint.anchor).Y()).degrees()
+        #         print(f"Start: anchor: {waypoint.anchor}, next_controldist: {next_control_dist}, next_control_head: {next_control_heading}")
+        #     elif idx == len(test_path_waypoints) - 1:
+        #         prev_control_dist = (waypoint.prevControl - waypoint.anchor).norm()
+        #         prev_control_heading = Rotation2d((waypoint.anchor - waypoint.prevControl).X(), (waypoint.anchor - waypoint.prevControl).Y()).degrees()
+        #         print(f"End: anchor: {waypoint.anchor}, prev_controldist: {prev_control_dist}, prev_control_head: {prev_control_heading}")
+        #     else:
+        #         next_control_dist = (waypoint.anchor - waypoint.nextControl).norm()
+        #         next_control_heading = Rotation2d((waypoint.nextControl - waypoint.anchor).X(), (waypoint.nextControl - waypoint.anchor).Y()).degrees()
+        #         prev_control_dist = (waypoint.prevControl - waypoint.anchor).norm()
+        #         prev_control_heading = Rotation2d((waypoint.anchor - waypoint.prevControl).X(), (waypoint.anchor - waypoint.prevControl).Y()).degrees()
+        #         print(f"{idx}: anchor: {waypoint.anchor}, heading: {prev_control_heading}, prevdist: {prev_control_dist}, next_controldist: {next_control_dist}")
+        # print(test_path.getRotationTargets())
+
+        # chassis = const.SWERVE_KINEMATICS.toChassisSpeeds(SwerveModuleState(-2.847, Rotation2d.fromDegrees(272.373)), SwerveModuleState(-2.668, Rotation2d.fromDegrees(268.330), SwerveModuleState(-2.282, Rotation2d.fromDegrees(268.737)), SwerveModuleState(1.220, Rotation2d.fromDegrees(66.530))))
+        # print(chassis)
 
         while True:
             yield
@@ -383,10 +407,10 @@ class Robot(CoroutineRobot):
             self.drivetrain.drive_robot_relative,
             PPHolonomicDriveController(
                 PIDConstants(
-                    1, 0, 0.025
+                    0.95, 0, 0.05 #1 , 0, 0.025
                 ),  # Translation PID constants
                 PIDConstants(
-                    0.8, 0, 0.05 # 0.8, 0, 0.05
+                    0.75, 0, 0.04 # 0.8, 0, 0.05
                 ),  # Rotation PID constants
             ),
             RobotConfig.fromGUISettings(),
@@ -426,10 +450,6 @@ class Robot(CoroutineRobot):
     ### DISABLED ###
 
     def disabled_mode(self):
-        if self.using_FMS:
-            while not self.driverstation.isFMSAttached():
-                yield
-            yield from self.wait(2.0)
 
         self.scheduler.cancelAll()
         # self.drivetrain.gyro_offset = self.drivetrain.gyro.get_roll()
@@ -440,23 +460,46 @@ class Robot(CoroutineRobot):
         self.match_timer.stop()
 
         while True: # Needs to continuously call while robot is disabled.
+            # self.fieldConstants.shouldFlip = self.driverstation.getAlliance() == self.driverstation.Alliance.kRed
             yield
     
     ### AUTONOMOUS ###
+
     def autonomous_mode(self):
         self.scheduler.cancelAll()
+        if self.in_autonomous_mode == False:
+            # self.fieldConstants.shouldFlip = self.driverstation.getAlliance() == self.driverstation.Alliance.kRed
+            if self.fieldConstants.shouldFlip:
+                self.auto_rotation_trench = -90
+            else:
+                self.auto_rotation_trench = 90
+            
+            # auto_chosen = self.auto_chooser.getSelected()
+            # if auto_chosen == 1:
+                # if self.fieldConstants.shouldFlip:
+                #     gyro_offset = 90
+                # else:
+                #     gyro_offset = -90
+                # self.poseEstimator.gyro.set_yaw(gyro_offset)
+                # self.poseEstimator.poseEst.resetPose(Pose2d(self.fieldConstants.flip_Translation2d(Translation2d(4.471, 7.381)), Rotation2d.fromDegrees(gyro_offset)))
+                # self.poseEstimator.curEstPose = Pose2d(self.fieldConstants.flip_Translation2d(Translation2d(4.471, 7.381)), Rotation2d.fromDegrees(gyro_offset))
+
+            #     self.auto = self.autoroutines.trench_left_safe_auto()
+            # elif auto_chosen == 2:
+            #     self.auto = self.autoroutines.trench_left_auto()
+            # elif auto_chosen == 3:
+            #     self.auto = self.autoroutines.trench_bump_left_auto()
+            # elif auto_chosen == 0:
+            #     self.auto = SequentialCommandGroup()
+            # else:
+            #     self.auto = SequentialCommandGroup()
+        
         self.in_teleop_mode = False
         self.in_autonomous_mode = True
         self.intake_at_default = False
+        
 
-        # self.fieldConstants.shouldFlip = self.driverstation.getAlliance() == self.driverstation.Alliance.kRed
-        # auto_chosen = self.auto_chooser.getSelected()
-        # if auto_chosen == 1:
-        #     self.auto = self.autoroutines.trench_left_auto()
-        # elif auto_chosen == 2:
-        #     self.auto = self.autoroutines.trench_bump_left_auto()
-        # else:
-        #     self.auto = SequentialCommandGroup()
+        
 
         # if self.isSimulation():
         #     self.fuel_sim.running = True
@@ -467,6 +510,11 @@ class Robot(CoroutineRobot):
     ### TELEOPERATED ###
     def teleop_mode(self):
         self.scheduler.cancelAll()
+
+        self.shoot_intent = False
+        self.shooter_at_default = True
+        self.shoot_fuel = False
+
         self.running_pid_lineup = False
         self.in_autonomous_mode = False
         self.oi.robot_oriented_angle = self.poseEstimator.curEstPose.rotation().degrees()
@@ -504,14 +552,12 @@ class Robot(CoroutineRobot):
             self.alliance_shift_time_remaining = 141-self.match_time
 
         if (2.5 < self.alliance_shift_time_remaining < 3) and not self.is_hub_active:
-            # self.rumble_d1 = True
-            # self.rumble_d2 = True
-            pass
+            self.rumble_d1 = True
+            self.rumble_d2 = True
 
 
         if self.auto_win is None and self.match_time >= 4 and self.rumble_d2 == False:
-            # self.rumble_d2 = True
-            pass
+            self.rumble_d2 = True
             
 
     ### WAIT FUNCTION ###
@@ -528,10 +574,14 @@ class Robot(CoroutineRobot):
         # SmartDashboard.putString("Shooting Values/")
         SmartDashboard.putNumber("Auto Currently Chosen", self.auto_chooser.getSelected())
         SmartDashboard.putNumberArray("Empty Pose", [0,0,0,1,0,0,0])
-        wpilib.SmartDashboard.putBoolean("Connected to FMS", self.driverstation.isFMSAttached())
+        # if self.isDisabled():
+        #     SmartDashboard.putData("Auto Chooser", self.auto_chooser)
+        #     SmartDashboard.putNumber("Current Auto Chosen", self.auto_chooser.getSelected())
+        # wpilib.SmartDashboard.putBoolean("Connected to FMS", self.driverstation.isFMSAttached())
         SmartDashboard.putBoolean("States/Running Pid Lineup", self.running_pid_lineup)
         SmartDashboard.putBoolean("States/Intake at Default", self.intake_at_default)
         SmartDashboard.putBoolean("States/Shooter at Default", self.shooter_at_default)
+        SmartDashboard.putNumber("Auto Rotation Trench", self.auto_rotation_trench)
         SmartDashboard.putBoolean("States/Should Hub Track", self.should_hub_track)
         SmartDashboard.putBoolean("States/Pulse Pivot", self.pulse_pivot)
         SmartDashboard.putBoolean("States/Down Bad", self.down_bad)
@@ -562,11 +612,13 @@ class Robot(CoroutineRobot):
             wpilib.SmartDashboard.putString("Alliance Shift", "DISABLED")
         wpilib.SmartDashboard.putNumber("Time Remaining", int(self.alliance_shift_time_remaining))
         wpilib.SmartDashboard.putBoolean("Hub active?", self.is_hub_active)
-        SmartDashboard.putString("Auto Win", str(self.auto_win))
+        # SmartDashboard.putString("Auto Win", str(self.auto_win))
+        if self.isTeleop():
+            self.update_hub_status()
         if self.auto_win is None:
-            wpilib.SmartDashboard.putString("Winner of Autonomous", "UNKNOWN")
+            wpilib.SmartDashboard.putString("Auto Win", "UNKNOWN")
         else:
-            wpilib.SmartDashboard.putString("Winner of Autonomous", "RED"*self.auto_win+"BLUE"*(not self.auto_win))
+            wpilib.SmartDashboard.putString("Auto Win", "RED"*self.auto_win+"BLUE"*(not self.auto_win))
 
         if self.in_teleop_mode and self.auto_win is None and self.match_timer.get() <= 4:
             game_message = self.driverstation.getGameSpecificMessage()
@@ -577,79 +629,79 @@ class Robot(CoroutineRobot):
 
 
 
-        # if self.isSimulation():
-        #     wpilib.SmartDashboard.putNumberArray("RobotPose", [self.poseEstimator.curEstPose.X(), self.poseEstimator.curEstPose.Y(), self.poseEstimator.curEstPose.rotation().degrees()])
-        #     # SmartDashboard.putNumberArray("ZeroedComponentPoses/Pose0", [0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0])
-        #     # SmartDashboard.putNumberArray("ZeroedComponentPoses/Pose1", [0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0])
-        #     # SmartDashboard.putNumberArray("ZeroedComponentPoses/Pose2", [0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0])5
+        if self.isSimulation():
+            wpilib.SmartDashboard.putNumberArray("RobotPose", [self.poseEstimator.curEstPose.X(), self.poseEstimator.curEstPose.Y(), self.poseEstimator.curEstPose.rotation().degrees()])
+            # SmartDashboard.putNumberArray("ZeroedComponentPoses/Pose0", [0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0])
+            # SmartDashboard.putNumberArray("ZeroedComponentPoses/Pose1", [0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0])
+            # SmartDashboard.putNumberArray("ZeroedComponentPoses/Pose2", [0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0])5
 
 
-        #     default_shooter_hood = Translation3d(-0.23, 0.15, 0.5)
-        #     cur_hood_pos = self.shooter.get_hood_position()
-        #     final_shooter_hood_quat = Rotation3d(degreesToRadians(cur_hood_pos), 0, 0).getQuaternion()
-        #     final_shooter_hood_trans = default_shooter_hood
-        #     SmartDashboard.putNumberArray("FinalComponentPoses/Pose0", [final_shooter_hood_trans.X(), final_shooter_hood_trans.Y(), final_shooter_hood_trans.Z(), final_shooter_hood_quat.W(), final_shooter_hood_quat.X(), final_shooter_hood_quat.Y(), final_shooter_hood_quat.Z()])
+            default_shooter_hood = Translation3d(-0.23, 0.15, 0.5)
+            cur_hood_pos = self.shooter.get_hood_position()
+            final_shooter_hood_quat = Rotation3d(degreesToRadians(cur_hood_pos), 0, 0).getQuaternion()
+            final_shooter_hood_trans = default_shooter_hood
+            SmartDashboard.putNumberArray("FinalComponentPoses/Pose0", [final_shooter_hood_trans.X(), final_shooter_hood_trans.Y(), final_shooter_hood_trans.Z(), final_shooter_hood_quat.W(), final_shooter_hood_quat.X(), final_shooter_hood_quat.Y(), final_shooter_hood_quat.Z()])
             
 
-        #     default_inner = Translation3d(0.3, 0.355, 0.2)
-        #     if self.intake.get_position() ==  -0.06:
-        #         cur_inner_pos = 30
-        #     else:
-        #         cur_inner_pos = 0
-        #     # cur_inner_pos = self.intake.get_position()
-        #     final_inner_quat = Rotation3d(0, degreesToRadians(cur_inner_pos), 0).getQuaternion()
-        #     final_inner_trans = default_inner
-        #     SmartDashboard.putNumberArray("FinalComponentPoses/Pose1", [final_inner_trans.X(), final_inner_trans.Y(), final_inner_trans.Z(), final_inner_quat.W(), final_inner_quat.X(), final_inner_quat.Y(), final_inner_quat.Z()])
+            default_inner = Translation3d(0.3, 0.355, 0.2)
+            if self.intake.get_position() ==  -0.06:
+                cur_inner_pos = 30
+            else:
+                cur_inner_pos = 0
+            # cur_inner_pos = self.intake.get_position()
+            final_inner_quat = Rotation3d(0, degreesToRadians(cur_inner_pos), 0).getQuaternion()
+            final_inner_trans = default_inner
+            SmartDashboard.putNumberArray("FinalComponentPoses/Pose1", [final_inner_trans.X(), final_inner_trans.Y(), final_inner_trans.Z(), final_inner_quat.W(), final_inner_quat.X(), final_inner_quat.Y(), final_inner_quat.Z()])
             
-        #     default_outer = Translation3d(0.2825, 0.32, 0.505)
-        #     arc_vec = Translation2d(0.307975, 0).rotateBy(Rotation2d.fromDegrees(cur_inner_pos))
-        #     inner_outer_transform = Translation3d(arc_vec.Y(),
-        #                                           0,
-        #                                           arc_vec.X()) - Translation3d(0, 0, 0.307975) 
-        #     final_outer_quat = Rotation3d(0, degreesToRadians(-cur_inner_pos / 6.43), 0).getQuaternion()
-        #     final_outer_trans = default_outer + inner_outer_transform
-        #     SmartDashboard.putNumberArray("FinalComponentPoses/Pose2", [final_outer_trans.X(), final_outer_trans.Y(), final_outer_trans.Z(), final_outer_quat.W(), final_outer_quat.X(), final_outer_quat.Y(), final_outer_quat.Z()])
+            default_outer = Translation3d(0.2825, 0.32, 0.505)
+            arc_vec = Translation2d(0.307975, 0).rotateBy(Rotation2d.fromDegrees(cur_inner_pos))
+            inner_outer_transform = Translation3d(arc_vec.Y(),
+                                                  0,
+                                                  arc_vec.X()) - Translation3d(0, 0, 0.307975) 
+            final_outer_quat = Rotation3d(0, degreesToRadians(-cur_inner_pos / 6.43), 0).getQuaternion()
+            final_outer_trans = default_outer + inner_outer_transform
+            SmartDashboard.putNumberArray("FinalComponentPoses/Pose2", [final_outer_trans.X(), final_outer_trans.Y(), final_outer_trans.Z(), final_outer_quat.W(), final_outer_quat.X(), final_outer_quat.Y(), final_outer_quat.Z()])
             
-        #     # cur_climber_pos = self.climber.get_position()
-        #     # SmartDashboard.putNumberArray("FinalComponentPoses/Pose3", [0, 0, cur_climber_pos / 5, 0, 0, 0, 0])
+            # cur_climber_pos = self.climber.get_position()
+            # SmartDashboard.putNumberArray("FinalComponentPoses/Pose3", [0, 0, cur_climber_pos / 5, 0, 0, 0, 0])
 
 
-        #     default_fuel_pose = Translation3d(-0.26, -0.28, 0.28)
-        #     for fuel_num in range(1,self.max_fuel_in_hopper + 1):
-        #         if fuel_num <= self.fuel_in_hopper:
-        #             #put the fuel in
-        #             fuel_diam = self.fieldConstants.fuelDiameter
-        #             per_x = int(self.x_hopper_max / fuel_diam)
-        #             per_y = int(self.y_hopper_max / fuel_diam)
-        #             if per_x < 1: per_x = 1
-        #             if per_y < 1: per_y = 1
+            default_fuel_pose = Translation3d(-0.26, -0.28, 0.28)
+            for fuel_num in range(1,self.max_fuel_in_hopper + 1):
+                if fuel_num <= self.fuel_in_hopper:
+                    #put the fuel in
+                    fuel_diam = self.fieldConstants.fuelDiameter
+                    per_x = int(self.x_hopper_max / fuel_diam)
+                    per_y = int(self.y_hopper_max / fuel_diam)
+                    if per_x < 1: per_x = 1
+                    if per_y < 1: per_y = 1
 
-        #             idx = fuel_num - 1
-        #             x_coord = (idx % per_x) * fuel_diam
-        #             y_coord = ((idx // per_x) % per_y) * fuel_diam
-        #             z_coord = (idx // (per_x * per_y)) * fuel_diam + 0.5
-        #             SmartDashboard.putNumberArray(f"Hopper/Sim Fuels/Fuel {fuel_num}", [default_fuel_pose.X() + x_coord, default_fuel_pose.Y() + y_coord, default_fuel_pose.Z() + z_coord, 1.0, 0.0, 0.0, 0.0])
-        #         else:
-        #             SmartDashboard.putNumberArray(f"Hopper/Sim Fuels/Fuel {fuel_num}", [0, 0, -0.5, 1.0, 0.0, 0.0, 0.0])
+                    idx = fuel_num - 1
+                    x_coord = (idx % per_x) * fuel_diam
+                    y_coord = ((idx // per_x) % per_y) * fuel_diam
+                    z_coord = (idx // (per_x * per_y)) * fuel_diam + 0.5
+                    SmartDashboard.putNumberArray(f"Hopper/Sim Fuels/Fuel {fuel_num}", [default_fuel_pose.X() + x_coord, default_fuel_pose.Y() + y_coord, default_fuel_pose.Z() + z_coord, 1.0, 0.0, 0.0, 0.0])
+                else:
+                    SmartDashboard.putNumberArray(f"Hopper/Sim Fuels/Fuel {fuel_num}", [0, 0, -0.5, 1.0, 0.0, 0.0, 0.0])
 
-        #     fly_speed = self.shooter.get_fly_speed()
-        #     accel_speed = self.shooter.get_accelerator_speed()
-        #     if fly_speed >= 5 and accel_speed >= 5 and self.fuel_in_hopper > 0:
-        #         #we are shooting every 0.06 seconds
-        #         if self.tick_count % 2 == 0:
-        #             vals = self.drivetrain.dist_lookup_table.interpolate((self.virtual_goal - self.poseEstimator.curEstPose.translation()).norm())
-        #             launch_vel = vals[0]
-        #             launch_angle = vals[1]
+            fly_speed = self.shooter.get_fly_speed()
+            accel_speed = self.shooter.get_accelerator_speed()
+            if fly_speed >= 5 and accel_speed >= 5 and self.fuel_in_hopper > 0:
+                #we are shooting every 0.06 seconds
+                if self.tick_count % 2 == 0:
+                    vals = self.drivetrain.dist_lookup_table.interpolate((self.virtual_goal - self.poseEstimator.curEstPose.translation()).norm())
+                    launch_vel = vals[0]
+                    launch_angle = vals[1]
 
-        #             trans = Translation3d(0, 0.27, 0.52) + Translation3d(0, -0.11, 0) + Translation3d(0, 0.11* math.cos(degreesToRadians(cur_hood_pos)), 0.11*math.sin(degreesToRadians(cur_hood_pos)))
-        #             launch_pos = Translation3d(self.poseEstimator.curEstPose.translation()) + trans.rotateBy(Rotation3d(0, 0, self.poseEstimator.curEstPose.rotation().radians()))
-        #             self.fuel_sim.launchFuel(launch_vel, launch_angle, 0, launch_pos)
-        #             self.fuel_in_hopper -= 1
+                    trans = Translation3d(0, 0.27, 0.52) + Translation3d(0, -0.11, 0) + Translation3d(0, 0.11* math.cos(degreesToRadians(cur_hood_pos)), 0.11*math.sin(degreesToRadians(cur_hood_pos)))
+                    launch_pos = Translation3d(self.poseEstimator.curEstPose.translation()) + trans.rotateBy(Rotation3d(0, 0, self.poseEstimator.curEstPose.rotation().radians()))
+                    self.fuel_sim.launchFuel(launch_vel, launch_angle, 0, launch_pos)
+                    self.fuel_in_hopper -= 1
 
-        #     if self.fuel_sim.running:
-        #         self.fuel_sim.updateSim()
-        #     SmartDashboard.putNumber("Sim/Fuel in Hopper", self.fuel_in_hopper)
-        #     self.tick_count += 1
+            if self.fuel_sim.running:
+                self.fuel_sim.updateSim()
+            SmartDashboard.putNumber("Sim/Fuel in Hopper", self.fuel_in_hopper)
+            self.tick_count += 1
         for s in self.subsystems:
             s.log()
         

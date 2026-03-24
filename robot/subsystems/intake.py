@@ -79,22 +79,18 @@ class Intake(Subsystem):
             position is in degrees
         '''
         
-        if self.intake_pose_in_trench() and False:
+        if self.intake_pose_in_trench():
             self.commanded_position = -0.05
             if abs(self.get_position() - 0.05) <= 0.02:
                 self.stop_deploy()
             else:
                 self.deploy_motor.set_control(controls.MotionMagicTorqueCurrentFOC(-0.05))
-        elif False:
+        else:
             self.commanded_position = position
             if abs(self.get_position() - self.commanded_position) <= 0.02:
                 self.stop_deploy()
             else:
                 self.deploy_motor.set_control(controls.MotionMagicTorqueCurrentFOC(position)) # USING MOTION MAGIC
-        else:
-            # self.commanded_position = -0.05
-            # self.deploy_motor.set_control(controls.MotionMagicTorqueCurrentFOC(-0.05))
-            pass
 
     def get_position(self):
         if self.robot.isSimulation():
@@ -105,7 +101,7 @@ class Intake(Subsystem):
             return position
 
     def intake_pose_in_trench(self):
-        pose = self.robot.poseEstimator.curEstPose.translation() + Translation2d(0, -0.4).rotateBy(self.robot.poseEstimator.curEstPose.rotation())
+        pose = self.robot.poseEstimator.curEstPose.translation() + Translation2d(0, -0.2).rotateBy(self.robot.poseEstimator.curEstPose.rotation())
 
         min_x_blue = inchesToMeters(156.406)
         max_x_blue = inchesToMeters(205.406)
@@ -144,7 +140,7 @@ class Intake(Subsystem):
         cur_speeds = self.robot.drivetrain.get_field_relative_speeds()
         cur_rotation = self.robot.poseEstimator.curEstPose.rotation().degrees()
         # angle = math.atan2(cur_speeds.vx, cur_speeds.vy)
-        angle = Translation2d(cur_speeds.vx, cur_speeds.vy).angle().degrees()
+        angle = Rotation2d.fromDegrees(Translation2d(cur_speeds.vx + 0.01, cur_speeds.vy + 0.01).angle().degrees() + 90).degrees() # divide by zero i think
         if abs(cur_speeds.vx) <= 0.1 and abs(cur_speeds.vy) <= 0.1 or (abs(angle-cur_rotation) <= 5):
             return cur_rotation
         return angle
@@ -160,13 +156,9 @@ class Intake(Subsystem):
             # if self.robot.fieldConstants.LinesVertical.starting < self.robot.poseEstimator.curEstPose.X() < self.robot.fieldConstants.fieldLength - self.robot.fieldConstants.LinesVertical.starting: # neutral zone
             self.set_intake_speed(0.8) # TUNE
             self.set_position(-0.05) # TUNE
-        elif self.robot.pulse_pivot:
-            if self.tick_count % 20 < 10:
-                # print("switch to out")
-                self.set_position(-0.05)
-            else:
-                # print("switch to in")
-                self.set_position(0.19)
+        elif self.robot.pulse_pivot :
+            if not self.robot.in_autonomous_mode or True:
+                self.set_position(0.21)
             self.set_intake_speed(0.8)
         else:
             self.stop_intake()
@@ -186,4 +178,4 @@ class Intake(Subsystem):
         SmartDashboard.putData("Intake/Deploy PID Controller", self.deploy_pid_controller)
 
         SmartDashboard.putNumber("Test/Test intake speed", self.test_intake_speed)
-        SmartDashboard.putNumber("Intake/Snake Angle", self.get_snake_intake_angle())
+        # SmartDashboard.putNumber("Intake/Snake Angle", self.get_snake_intake_angle())

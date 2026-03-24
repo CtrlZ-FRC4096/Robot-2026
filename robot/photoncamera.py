@@ -53,6 +53,7 @@ class WrapperedPhotonCameraTag:
         self.poseEstimates : list[Pose2d] = []
         self.zEstimates = []
         self.robotToCam: Transform3d = robotToCam
+        self.obsTime = 0
         self.counter = 0
         self.tag_map = AprilTagFieldLayout.loadField(AprilTagField.k2026RebuiltWelded)
 
@@ -63,6 +64,7 @@ class WrapperedPhotonCameraTag:
     def update(
         self,
         prevEstPoseSingleTag: Pose2d,
+        prevObsTime : float
     ):
         # self.counter += 1
         self.poseEstimates = []
@@ -81,7 +83,12 @@ class WrapperedPhotonCameraTag:
 
         # Grab whatever the camera last reported for observations in a camera frame
         # Note: Results simply report "I processed a frame". There may be 0 or more targets seen in a frame
-        res = self.cam.getLatestResult()
+        all_results = self.cam.getAllUnreadResults()
+
+        if len(all_results) == 0:
+            return
+        
+        res = all_results[-1]
 
         # MiniHack - results also have a more accurate "getTimestamp()", but this is
         # broken in photonvision 2.4.2. Hack with the non-broken latency calcualtion
@@ -101,7 +108,7 @@ class WrapperedPhotonCameraTag:
         # don't make sense.
 
         for target in res.getTargets():
-
+           
             # Transform both poses to on-field poses
             tgtID = target.getFiducialId()
 
@@ -111,7 +118,13 @@ class WrapperedPhotonCameraTag:
             target_y_angle = -1 * math.radians(target.getPitch())
 
             distance_3d = target.getBestCameraToTarget().translation().norm()
- 
+            
+            if distance_3d > 5:
+                continue
+            ambiguity = target.getPoseAmbiguity()
+            if ambiguity > 0.3:
+                continue
+
             distance_2d_to_tag = distance_3d * math.cos(
                 (-1 * self.robotToCam.rotation().Y()) - target_y_angle
             )  # cosine is even so we don't need to negate both
@@ -156,9 +169,9 @@ class WrapperedPhotonCameraTag:
             robot_pose = Pose2d(
                 robot_pose.translation(), prevEstPoseSingleTag.rotation()
             )
-            zEst = tagFieldPose.Z() - self.robotToCam.Z() - math.sin(self.robotToCam.rotation().Y() +  target_y_angle) * distance_3d
-            self.zEstimates.append(zEst)
-            self.poseSingleTag.append([robot_pose, tgtID, target.getPoseAmbiguity(), zEst])
+            # zEst = tagFieldPose.Z() - self.robotToCam.Z() - math.sin(self.robotToCam.rotation().Y() +  target_y_angle) * distance_3d
+            # self.zEstimates.append(zEst)
+            self.poseSingleTag.append([robot_pose, tgtID, ambiguity])
             self.singleTagIDs.append(tgtID)
             
 

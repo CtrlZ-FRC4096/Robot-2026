@@ -149,16 +149,17 @@ class PoseEstimator(Subsystem):
         time.sleep(1.0)
         self.reset_modules_to_absolute()
 
-        self.odometry = SwerveDrive4Odometry(
-            const.SWERVE_KINEMATICS, self.getYaw(), self.get_module_positions()  # type: ignore
-        )
+        # self.odometry = SwerveDrive4Odometry(
+        #     const.SWERVE_KINEMATICS, self.getYaw(), self.get_module_positions()  # type: ignore
+        # )
 
 
         # self.curEstPose = Pose2d(4.44, 8.1-0.641, math.pi)
-        # climb pose
-        # self.curEstPose = Pose2d(1.003, 4.637, Rotation2d(math.pi / 2))
+
+        # self.curEstPose = Pose2d(self.robot.fieldConstants.flip_Translation2d(Translation2d(3.524, 4.064)), Rotation2d())
+        
         # self.curEstPose = Pose2d(4.414, 7.587, self.getYaw())
-        self.curEstPose = Pose2d(self.robot.fieldConstants.flip_Translation2d(Translation2d(4.471, 7.381)), self.getYaw())
+        self.curEstPose = Pose2d(self.robot.fieldConstants.flip_Translation2d(Translation2d(4.471, 4.411)), self.getYaw()) # subtract by field width if right side
         self.estZ = 0
 
         self.poseEst = SwerveDrive4PoseEstimator(
@@ -169,7 +170,7 @@ class PoseEstimator(Subsystem):
         self.thetastd_single_tag = 1000.0
 
         ROBOT_TO_CAM1 = Transform3d(
-            Translation3d(-0.277, 0.274, 0.491),
+            Translation3d(-0.274, 0.277, 0.491),
             Rotation3d.fromDegrees(0.0, 0.0, -165.0)
         ) # CLIMBER SIDE CAMERA
         
@@ -188,7 +189,7 @@ class PoseEstimator(Subsystem):
 
         self.cams = [
             WrapperedPhotonCameraTag("flywheel", ROBOT_TO_CAM1),
-            # WrapperedPhotonCameraTag("shooter", ROBOT_TO_CAM2),
+            WrapperedPhotonCameraTag("shooter", ROBOT_TO_CAM2),
             WrapperedPhotonCameraTag("climber", ROBOT_TO_CAM3)
         ]
 
@@ -422,40 +423,63 @@ class PoseEstimator(Subsystem):
         z_count = 0
         for cam in self.cams:
             cam.update(
-                self.curEstPose
+                self.curEstPose,
+                cam.getObsTime()
             )
             single_tag_poses : list[(Pose2d, int)] = cam.getPoseSingleTag()
             self.single_tag_IDs.update(cam.getSingleTagIDs())
             zEstimates = cam.getZEstimates()
             z_sum += sum(zEstimates)
             z_count += len(zEstimates)
+            valid_poses = []
            
             for combined in single_tag_poses:
                 pose : Pose2d = combined[0]
-                tgt_id = combined[1]
-                ambiguity = combined[2]
-                tgtZEst = combined[3]
-                # print(f"tgtZEst: {tgtZEst}")
-                # print(f"ambiguity : {ambiguity}")
-                tag_pose = self.tag_layout.getTagPose(tgt_id)
-                distance = tag_pose.translation().toTranslation2d().distance(pose.translation())
-                self.camera_X[cam.camName] = pose.X()
-                self.camera_Y[cam.camName] = pose.Y()
-                self.camera_theta[cam.camName] = pose.rotation()
-                # if not(abs(self.gyro.get_pitch()) >= 10 or abs(self.gyro.get_roll()) >= 10):
-                if not(ambiguity >= 0.3) or True:# or tgtZEst > 0.75):
-                    distance_modifier = 1 if distance > 5 else 1
-                    self.poseEst.addVisionMeasurement(
-                        pose,
-                        cam.getObsTime(),
-                        (
-                            self.xystd_single_tag * (distance ** 2) * distance_modifier,  # * (min_ambiguity / 0.4),
-                            self.xystd_single_tag * (distance ** 2) * distance_modifier,  # * (min_ambiguity / 0.4),
-                            self.thetastd_single_tag * (distance ** 2) * distance_modifier,  # * (min_ambiguity / 0.4),
-                        ),
-                    )
-        if z_count > 0:
-            self.estZ = z_sum / z_count
+                # tgt_id = combined[1]
+                # ambiguity = combined[2]
+                # # print(f"tgtZEst: {tgtZEst}")
+                # # print(f"ambiguity : {ambiguity}")
+                # tag_pose = self.tag_layout.getTagPose(tgt_id)
+                # distance = tag_pose.translation().toTranslation2d().distance(pose.translation())
+            
+                # self.poseEst.addVisionMeasurement(
+                #     pose,
+                #     cam.getObsTime(),
+                #     (
+                #         self.xystd_single_tag * (distance ** 2),  # * (min_ambiguity / 0.4),
+                #         self.xystd_single_tag * (distance ** 2),  # * (min_ambiguity / 0.4),
+                #         self.thetastd_single_tag * (distance ** 2),  # * (min_ambiguity / 0.4),
+                #     ),
+                # )
+                valid_poses.append(pose)
+                
+            if len(valid_poses) > 0:
+                avg_x = sum(pose.X() for pose in valid_poses) / len(valid_poses)
+                avg_y = sum(pose.Y() for pose in valid_poses) / len(valid_poses)
+
+                avg_cos = sum(pose.rotation().cos() for pose in valid_poses) / len(valid_poses)
+                avg_sin = sum(pose.rotation().sin() for pose in valid_poses) / len(valid_poses)
+
+                avg_rot = Rotation2d(avg_cos, avg_sin)
+                avg_pose = Pose2d(avg_x, avg_y, avg_rot)
+                
+                self.camera_X[cam.camName] = avg_x
+                self.camera_Y[cam.camName] = avg_y
+                self.camera_theta[cam.camName] = avg_pose.rotation()
+                cur_speeds = self.robot.drivetrain.get_field_relative_speeds()
+                omega = abs(cur_speeds.omega)
+                self.poseEst.addVisionMeasurement(
+                    avg_pose,
+                    cam.getObsTime(),
+                    (
+                        self.xystd_single_tag * (omega * 5),  # * (min_ambiguity / 0.4),
+                        self.xystd_single_tag * (omega * 5),  # * (min_ambiguity / 0.4),
+                        self.thetastd_single_tag * (omega * 5),  # * (min_ambiguity / 0.4),
+                    ),
+                )
+                    
+        # if z_count > 0:
+        #     self.estZ = z_sum / z_count
         
         # UPDATING OBJECT DETECTION CAMERAS
         # self.intake_cam.update(self.curEstPose, self.estZ, self.gyro.getRotation3d())
@@ -476,7 +500,7 @@ class PoseEstimator(Subsystem):
 
         self.poseConverge = True
 
-        self.odometry.update(self.getYaw(), self.get_module_positions())
+        # self.odometry.update(self.getYaw(), self.get_module_positions())
 
 
     def log(self):
@@ -497,15 +521,15 @@ class PoseEstimator(Subsystem):
         )
         SmartDashboard.putNumber("Est Z", self.estZ)
 
-        SmartDashboard.putNumber(
-            "Swerve/Odometry X", self.odometry.getPose().x_feet * 0.305
-        )
-        SmartDashboard.putNumber(
-            "Swerve/Odometry Y", self.odometry.getPose().y_feet * 0.305
-        )
-        SmartDashboard.putNumber(
-            "Swerve/Odometry Theta", self.odometry.getPose().rotation().degrees()
-        )
+        # SmartDashboard.putNumber(
+        #     "Swerve/Odometry X", self.odometry.getPose().x_feet * 0.305
+        # )
+        # SmartDashboard.putNumber(
+        #     "Swerve/Odometry Y", self.odometry.getPose().y_feet * 0.305
+        # )
+        # SmartDashboard.putNumber(
+        #     "Swerve/Odometry Theta", self.odometry.getPose().rotation().degrees()
+        # )
         SmartDashboard.putNumber("Gyro/Yaw", self.getYaw().degrees())
         SmartDashboard.putNumber("Gyro/Roll", self.gyro.get_roll().value)
 
@@ -516,7 +540,7 @@ class PoseEstimator(Subsystem):
 
         SmartDashboard.putNumber("Skidding Ratio", self.get_skidding_ratio())
         for module in self.modules:
-            SmartDashboard.putNumber(f"Swerve/{module.module_name}/Cancoder Angle", module.get_angle_CANcoder().degrees())  # type: ignore
+            SmartDashboard.putNumber(f"Swerve/{module.module_name}/Cancoder Angle", (module.get_angle_CANcoder().degrees() - module.angle_offset.degrees()) % 360)  # type: ignore
             SmartDashboard.putNumber(f"Swerve/{module.module_name}/Motor Angle", module.get_position().angle.degrees())  # type: ignore
             SmartDashboard.putNumber(
                 f"Swerve/{module.module_name}/Velcoity", module.get_state().speed
