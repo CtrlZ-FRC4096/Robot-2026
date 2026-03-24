@@ -111,6 +111,7 @@ class Coroutines:
             robot.shooter_at_default = False
             while robot.fuel_in_hopper > 0:
                 yield
+                
 
         self.drive_to_zone_trench = (drive_to_zone_trench)
         self.drive_to_zone_trench_2 = (drive_to_zone_trench_2)
@@ -123,3 +124,36 @@ class Coroutines:
         self.spin_for_trench = (spin_for_trench)
         self.stop_drive = (stop_drive)
 
+        
+
+
+        @commandify
+        def p1_right_trench():
+            robot.pulse_pivot = False
+            robot.shoot_intent = False
+            robot.shooter_at_default = True
+            robot.running_pid_lineup = False
+            robot.intake_at_default = False
+            robot.is_intaking = True
+
+            robot.final_lineup_pose = robot.fieldConstants.flip_Pose2d(Pose2d(5.842, 0.652, Rotation2d.fromDegrees(-90)))
+            # robot.running_pid_lineup = True
+            robot.run_p1 = True
+            while not robot.done_p1:
+                yield
+            robot.run_p1 = False
+            robot.done_p1 = False
+        
+        @commandify
+        def p2_right_trench():
+            robot.final_lineup_pose = robot.fieldConstants.flip_Pose2d(Pose2d(7.735, 1.106, Rotation2d.fromDegrees(-150)))
+            robot.run_p2 = True
+
+            while not robot.done_p2:
+                yield
+            robot.run_p2 = False
+            robot.done_p2 = False
+
+        self.p1_right_trench = (p1_right_trench)
+        self.p2_right_trench = (p2_right_trench)
+        
