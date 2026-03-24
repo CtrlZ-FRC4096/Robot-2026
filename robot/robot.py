@@ -213,7 +213,19 @@ class Robot(CoroutineRobot):
         self.clear_jam = False
         self.ignore_shooter_in_jam = False
         
-        self.lining_with_outpost = False
+        # AUTO FLAGS
+        self.run_p1 = False
+        self.done_p1 = False
+
+        self.run_p2 = False
+        self.done_p2 = False
+
+        self.run_p3 = False
+        self.done_p3 = False
+
+        self.run_p4 = False
+        self.done_p4 = False
+
 
         self.snake_intake = False
         self.track_fuel = False

@@ -15,7 +15,8 @@ from wpimath.geometry import (
     Translation3d,
     Transform3d,
     Rotation3d,
-    Twist2d
+    Twist2d,
+    Transform2d
 )
 from wpimath.kinematics import (
     ChassisSpeeds,
@@ -250,14 +251,14 @@ class Drivetrain(Subsystem):
         module_states = SwerveDrive4Kinematics.desaturateWheelSpeeds(
                 module_states, max_speed
             )
-        self.log_chassis = const.SWERVE_KINEMATICS.toChassisSpeeds(module_states)
-        SmartDashboard.putNumber("translation x", translation.x / 20)
-        SmartDashboard.putNumber("translation y", translation.y / 20)
-        SmartDashboard.putNumber("translation omega", radiansToDegrees(rotation) / 20)
+        # self.log_chassis = const.SWERVE_KINEMATICS.toChassisSpeeds(module_states)
+        # SmartDashboard.putNumber("translation x", translation.x / 20)
+        # SmartDashboard.putNumber("translation y", translation.y / 20)
+        # SmartDashboard.putNumber("translation omega", radiansToDegrees(rotation) / 20)
 
-        SmartDashboard.putNumber("chassis log vx", self.log_chassis.vx / 45)
-        SmartDashboard.putNumber("chassis log vy", self.log_chassis.vy / 45)
-        SmartDashboard.putNumber("chassis log omega dps", self.log_chassis.omega_dps / 20)
+        # SmartDashboard.putNumber("chassis log vx", self.log_chassis.vx / 45)
+        # SmartDashboard.putNumber("chassis log vy", self.log_chassis.vy / 45)
+        # SmartDashboard.putNumber("chassis log omega dps", self.log_chassis.omega_dps / 20)
         if self.robot.isSimulation():
             curPose = self.robot.poseEstimator.curEstPose
             
@@ -366,15 +367,19 @@ class Drivetrain(Subsystem):
         if (
             self.x_controller.atSetpoint()
             and self.y_controller.atSetpoint()
-            and (self.theta_controller.atSetpoint() and not self.robot.shoot_intent)
-        ) or (self.robot.poseEstimator.cur_pos_in_zone(4.1) and self.robot.in_autonomous_mode):
+            #and (self.theta_controller.atSetpoint() and not self.robot.shoot_intent)
+        ):
             # self.robot.running_pid_lineup = False
-            if self.robot.lining_with_outpost:
-                self.robot.clear_jam = True
-                self.robot.ignore_shooter_in_jam = True
-                self.robot.is_intaking = False
-                self.robot.intake_at_default = False
-            self.robot.running_pid_lineup = False
+            if self.robot.run_p1:
+                self.robot.done_p1 = True
+            if self.robot.run_p2:
+                self.robot.done_p2 = True
+            if self.robot.run_p3:
+                self.robot.done_p3 = True
+            if self.robot.run_p4:
+                self.robot.done_p4 = True
+            
+            # self.robot.running_pid_lineup = False
 
 
         # Drive the robot using the calculated velocities
@@ -450,78 +455,11 @@ class Drivetrain(Subsystem):
             return Pose2d(pose.translation(), self.get_hub_angle())
         
     def create_lookup_table(self):
-        # self.dist_lookup_table.add_entry(0.7, 5.404, 79.295, 0.655)
-        # self.dist_lookup_table.add_entry(0.774, 5.443, 78.307, 0.665)
-        # self.dist_lookup_table.add_entry(0.847, 5.484, 77.357, 0.675)
-        # self.dist_lookup_table.add_entry(0.921, 5.526, 76.442, 0.684)
-        # self.dist_lookup_table.add_entry(0.995, 5.569, 75.562, 0.693)
-        # self.dist_lookup_table.add_entry(1.069, 5.614, 74.716, 0.702)
-        # self.dist_lookup_table.add_entry(1.142, 5.66, 73.902, 0.711)
-        # self.dist_lookup_table.add_entry(1.216, 5.707, 73.119, 0.72)
-        # self.dist_lookup_table.add_entry(1.29, 5.754, 72.366, 0.729)
-        # self.dist_lookup_table.add_entry(1.364, 5.803, 71.641, 0.738)
-        # self.dist_lookup_table.add_entry(1.437, 5.852, 70.944, 0.746)
-        # self.dist_lookup_table.add_entry(1.511, 5.902, 70.273, 0.755)
-        # self.dist_lookup_table.add_entry(1.585, 5.953, 69.627, 0.764)
-        # self.dist_lookup_table.add_entry(1.659, 6.004, 69.006, 0.772)
-        # self.dist_lookup_table.add_entry(1.732, 6.056, 68.407, 0.781)
-        # self.dist_lookup_table.add_entry(1.806, 6.108, 67.831, 0.789)
-        # self.dist_lookup_table.add_entry(1.88, 6.16, 67.275, 0.797)
-        # self.dist_lookup_table.add_entry(1.954, 6.213, 66.74, 0.806)
-        # self.dist_lookup_table.add_entry(2.027, 6.266, 66.223, 0.814)
-        # self.dist_lookup_table.add_entry(2.101, 6.319, 65.725, 0.822)
-        # self.dist_lookup_table.add_entry(2.175, 6.373, 65.245, 0.83)
-        # self.dist_lookup_table.add_entry(2.248, 6.426, 64.781, 0.838)
-        # self.dist_lookup_table.add_entry(2.322, 6.48, 64.334, 0.846)
-        # self.dist_lookup_table.add_entry(2.396, 6.534, 63.902, 0.854)
-        # self.dist_lookup_table.add_entry(2.47, 6.588, 63.484, 0.862)
-        # self.dist_lookup_table.add_entry(2.543, 6.642, 63.08, 0.87)
-        # self.dist_lookup_table.add_entry(2.617, 6.696, 62.69, 0.878)
-        # self.dist_lookup_table.add_entry(2.691, 6.75, 62.312, 0.885)
-        # self.dist_lookup_table.add_entry(2.765, 6.804, 61.947, 0.893)
-        # self.dist_lookup_table.add_entry(2.838, 6.859, 61.593, 0.901)
-        # self.dist_lookup_table.add_entry(2.912, 6.913, 61.25, 0.909)
-        # self.dist_lookup_table.add_entry(2.986, 6.97, 61.0, 0.918)
-        # self.dist_lookup_table.add_entry(3.06, 7.035, 61.0, 0.934)
-        # self.dist_lookup_table.add_entry(3.133, 7.101, 61.0, 0.949)
-        # self.dist_lookup_table.add_entry(3.207, 7.167, 61.0, 0.965)
-        # self.dist_lookup_table.add_entry(3.281, 7.232, 61.0, 0.98)
-        # self.dist_lookup_table.add_entry(3.355, 7.298, 61.0, 0.994)
-        # self.dist_lookup_table.add_entry(3.428, 7.364, 61.0, 1.009)
-        # self.dist_lookup_table.add_entry(3.502, 7.43, 61.0, 1.024)
-        # self.dist_lookup_table.add_entry(3.576, 7.496, 61.0, 1.038)
-        # self.dist_lookup_table.add_entry(3.649, 7.561, 61.0, 1.052)
-        # self.dist_lookup_table.add_entry(3.723, 7.627, 61.0, 1.066)
-        # self.dist_lookup_table.add_entry(3.797, 7.692, 61.0, 1.08)
-        # self.dist_lookup_table.add_entry(3.871, 7.757, 61.0, 1.094)
-        # self.dist_lookup_table.add_entry(3.944, 7.823, 61.0, 1.107)
-        # self.dist_lookup_table.add_entry(4.018, 7.888, 61.0, 1.121)
-        # self.dist_lookup_table.add_entry(4.092, 7.952, 61.0, 1.134)
-        # self.dist_lookup_table.add_entry(4.166, 8.017, 61.0, 1.147)
-        # self.dist_lookup_table.add_entry(4.239, 8.082, 61.0, 1.16)
-        # self.dist_lookup_table.add_entry(4.313, 8.146, 61.0, 1.173)
-        # self.dist_lookup_table.add_entry(4.387, 8.211, 61.0, 1.186)
-        # self.dist_lookup_table.add_entry(4.461, 8.275, 61.0, 1.198)
-        # self.dist_lookup_table.add_entry(4.534, 8.339, 61.0, 1.211)
-        # self.dist_lookup_table.add_entry(4.608, 8.403, 61.0, 1.224)
-        # self.dist_lookup_table.add_entry(4.682, 8.466, 61.0, 1.236)
-        # self.dist_lookup_table.add_entry(4.756, 8.53, 61.0, 1.248)
-        # self.dist_lookup_table.add_entry(4.829, 8.593, 61.0, 1.26)
-        # self.dist_lookup_table.add_entry(4.903, 8.656, 61.0, 1.272)
-        # self.dist_lookup_table.add_entry(4.977, 8.72, 61.0, 1.284)
-        # self.dist_lookup_table.add_entry(5.051, 8.782, 61.0, 1.296)
-        # self.dist_lookup_table.add_entry(5.124, 8.845, 61.0, 1.308)
-        # self.dist_lookup_table.add_entry(5.198, 8.908, 61.0, 1.32)
-        # self.dist_lookup_table.add_entry(5.272, 8.97, 61.0, 1.332)
-        # self.dist_lookup_table.add_entry(5.345, 9.033, 61.0, 1.343)
-        # self.dist_lookup_table.add_entry(5.419, 9.095, 61.0, 1.355)
-        # self.dist_lookup_table.add_entry(5.493, 9.157, 61.0, 1.366)
-        # self.dist_lookup_table.add_entry(5.567, 9.2, 61.0, 1.374)
         self.dist_lookup_table.add_entry(1.65, 50, 31, 0.772)
         self.dist_lookup_table.add_entry(2.4, 55, 40, 0.854)
-        self.dist_lookup_table.add_entry(3.35, 63, 43, 0.994)
-        self.dist_lookup_table.add_entry(3.88, 67, 44, 1.094)
-        self.dist_lookup_table.add_entry(3.99, 68, 44, 1.107)
+        self.dist_lookup_table.add_entry(3.35, 63, 43, 1.114) #calc tof
+        self.dist_lookup_table.add_entry(3.88, 67, 44, 1.305) #calc tof
+        self.dist_lookup_table.add_entry(3.99, 68, 44, 1.315) #calc tof
         self.dist_lookup_table.add_entry(4.25, 71, 45, 1.16)
         self.dist_lookup_table.add_entry(4.88, 83, 45, 1.265)
         self.dist_lookup_table.add_entry(15, 83, 45, 2)
@@ -586,6 +524,35 @@ class Drivetrain(Subsystem):
         # self.angle_lookup_table.add_entry(85, 0)
 
     def periodic(self):
+        # 6328 INSPIRED SHOT CALC
+        cur_robot_pose = self.robot.poseEstimator.curEstPose
+        robot_relative_vel = self.get_robot_relative_speeds()
+        est_pose = cur_robot_pose.exp(Twist2d(
+            robot_relative_vel.vx * 0.03,
+            robot_relative_vel.vy * 0.03,
+            robot_relative_vel.omega * 0.03
+        ))
+
+        if self.robot.shoot_intent:
+            if self.robot.poseEstimator.cur_pos_in_zone(4.55) or self.robot.in_autonomous_mode:
+                self.robot.static_target = self.robot.fieldConstants.flip_Translation2d(self.robot.fieldConstants.Hub.topCenterPoint.toTranslation2d())
+            else:
+                if not self.robot.fieldConstants.shouldFlip:
+                    if cur_pos.Y() <= self.robot.fieldConstants.fieldWidth / 2: #shoot to right corner blue
+                        self.robot.static_target = Translation2d(1.694, 1.417)
+                    else: #pass to left corner blue
+                        self.robot.static_target = Translation2d(1.694, self.robot.fieldConstants.fieldWidth - 1.417)
+                else:
+                    if cur_pos.Y() <= self.robot.fieldConstants.fieldWidth / 2: # pass to left corner red (red relative)
+                        self.robot.static_target = Translation2d(1.694, self.robot.fieldConstants.fieldWidth - 1.417)
+                    else: #pass to right corner 
+                        self.robot.static_target = Translation2d(1.694, 1.417)
+            
+            shooter_pos = est_pose.transformBy(Transform2d())
+
+
+
+
         cur_speeds = self.get_robot_relative_speeds()
         phase_delay_twist = Twist2d(cur_speeds.vx * 0.1, cur_speeds.vy * 0.1, cur_speeds.omega * 0.1)
         cur_pos = self.robot.poseEstimator.curEstPose.exp(phase_delay_twist)
@@ -617,7 +584,7 @@ class Drivetrain(Subsystem):
             for _ in range(5):
                 if True: # CHANGE TO CASES ON ALLIANCE ZONE AND NEUTRAL ZONE
                     temp_virtual_goal = Translation2d(
-                        self.robot.static_target.X() - (temp_time_of_flight+0.2) * field_relative_speeds.vx, self.robot.static_target.Y() - (temp_time_of_flight + 0.2) * field_relative_speeds.vy 
+                        self.robot.static_target.X() - (temp_time_of_flight) * field_relative_speeds.vx, self.robot.static_target.Y() - (temp_time_of_flight) * field_relative_speeds.vy 
                     )
                 virtual_robot_distance = (shooter_pos - temp_virtual_goal).norm()
                 temp_time_of_flight = self.dist_lookup_table.interpolate(virtual_robot_distance)[2]
