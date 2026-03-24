@@ -197,6 +197,9 @@ class Robot(CoroutineRobot):
         self.P2_T_L = self.getPathCommand(PathPlannerPath.fromPathFile("P2_T_L"))
         self.P2_T_R = self.getPathCommand(PathPlannerPath.fromPathFile("P2_T_R"))
         self.P1_T_R_SAFE = self.getPathCommand(PathPlannerPath.fromPathFile("P1_T_R_Safe"))
+        self.P1_T_L_SOM = self.getPathCommand(PathPlannerPath.fromPathFile("P1_T_L_SOM"))
+        self.P1_T_L_SOM_2 = self.getPathCommand(PathPlannerPath.fromPathFile("P1_T_L_SOM_2"))
+        self.P1_T_L_SOM_3 = self.getPathCommand(PathPlannerPath.fromPathFile("P1_T_L_SOM_3"))
 
         self.autoroutines = autoroutines.AutoRoutines(self)
 

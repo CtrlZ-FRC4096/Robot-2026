@@ -70,6 +70,15 @@ class AutoRoutines:
                                  self.robot.coroutines.intake_2),
             self.robot.coroutines.drive_to_zone_trench_2
         )
+    def trench_left_shoot_on_move_auto(self):
+        return SequentialCommandGroup(
+            ParallelCommandGroup(self.robot.P1_T_L_SOM,
+                                 self.robot.coroutines.intake),
+            self.robot.coroutines.drive_to_zone_trench,
+            self.robot.coroutines.spin_for_trench,
+            self.robot.P1_T_L_SOM_2,
+            self.robot.P1_T_L_SOM_3
+        )
     def trench_bump_left_auto(self):
         return SequentialCommandGroup(
             ParallelCommandGroup(
