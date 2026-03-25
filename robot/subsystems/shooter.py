@@ -27,7 +27,7 @@ class Shooter(Subsystem):
         self.commanded_fly_speed = 0.0
         self.commanded_hood_position = 0.0
         self.commanded_accelerator_speed = 0.0
-        self.request = controls.MotionMagicVoltage(0, enable_foc=False)
+        self.request = controls.MotionMagicVoltage(0)
 
         # Flywheel motors
         self.right_fly_motor = hardware.TalonFX(const.RIGHT_FLY_ID, "rio")
@@ -46,7 +46,7 @@ class Shooter(Subsystem):
         self.hood_cancoder.configurator.apply(hood_cancoder_config)
 
 
-        self.fly_motor_config = self.robot.get_motor_config(0, 1.15, 0, 0, 0.122, 0, 0, 0.3)
+        self.fly_motor_config = self.robot.get_motor_config(0, 10.0, 0, 0, 0.015, 0, 0, 3.5)
         # self.right_fly_motor_config = self.robot.get_motor_config(0, 12.0, 0.1, 0, 0, 0, 0, 0)
         self.fly_motor_config.current_limits.supply_current_limit = 80
         self.fly_motor_config.torque_current.peak_forward_torque_current = 80
@@ -55,7 +55,7 @@ class Shooter(Subsystem):
         self.left_up_fly_motor.configurator.apply(self.fly_motor_config)
         self.left_down_fly_motor.configurator.apply(self.fly_motor_config)
 
-        self.accelerator_motor_config = self.robot.get_motor_config(1, 0.4, 0, 0, 0.12, 0, 0, 0.25) # retune when we have metal plates
+        self.accelerator_motor_config = self.robot.get_motor_config(1, 9.0, 0, 0.025, 0, 0, 0, 9) # retune when we have metal plates
         self.accelerator_motor_config.current_limits.supply_current_limit = 80
         self.accelerator_motor_config.torque_current.peak_forward_torque_current = 80
         self.accelerator_motor_config.torque_current.peak_reverse_torque_current = -80
@@ -90,7 +90,7 @@ class Shooter(Subsystem):
         # if self.get_fly_speed() <= self.commanded_fly_speed * 0.85:
         #     self.right_fly_motor.set_control(controls.DutyCycleOut(0.97))
         # else:
-        self.left_up_fly_motor.set_control(controls.VelocityVoltage(-1 * speed, enable_foc=False))
+        self.left_up_fly_motor.set_control(controls.VelocityTorqueCurrentFOC(-1 * speed))
 
     def get_accelerator_speed(self):
         if self.robot.isSimulation():
@@ -103,7 +103,7 @@ class Shooter(Subsystem):
         # if self.get_accelerator_speed() <= self.commanded_accelerator_speed * 0.85:
         #     self.accelerator_motor.set_control(controls.VelocityDutyCycle(0.97))
         # else:
-        self.accelerator_motor.set_control(controls.VelocityVoltage(speed, enable_foc=False))
+        self.accelerator_motor.set_control(controls.VelocityTorqueCurrentFOC(speed))
     
     def set_hood_position(self, position):
         
@@ -115,12 +115,12 @@ class Shooter(Subsystem):
         # else:
         if self.pose_in_trench():
             self.commanded_hood_position = 0
-            self.hood_motor.set_control(controls.MotionMagicVoltage(0, enable_foc=False))
+            self.hood_motor.set_control(controls.MotionMagicVoltage(0))
             self.shoot_ready = False
         else:
             self.commanded_hood_position = position
             rotations = position # ADD GEAR RATIOS STUFF
-            self.hood_motor.set_control(controls.MotionMagicVoltage(rotations, enable_foc=False)) # USING MOTION MAGIC
+            self.hood_motor.set_control(controls.MotionMagicVoltage(rotations)) # USING MOTION MAGIC
     
     def get_hood_position(self):
         if self.robot.isSimulation():
@@ -131,15 +131,15 @@ class Shooter(Subsystem):
             return position
 
     def stop_hood(self):
-        self.hood_motor.set_control(controls.DutyCycleOut(0.0, enable_foc=False))
+        self.hood_motor.set_control(controls.DutyCycleOut(0.0))
     
     def stop_fly(self):
         self.commanded_fly_speed = 0.0
-        self.left_up_fly_motor.set_control(controls.DutyCycleOut(0.0, enable_foc=False))
+        self.left_up_fly_motor.set_control(controls.DutyCycleOut(0.0))
 
     def stop_accelerator(self):
         self.commanded_accelerator_speed = 0.0
-        self.accelerator_motor.set_control(controls.DutyCycleOut(0.0, enable_foc=False))
+        self.accelerator_motor.set_control(controls.DutyCycleOut(0.0))
 
     def stop(self):
         self.stop_hood()
@@ -168,7 +168,7 @@ class Shooter(Subsystem):
 
     def ready_to_shoot(self):
         rotation = self.robot.drivetrain.get_target_angle(self.robot.time_of_flight, self.robot.static_target)
-        if (abs(abs(self.get_fly_speed()) - self.commanded_fly_speed <= 3)) and (abs(abs(self.get_hood_position()) - self.commanded_hood_position) < 2) and (self.robot.down_bad or abs((self.robot.poseEstimator.curEstPose.rotation() - rotation).degrees()) <= 5.5): #and pointed at hub   
+        if (abs(abs(self.get_fly_speed()) - self.commanded_fly_speed <= 3)) and (abs(abs(self.get_hood_position()) - self.commanded_hood_position) < 2) and (self.robot.down_bad or abs((self.robot.poseEstimator.curEstPose.rotation() - rotation).degrees()) <= 10): #and pointed at hub   
             self.shoot_ready = True
             return True
         else:
@@ -184,7 +184,7 @@ class Shooter(Subsystem):
             self.set_hood_position(0.0)
             self.set_accelerator_speed(-50)
             self.set_fly_speed(-50)
-            self.robot.hopper.indexer_motor.set_control(controls.DutyCycleOut(-0.7, enable_foc=False))
+            self.robot.hopper.indexer_motor.set_control(controls.DutyCycleOut(-0.7))
         elif self.robot.shoot_intent or self.robot.down_bad:
                 if not self.robot.in_autonomous_mode or (self.robot.in_autonomous_mode and self.robot.poseEstimator.cur_pos_in_zone()):
                     if self.robot.down_bad:
@@ -204,7 +204,7 @@ class Shooter(Subsystem):
                                 self.robot.intake.tick_count = 0
                             self.accel_good = True
                             self.robot.hopper.commanded_speed = 0.95
-                            self.robot.hopper.indexer_motor.set_control(controls.DutyCycleOut(0.95, enable_foc=False))
+                            self.robot.hopper.indexer_motor.set_control(controls.DutyCycleOut(0.95))
                             self.robot.pulse_pivot = True 
 
                             # self.robot.hopper.set_speed(self.robot.hopper.test_indexer_speed) 
@@ -215,7 +215,7 @@ class Shooter(Subsystem):
             self.set_hood_position(0.0)
             self.stop_accelerator()
             self.stop_fly()
-            self.robot.hopper.indexer_motor.set_control(controls.DutyCycleOut(0.0, enable_foc=False))
+            self.robot.hopper.indexer_motor.set_control(controls.DutyCycleOut(0.0))
 
     def log(self):
         SmartDashboard.putNumber("Shooter/Right Fly Speed", self.right_fly_motor.get_velocity().value)

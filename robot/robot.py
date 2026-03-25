@@ -197,11 +197,15 @@ class Robot(CoroutineRobot):
         self.P2_T_L = self.getPathCommand(PathPlannerPath.fromPathFile("P2_T_L"))
         self.P2_T_R = self.getPathCommand(PathPlannerPath.fromPathFile("P2_T_R"))
         self.P1_T_R_SAFE = self.getPathCommand(PathPlannerPath.fromPathFile("P1_T_R_Safe"))
+
         self.P1_T_R_ROBUST_1 = self.getPathCommand(PathPlannerPath.fromPathFile("P1_T_R_Robust_1"))
         self.P1_T_R_ROBUST_2 = self.getPathCommand(PathPlannerPath.fromPathFile("P1_T_R_Robust_2"))
-        self.P1_T_L_SOM = self.getPathCommand(PathPlannerPath.fromPathFile("P1_T_L_SOM"))
-        self.P1_T_L_SOM_2 = self.getPathCommand(PathPlannerPath.fromPathFile("P1_T_L_SOM_2"))
-        self.P1_T_L_SOM_3 = self.getPathCommand(PathPlannerPath.fromPathFile("P1_T_L_SOM_3"))
+
+        self.P1_T_B_R_ROBUST = self.getPathCommand(PathPlannerPath.fromPathFile("P1_T_B_R_Robust"))
+
+        # self.P1_T_L_SOM = self.getPathCommand(PathPlannerPath.fromPathFile("P1_T_L_SOM"))
+        # self.P1_T_L_SOM_2 = self.getPathCommand(PathPlannerPath.fromPathFile("P1_T_L_SOM_2"))
+        # self.P1_T_L_SOM_3 = self.getPathCommand(PathPlannerPath.fromPathFile("P1_T_L_SOM_3"))
 
         self.autoroutines = autoroutines.AutoRoutines(self)
 
@@ -265,6 +269,7 @@ class Robot(CoroutineRobot):
         #TESTING
         self.should_hub_track = False
         self.is_hub_active = True
+        self.velocity_constrain_pid = False
 
         # SHOOTING VALUES
         self.time_of_flight = 1
@@ -306,9 +311,10 @@ class Robot(CoroutineRobot):
         self.auto_win = None  # false = BLUE, true = RED
         # self.auto_win_found = False
 
-        
-        self.auto = self.autoroutines.trench_right_counter_auto()
+        self.auto = self.autoroutines.right_trench_bump_robust()
+
         self.poseEstimator.poseEst.resetPose(Pose2d(self.fieldConstants.flip_Translation2d(Translation2d(4.47, 0.6)), self.poseEstimator.getYaw())) # for right auto
+        # self.poseEstimator.curEstPose = Pose2d(self.fieldConstants.flip_Translation2d(Translation2d(4.47, 0.6)), self.poseEstimator.getYaw())
         # self.poseEstimator.poseEst.resetPose(Pose2d(self.fieldConstants.flip_Translation2d(Translation2d(4.471, 7.587)), self.poseEstimator.getYaw())) # for left auto
 
 

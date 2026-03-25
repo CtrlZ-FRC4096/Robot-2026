@@ -137,8 +137,76 @@ class Coroutines:
         self.spin_for_trench = (spin_for_trench)
         self.stop_drive = (stop_drive)
 
-        
+        self.reline_up_with_right_trench = (reline_up_with_right_trench)
 
+        @commandify
+        def p1_over_right_bump():
+            robot.is_intaking = False
+            robot.intake_at_default = False
+            robot.pulse_pivot = False
+
+            robot.final_lineup_pose = robot.fieldConstants.flip_Pose2d(Pose2d(2.807, 2.4, Rotation2d.fromDegrees(-41)))
+            robot.running_pid_lineup = True
+            robot.shoot_intent = True
+            robot.run_p1 = True
+            while not (robot.done_p1 or robot.poseEstimator.cur_pos_in_zone(3.7)):
+                yield
+            robot.running_pid_lineup = False
+            robot.run_p1 = False
+            robot.done_p1 = False
+        
+        self.p1_over_right_bump = (p1_over_right_bump)
+        
+        @commandify
+        def p2_over_right_bump():
+            robot.is_intaking = False
+            robot.intake_at_default = False
+            robot.pulse_pivot = False
+
+            robot.final_lineup_pose = robot.fieldConstants.flip_Pose2d(Pose2d(2.807, 2.482, Rotation2d.fromDegrees(145)))
+            robot.running_pid_lineup = True
+            robot.shoot_intent = True
+            robot.run_p2 = True
+            while not robot.done_p2:
+                yield
+            robot.running_pid_lineup = False
+            robot.run_p2 = False
+            robot.done_p2 = False
+        
+        self.p2_over_right_bump = (p2_over_right_bump)
+
+        @commandify
+        def drive_to_zone_trench_pid():
+            robot.is_intaking = False
+            robot.intake_at_default = False
+            robot.velocity_constrain_pid = True
+            # robot.final_lineup_pose = Pose2d(3.368, 8.1-0.709, Rotation2d.fromDegrees(-90))
+            # robot.running_pid_lineup = True
+            robot.shoot_intent = True
+            robot.shooter_at_default = False
+            while not robot.shooter.shoot_ready:
+                yield
+            robot.final_lineup_pose = robot.fieldConstants.flip_Pose2d(Pose2d(2.783, 1.039, Rotation2d()))
+            robot.running_pid_lineup = True
+            robot.velocity_constrain_pid = True
+            while robot.fuel_in_hopper > 0:
+                yield
+
+        self.drive_to_zone_trench_pid = (drive_to_zone_trench_pid)
+
+        @commandify
+        def intake_2_pid():
+            robot.should_rotate_trench_auto = False
+            robot.pulse_pivot = False
+            robot.shoot_intent = False
+            robot.shooter_at_default = True
+            robot.running_pid_lineup = False
+            robot.intake_at_default = False
+            robot.is_intaking = True
+            robot.velocity_constrain_pid = False
+            yield
+        
+        self.intake_2_pid = (intake_2_pid)
 
         @commandify
         def p1_right_trench():

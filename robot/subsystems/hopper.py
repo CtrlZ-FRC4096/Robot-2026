@@ -47,11 +47,11 @@ class Hopper(Subsystem):
                     
     def set_speed(self, speed):
         self.commanded_speed = speed
-        self.indexer_motor.set_control(controls.VelocityVoltage(speed, enable_foc=False))
+        self.indexer_motor.set_control(controls.VelocityVoltage(speed))
 
     def stop(self):
         self.commanded_speed = 0.0
-        self.indexer_motor.set_control(controls.DutyCycleOut(0.0, enable_foc=False))
+        self.indexer_motor.set_control(controls.DutyCycleOut(0.0))
 
     def periodic(self):
         if not self.robot.shoot_intent and self.robot.is_intaking:
@@ -62,7 +62,7 @@ class Hopper(Subsystem):
         #     self.set_speed(abs(sin(self.time.get()*pi*self.hz)*self.amp)) # moves fuel towards shooter
         elif (not self.robot.shoot_intent and not self.robot.down_bad) and self.robot.intake_at_default:
             self.commanded_speed = 0
-            self.indexer_motor.set_control(controls.DutyCycleOut(0.0, enable_foc=False))
+            self.indexer_motor.set_control(controls.DutyCycleOut(0.0))
         elif self.robot.shooter_at_default:
             self.stop()
 

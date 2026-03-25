@@ -22,7 +22,7 @@ class Intake(Subsystem):
     def __init__(self, robot: "Robot"):
         super().__init__()
         self.robot = robot
-        self.request = controls.MotionMagicVoltage(0, enable_foc=False)
+        self.request = controls.MotionMagicVoltage(0)
 
         self.left_intake_motor = hardware.TalonFX(const.LEFT_INTAKE_MOTOR_ID, "rio")
         self.right_intake_motor = hardware.TalonFX(const.RIGHT_INTAKE_MOTOR_ID, "rio")
@@ -69,10 +69,10 @@ class Intake(Subsystem):
 
     def stop_intake(self):
         self.commanded_intake_speed = 0.0
-        self.left_intake_motor.set_control(controls.DutyCycleOut(0.0, enable_foc=False))
+        self.left_intake_motor.set_control(controls.DutyCycleOut(0.0))
 
     def stop_deploy(self):
-        self.deploy_motor.set_control(controls.DutyCycleOut(0.0, enable_foc=False))
+        self.deploy_motor.set_control(controls.DutyCycleOut(0.0))
 
     def set_position(self, position):
         '''
@@ -128,7 +128,7 @@ class Intake(Subsystem):
 
     def set_intake_speed(self, speed):
         self.commanded_intake_speed = speed
-        self.left_intake_motor.set_control(controls.DutyCycleOut(speed, enable_foc=False))
+        self.left_intake_motor.set_control(controls.DutyCycleOut(speed))
 
     def get_intake_speed(self):
         if self.robot.isSimulation():

@@ -408,9 +408,9 @@ class PoseEstimator(Subsystem):
             return True
         
     def set_wheels_to_x(self):
-        fl = SwerveModuleState(0, Rotation2d.fromDegrees(45))
-        fr = SwerveModuleState(0, Rotation2d.fromDegrees(-45))
-        bl = SwerveModuleState(0, Rotation2d.fromDegrees(-45))
+        fl = SwerveModuleState(0, Rotation2d.fromDegrees(225))
+        fr = SwerveModuleState(0, Rotation2d.fromDegrees(315))
+        bl = SwerveModuleState(0, Rotation2d.fromDegrees(315))
         br = SwerveModuleState(0, Rotation2d.fromDegrees(45))
         desired_states = (fl, fr, bl, br)
         self.set_module_states(desired_states)        

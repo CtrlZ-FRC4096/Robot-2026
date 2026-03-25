@@ -64,6 +64,22 @@ class AutoRoutines:
             ParallelCommandGroup(self.robot.P2_B_R,
                                 self.robot.coroutines.intake_2)
         )
+    
+    def right_trench_bump_robust(self):
+        return SequentialCommandGroup(
+            ParallelCommandGroup(
+                self.robot.P1_T_B_R_ROBUST,
+                self.robot.coroutines.intake),
+            self.robot.coroutines.p1_over_right_bump,
+            self.robot.coroutines.drive_to_zone_trench.withTimeout(3.5),
+            ParallelCommandGroup(
+                self.robot.P2_B_R,
+                self.robot.coroutines.intake_2
+            ),
+            self.robot.coroutines.p2_over_right_bump,
+            self.robot.coroutines.drive_to_zone_trench_2.withTimeout(3.5)
+        )
+
     def trench_left_safe_auto(self):
         # if self.robot.fieldConstants.shouldFlip:
         #     gyro_offset = 90
@@ -81,15 +97,15 @@ class AutoRoutines:
                                  self.robot.coroutines.intake_2),
             self.robot.coroutines.drive_to_zone_trench_2
         )
-    def trench_left_shoot_on_move_auto(self):
-        return SequentialCommandGroup(
-            ParallelCommandGroup(self.robot.P1_T_L_SOM,
-                                 self.robot.coroutines.intake),
-            self.robot.coroutines.drive_to_zone_trench,
-            self.robot.coroutines.spin_for_trench,
-            self.robot.P1_T_L_SOM_2,
-            self.robot.P1_T_L_SOM_3
-        )
+    # def trench_left_shoot_on_move_auto(self):
+    #     return SequentialCommandGroup(
+    #         ParallelCommandGroup(self.robot.P1_T_L_SOM,
+    #                              self.robot.coroutines.intake),
+    #         self.robot.coroutines.drive_to_zone_trench,
+    #         self.robot.coroutines.spin_for_trench,
+    #         self.robot.P1_T_L_SOM_2,
+    #         self.robot.P1_T_L_SOM_3
+        # )
     def trench_bump_left_auto(self):
         return SequentialCommandGroup(
             ParallelCommandGroup(

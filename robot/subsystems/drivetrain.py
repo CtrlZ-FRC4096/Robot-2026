@@ -353,6 +353,22 @@ class Drivetrain(Subsystem):
             current_pose.rotation().degrees(), target_pose.rotation().degrees()
         ) + feedfoward_theta
 
+
+        if self.robot.velocity_constrain_pid:
+            mag_vel = Translation2d(vx, vy).norm()
+            if mag_vel > 1e-3:
+                direction = Translation2d(vx, vy) / mag_vel
+            else:
+                direction = Translation2d(0, 0)
+
+            if mag_vel >= 0.25:
+                vx = (vx / mag_vel) * 0.2
+                vy = (vy / mag_vel) * 0.2
+            new_mag_vel = Translation2d(vx, vy).norm()
+
+            limit_mag = self.accel_shoot_limiter.calculate(new_mag_vel)
+            vx = direction.X() * limit_mag
+            vy = direction.Y() * limit_mag
         # if self.robot.shoot_intent:
         #     mag_vel = Translation2d(vx, vy).norm()
         #     if mag_vel > 1e-6:
@@ -467,8 +483,8 @@ class Drivetrain(Subsystem):
             return Pose2d(pose.translation(), self.get_hub_angle())
         
     def create_lookup_table(self):
-        self.dist_lookup_table.add_entry(1.65, 50, 31, 0.772)
-        self.dist_lookup_table.add_entry(2.4, 55, 40, 0.854)
+        self.dist_lookup_table.add_entry(1.65, 54, 31, 0.772 + 0.2)
+        self.dist_lookup_table.add_entry(2.4, 58, 40, 0.854+ 0.2)
         self.dist_lookup_table.add_entry(3.35, 63, 43, 1.114) #calc tof
         self.dist_lookup_table.add_entry(3.88, 67, 44, 1.305) #calc tof
         self.dist_lookup_table.add_entry(3.99, 68, 44, 1.315) #calc tof

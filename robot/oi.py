@@ -191,7 +191,7 @@ class OI:
                     mag_vel = Translation2d(forward_back, left_right).norm()
                     wheels_to_x = mag_vel <= 0.02 and abs((self.robot.poseEstimator.curEstPose.rotation().degrees() - rotation_2d.degrees())) <= 5
                     SmartDashboard.putBoolean("Wheels to X", wheels_to_x)
-                    if mag_vel <= 0.02 and wheels_to_x and False:
+                    if wheels_to_x:
                         self.robot.poseEstimator.set_wheels_to_x()
                     else:
 
@@ -243,7 +243,7 @@ class OI:
                         self.robot.drivetrain.drive(
                             Translation2d(forward_back, left_right)
                             * const.SWERVE_MAX_SPEED,
-                            rotate * 3,
+                            rotate * 4,
                             True,
                             False,
                         )
