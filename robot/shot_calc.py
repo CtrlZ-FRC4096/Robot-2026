@@ -35,12 +35,12 @@
 #         self.max_angle_rad = math.radians(max_angle_deg)
         
 #         # Uncertainty
-#         self.v_std = 0.25
-#         self.theta_std = math.radians(1.0)
-#         self.phi_std = math.radians(2.0)
+#         self.v_std = -0.5
+#         self.theta_std = math.radians(2.0)
+#         self.phi_std = math.radians(3.0)
 
 #         # Opt config
-#         self.steps = 2
+#         self.steps = 5
         
 #     def dynamics(self, state, spin_axis=None):
 #         # State: [x, y, z, vx, vy, vz]
@@ -230,9 +230,9 @@
 #         else:
 #             # Full Robust Mode: Check "Corners" of the uncertainty volume
 #             # This captures compound errors (e.g. High Velocity + Low Angle + Left Drift)
-#             # 1 Nominal + 8 Corners = 9 Total Scenarios
+#             # 1 Nominal + 4 Corners = 5 Total Scenarios
 #             perturbations = [(0.0, 0.0, 0.0)]
-#             for s_v in [self.v_std, -self.v_std]:
+#             for s_v in [self.v_std]:
 #                 for s_th in [self.theta_std, -self.theta_std]:
 #                     for s_ph in [self.phi_std, -self.phi_std]:
 #                         perturbations.append((s_v, s_th, s_ph))
@@ -373,7 +373,7 @@
 # def create_lookup_table():
 #         min_dist = 0.7
 #         max_dist = 8
-#         num_points = 100
+#         num_points = 20
 #         shooter_height = 0.52
 #         hub_pos = np.array([4.625594, 4.034536, 1.83])
 #         distances = np.linspace(min_dist, max_dist, num_points)
