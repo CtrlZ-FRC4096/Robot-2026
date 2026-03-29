@@ -202,7 +202,7 @@ class Shooter(Subsystem):
                     self.set_hood_position(hood_angle + self.robot.hood_fudge_value)
                     rotation = self.robot.drivetrain.get_target_angle(self.robot.time_of_flight, self.robot.static_target)
                     SmartDashboard.putNumber("rotation lock error", (self.robot.poseEstimator.curEstPose.rotation() - rotation).degrees())
-                    if self.robot.shoot_fuel or self.shoot_ready or self.ready_to_shoot():
+                    if self.robot.shoot_fuel  or self.ready_to_shoot() or self.shoot_ready:
                         self.set_accelerator_speed(self.test_accelerator_speed)
                         if self.robot.shoot_fuel or (abs(abs(self.get_accelerator_speed()) - self.commanded_accelerator_speed) <= 4 or self.accel_good) and (not self.robot.in_autonomous_mode or self.robot.poseEstimator.cur_pos_in_zone()):
                             if not self.accel_good:
