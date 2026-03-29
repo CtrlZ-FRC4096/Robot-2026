@@ -70,6 +70,14 @@ class Drivetrain(Subsystem):
         self.angle_pid.enableContinuousInput(0, 360)
         self.angle_pid.setTolerance(2)  # Set position tolerance to 0.5 degrees
 
+        self.angle_pid_close = PIDController(0.04, 0.0, 0.00015)
+        self.angle_pid_close.enableContinuousInput(0, 360)
+        self.angle_pid_close.setTolerance(2)  # Set position tolerance to 0.5 degrees
+
+        self.angle_pid_far_sotm = PIDController(0.06, 0.0, 0.005)
+        self.angle_pid_far_sotm.enableContinuousInput(0, 360)
+        self.angle_pid_far_sotm.setTolerance(2)
+
         self.x_controller = PIDController(3, 0, 0) #0.01
         self.y_controller = PIDController(3, 0, 0) #0.01
         self.xy_controller = ProfiledPIDController(2.3, 0.0, 0.025, TrapezoidProfile.Constraints(4.0, 4.0))
@@ -106,6 +114,8 @@ class Drivetrain(Subsystem):
         self.log_chassis = ChassisSpeeds()
 
         self.final_velo = Translation2d()
+
+        self.cur_accel = Translation2d()
         self.accel_shoot_limiter = SlewRateLimiter(0.2, -3)
 
         # SIM STUFF
@@ -229,6 +239,9 @@ class Drivetrain(Subsystem):
         SmartDashboard.putNumber("Swerve/Translation Y", translation.y)
         SmartDashboard.putNumber("Swerve/Rotation", rotation)
         SmartDashboard.putBoolean("Swerve/With PID", False)
+
+        self.cur_accel = Translation2d(self.robot.poseEstimator.gyro.get_acceleration_x().value, self.robot.poseEstimator.gyro.get_acceleration_y().value)
+        SmartDashboard.putNumber("Swerve/ Commanded* Acceleration", self.cur_accel.norm())
         
         if field_relative and not self.robot.isSimulation():
             module_states = const.SWERVE_KINEMATICS.toSwerveModuleStates(
@@ -297,13 +310,17 @@ class Drivetrain(Subsystem):
 
 
     def drive_with_pid(self, translation: Translation2d, target_angle):
-        pid_output = self.angle_pid.calculate(self.robot.poseEstimator.curEstPose.rotation().degrees(), target_angle)  # type: ignore
+        cur_speeds = ChassisSpeeds.fromRobotRelativeSpeeds(self.log_chassis, self.robot.poseEstimator.curEstPose.rotation())
+        
+        if self.robot.shoot_intent and Translation2d(cur_speeds.vx, cur_speeds.vy).norm() > 0.2 and self.cur_accel.norm() > 0.28 and (self.robot.poseEstimator.curEstPose.rotation() - Rotation2d.fromDegrees(target_angle)).degrees() >= 30 and self.robot.shooter.shoot_ready and self.robot.shooter.accel_good:
+            pid_output = self.angle_pid_far_sotm.calculate(self.robot.poseEstimator.curEstPose.rotation().degrees(), target_angle)
+        else:
+            pid_output = self.angle_pid.calculate(self.robot.poseEstimator.curEstPose.rotation().degrees(), target_angle)  
+        # else:
+        #     pid_output = self.angle_pid.calculate(self.robot.poseEstimator.curEstPose.rotation().degrees(), target_angle) 
 
-        # if self.angle_pid.atSetpoint():
-        #     pid_output = 0
+        
 
-        # if not in_motion:
-        #     pid_output += math.copysign(0.2, pid_output)
         SmartDashboard.putBoolean("Swerve/With PID", True)
         self.drive(
             translation, pid_output, True, False
@@ -362,8 +379,8 @@ class Drivetrain(Subsystem):
                 direction = Translation2d(0, 0)
 
             if mag_vel >= 0.25:
-                vx = (vx / mag_vel) * 0.2
-                vy = (vy / mag_vel) * 0.2
+                vx = (vx / mag_vel) * 0.25
+                vy = (vy / mag_vel) * 0.25
             new_mag_vel = Translation2d(vx, vy).norm()
 
             limit_mag = self.accel_shoot_limiter.calculate(new_mag_vel)
@@ -387,14 +404,14 @@ class Drivetrain(Subsystem):
             #and (self.theta_controller.atSetpoint() or self.robot.in_autonomous_mode)
         ):
             # self.robot.running_pid_lineup = False
-            if self.robot.lining_with_outpost:
-                self.robot.clear_jam = True
-                self.robot.ignore_shooter_in_jam = True
-                self.robot.is_intaking = False
-                self.robot.intake_at_default = False
-            if self.robot.lining_with_trench:
-                self.robot.at_trench_position = True
-            self.robot.running_pid_lineup = False
+            # if self.robot.lining_with_outpost:
+            #     self.robot.clear_jam = True
+            #     self.robot.ignore_shooter_in_jam = True
+            #     self.robot.is_intaking = False
+            #     self.robot.intake_at_default = False
+            # if self.robot.lining_with_trench:
+            #     self.robot.at_trench_position = True
+            # self.robot.running_pid_lineup = False
             #and (self.theta_controller.atSetpoint() and not self.robot.shoot_intent)
         
             # self.robot.running_pid_lineup = False
@@ -406,6 +423,8 @@ class Drivetrain(Subsystem):
                 self.robot.done_p3 = True
             if self.robot.run_p4:
                 self.robot.done_p4 = True
+
+            
             
             # self.robot.running_pid_lineup = False
 
@@ -457,10 +476,10 @@ class Drivetrain(Subsystem):
         return DriverStation.getAlliance() == DriverStation.Alliance.kRed
     
     def get_target_angle(self, tof, target : Translation2d):
-        field_relative_speeds = self.get_field_relative_speeds()
+        field_relative_speeds = ChassisSpeeds.fromRobotRelativeSpeeds(self.log_chassis, self.robot.poseEstimator.curEstPose.rotation()) #self.get_field_relative_speeds()
 
-        virtual_goal_x = target.x - tof * (field_relative_speeds.vx)
-        virtual_goal_y = target.y - tof * (field_relative_speeds.vy)
+        virtual_goal_x = target.x - (tof + 0.5) * (field_relative_speeds.vx)
+        virtual_goal_y = target.y - (tof + 0.5) * (field_relative_speeds.vy)
 
         moving_goal_location = Translation2d(virtual_goal_x, virtual_goal_y)
         robot_to_target = (moving_goal_location - self.robot.poseEstimator.curEstPose.translation())
@@ -589,11 +608,11 @@ class Drivetrain(Subsystem):
         self.dist_lookup_table.add_entry(1.084, 5.735, 69.912, 0.689)
         self.dist_lookup_table.add_entry(1.468, 6.029, 65.963, 0.735)
         self.dist_lookup_table.add_entry(1.853, 6.332, 62.87, 0.78)
-        self.dist_lookup_table.add_entry(2.237, 6.641, 61.0, 0.835)
+        self.dist_lookup_table.add_entry(2.237, 6.641, 61.0, 0.835) # calc tof: 1.169
         self.dist_lookup_table.add_entry(2.621, 6.977, 61.0, 0.92)
         self.dist_lookup_table.add_entry(3.005, 7.323, 61.0, 1.0)
         self.dist_lookup_table.add_entry(3.389, 7.672, 61.0, 1.076)
-        self.dist_lookup_table.add_entry(3.774, 8.018, 61.0, 1.147)
+        self.dist_lookup_table.add_entry(3.774, 8.018, 61.0, 1.184) # calc tof: 1.27
         self.dist_lookup_table.add_entry(4.158, 8.36, 61.0, 1.215)
         self.dist_lookup_table.add_entry(4.542, 8.697, 61.0, 1.28)
         self.dist_lookup_table.add_entry(4.926, 9.03, 61.0, 1.343)
@@ -607,9 +626,12 @@ class Drivetrain(Subsystem):
         self.dist_lookup_table.add_entry(8.0, 9.2, 61.0, 1.374)
         
     def create_launch_vel_table(self):
-        self.vel_lookup_table.add_entry(5.6, 50)
-        self.vel_lookup_table.add_entry(8, 70)
-        self.vel_lookup_table.add_entry(8.65, 80)
+        self.vel_lookup_table.add_entry(5.95, 50)
+        self.vel_lookup_table.add_entry(7.2, 60)
+        self.vel_lookup_table.add_entry(7.95, 67)
+        self.vel_lookup_table.add_entry(8.3, 70)
+        self.vel_lookup_table.add_entry(8.9, 80)
+        self.vel_lookup_table.add_entry(9.2, 83)
         
     def create_launch_angle_table(self):
         self.angle_lookup_table.add_entry(61, 45)
@@ -650,8 +672,9 @@ class Drivetrain(Subsystem):
 
 
 
-        cur_speeds = self.get_robot_relative_speeds()
-        phase_delay_twist = Twist2d(cur_speeds.vx * 0.1, cur_speeds.vy * 0.1, cur_speeds.omega * 0.1)
+        cur_speeds = self.log_chassis #self.get_robot_relative_speeds()
+        phase_delay = 0.04
+        phase_delay_twist = Twist2d(cur_speeds.vx * phase_delay + 0.5 * self.cur_accel.X() * (phase_delay ** 2), cur_speeds.vy * phase_delay + 0.5 * self.cur_accel.Y() * (phase_delay ** 2), cur_speeds.omega * phase_delay)
         cur_pos = self.robot.poseEstimator.curEstPose.exp(phase_delay_twist)
         self.robot.distance = self.get_hub_distance(cur_pos.translation())
         if self.robot.shoot_intent:
@@ -676,18 +699,18 @@ class Drivetrain(Subsystem):
             temp_time_of_flight = self.dist_lookup_table.interpolate(dist_from_shooter)[2]
             temp_virtual_goal = Translation2d()
             field_relative_speeds = self.get_field_relative_speeds()
-            SmartDashboard.putNumber("Test/ Field Rel X", field_relative_speeds.vx)
-            SmartDashboard.putNumber("Test/ Field Rel Y", field_relative_speeds.vy)
+            SmartDashboard.putNumber("Test/ Actual Field Rel X", field_relative_speeds.vx)
+            SmartDashboard.putNumber("Test/ Actual Field Rel Y", field_relative_speeds.vy)
             for _ in range(2):
                 if True: # CHANGE TO CASES ON ALLIANCE ZONE AND NEUTRAL ZONE
                     temp_virtual_goal = Translation2d(
-                        self.robot.static_target.X() - (temp_time_of_flight) * field_relative_speeds.vx, self.robot.static_target.Y() - (temp_time_of_flight) * field_relative_speeds.vy 
+                        self.robot.static_target.X() - (temp_time_of_flight + 0.2) * field_relative_speeds.vx, self.robot.static_target.Y() - (temp_time_of_flight + 0.2) * field_relative_speeds.vy 
                     )
                 virtual_robot_distance = (shooter_pos - temp_virtual_goal).norm()
                 temp_time_of_flight = self.dist_lookup_table.interpolate(virtual_robot_distance)[2]
 
             SmartDashboard.putNumber("Virtual Goal Dist (shooter)", virtual_robot_distance)
-            self.robot.virtual_target.setPose(Pose2d(temp_virtual_goal, Rotation2d()))
+            # self.robot.virtual_target.setPose(Pose2d(temp_virtual_goal, Rotation2d()))
             self.robot.virtual_goal = temp_virtual_goal
             self.robot.time_of_flight = temp_time_of_flight
 
@@ -708,7 +731,7 @@ class Drivetrain(Subsystem):
         # self.chassis_accel = (
         #     self.get_robot_relative_speeds() - self.previous_chassisspeeds
         # ) / 0.05
-        # self.previous_chassisspeeds = self.get_robot_relative_speeds()
+        self.previous_chassisspeeds = self.get_robot_relative_speeds()
 
         if self.robot.in_autonomous_mode:
             # if self.robot.poseEstimator.curEstPose.X() >= 5.172:
@@ -743,6 +766,7 @@ class Drivetrain(Subsystem):
         SmartDashboard.putNumber("Distance to Hub", self.get_hub_distance(self.robot.poseEstimator.curEstPose.translation()))
 
         SmartDashboard.putData("PID Controller (Drivetrain)", self.angle_pid)
+        SmartDashboard.putData("PID Controller CLOSE (Drivetrain)", self.angle_pid_close)
         SmartDashboard.putBoolean("Angle at Setpoint", self.angle_pid.atSetpoint())
         SmartDashboard.putNumber("PID Controller Error", self.angle_pid.getError())
         SmartDashboard.putData("PID Controller (XY Inter)", self.xy_inter_controller)

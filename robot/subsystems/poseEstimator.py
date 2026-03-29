@@ -175,12 +175,12 @@ class PoseEstimator(Subsystem):
         ) # CLIMBER SIDE CAMERA
         
         ROBOT_TO_CAM2 = Transform3d(
-            Translation3d(0.130, 0.335, 0.311),
+            Translation3d(0.0919, 0.335, 0.311),
             Rotation3d.fromDegrees(0, -10, 90)
         ) # SHOOTER BACK CAMERA (TO DO)
 
         ROBOT_TO_CAM3 = Transform3d(
-            Translation3d(0.0, 0.068, 0.514),
+            Translation3d(0.0, 0.071, 0.514),
             Rotation3d.fromDegrees(0, -20, -90)
         ) # FLYWHEEL BAR CAMERA
 
@@ -408,12 +408,13 @@ class PoseEstimator(Subsystem):
             return True
         
     def set_wheels_to_x(self):
-        fl = SwerveModuleState(0, Rotation2d.fromDegrees(225))
+        fl = SwerveModuleState(0, Rotation2d.fromDegrees(45))
         fr = SwerveModuleState(0, Rotation2d.fromDegrees(315))
         bl = SwerveModuleState(0, Rotation2d.fromDegrees(315))
         br = SwerveModuleState(0, Rotation2d.fromDegrees(45))
         desired_states = (fl, fr, bl, br)
-        self.set_module_states(desired_states)        
+        for idx, module in enumerate(self.modules):
+            module.set_desired_state(desired_states[idx], False, ignore_speed_for_angle=True)        
 
     def periodic(self):
         self.single_tag_IDs = set()
@@ -513,6 +514,8 @@ class PoseEstimator(Subsystem):
                 continue
 
         SmartDashboard.putNumber("Gyro/gyro voltage", self.gyro.get_supply_voltage().value)
+        SmartDashboard.putNumber("Gyro/ Accel X", self.gyro.get_acceleration_x().value)
+        SmartDashboard.putNumber("Gyro/ Accel Y", self.gyro.get_acceleration_y().value)
 
         SmartDashboard.putNumber("Camera/Odometry X", self.curEstPose.x)
         SmartDashboard.putNumber("Camera/Odometry Y", self.curEstPose.y)

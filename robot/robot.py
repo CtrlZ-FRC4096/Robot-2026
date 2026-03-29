@@ -309,7 +309,7 @@ class Robot(CoroutineRobot):
         # self.auto_win_found = False
 
         
-        self.auto = self.autoroutines.trench_right_counter_auto()
+        self.auto = self.autoroutines.right_trench_bump_robust()
         self.poseEstimator.poseEst.resetPose(Pose2d(self.fieldConstants.flip_Translation2d(Translation2d(4.47, 0.6)), self.poseEstimator.getYaw())) # for right auto
         # self.poseEstimator.poseEst.resetPose(Pose2d(self.fieldConstants.flip_Translation2d(Translation2d(4.471, 7.587)), self.poseEstimator.getYaw())) # for left auto
 

@@ -58,8 +58,8 @@ class SwerveModule:
         swerve_angle_motor_config = configs.TalonFXConfiguration()
         #        self.talonfx.configurator.apply(configs.TalonFXConfiguration())
         #        swerve_angle_motor_config = hardware.TalonFXConfiguration()
-        swerve_angle_motor_config.slot0.k_p = 2.4
-        swerve_angle_motor_config.slot0.k_d = 0.1
+        swerve_angle_motor_config.slot0.k_p = 5.0
+        swerve_angle_motor_config.slot0.k_d = 0.0
         swerve_angle_motor_config.slot0.k_i = 0.0
         swerve_angle_motor_config.current_limits.supply_current_limit = (
             25  # I am not sure if this is correct
@@ -165,11 +165,11 @@ class SwerveModule:
             const.SWERVE_DRIVE_KS, const.SWERVE_DRIVE_KV, const.SWERVE_DRIVE_KA
         )
 
-    def set_desired_state(self, desired_state: SwerveModuleState, is_open_loop, feed_forward=0.0):
+    def set_desired_state(self, desired_state: SwerveModuleState, is_open_loop, feed_forward=0.0, ignore_speed_for_angle=False):
         desired_state = ctre_module_state.optimize(
             desired_state, self.get_state().angle
         )
-        self.set_angle(desired_state)
+        self.set_angle(desired_state, ignore_speed=ignore_speed_for_angle)
 
         ## Add cosine compensation, wheels don't spin as fast when they are at the wrong angle
         desired_state.speed *= (desired_state.angle - self.get_state().angle).cos()
@@ -198,15 +198,15 @@ class SwerveModule:
                 )
             )
 
-    def set_angle(self, desired_state: SwerveModuleState):
-        if abs(desired_state.speed) <= 0.05:  # if value is small, dont change the angle
+    def set_angle(self, desired_state: SwerveModuleState, ignore_speed=False):
+        if abs(desired_state.speed) <= 0.05 and not ignore_speed:  # if value is small, dont change the angle
             angle = self.get_angle()
         else:
             angle = desired_state.angle
 
         self.angle_motor.set_control(
             controls.PositionVoltage(
-                angle.degrees() / 360 * const.SWERVE_ANGLE_GEAR_RATIO, enable_foc=True
+                angle.degrees() / 360 * const.SWERVE_ANGLE_GEAR_RATIO
             )
             # conversions.degrees_to_falcon(
             #     angle.degrees(), const.SWERVE_ANGLE_GEAR_RATIO

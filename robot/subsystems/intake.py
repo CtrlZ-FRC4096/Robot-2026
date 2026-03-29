@@ -34,19 +34,22 @@ class Intake(Subsystem):
         deploy_cancoder_config.magnet_sensor.sensor_direction = (
             signals.InvertedValue(0)
         )
-        deploy_cancoder_config.magnet_sensor.magnet_offset = -0.27
+        deploy_cancoder_config.magnet_sensor.magnet_offset = 0.72
 
         self.deploy_cancoder.configurator.apply(
             deploy_cancoder_config  # type: ignore
         )  # Apply settings to angle encoder
 
-        self.intake_motor_config = self.robot.get_motor_config(1, 5, 0, 0, 0.21, 0, 0, 11)
-        self.deploy_motor_config = self.robot.get_motor_config(1, 110, 0, 15, 0, 0, 9, 8)
+        self.intake_motor_config = self.robot.get_motor_config(0, 5, 0, 0, 0.21, 0, 0, 11)
+        self.deploy_motor_config = self.robot.get_motor_config(1, 140, 0, 15, 0, 0, 9, 8)
+        self.deploy_motor_config.current_limits.supply_current_limit = 60
+        self.deploy_motor_config.torque_current.peak_forward_torque_current = 60
+        self.deploy_motor_config.torque_current.peak_reverse_torque_current = -60
         self.deploy_motor_config.motion_magic.motion_magic_cruise_velocity = 20
         self.deploy_motor_config.motion_magic.motion_magic_acceleration = 40
         self.deploy_motor_config.feedback.feedback_remote_sensor_id = const.INTAKE_DEPLOY_CANCODER_ID
         self.deploy_motor_config.feedback.feedback_sensor_source = signals.FeedbackSensorSourceValue.REMOTE_CANCODER
-
+        
         self.left_intake_motor.configurator.apply(self.intake_motor_config)
         self.right_intake_motor.configurator.apply(self.intake_motor_config)
         self.deploy_motor.configurator.apply(self.deploy_motor_config)
@@ -81,7 +84,7 @@ class Intake(Subsystem):
         
         if self.intake_pose_in_trench():
             self.commanded_position = -0.05
-            if abs(self.get_position() - 0.05) <= 0.02:
+            if abs(self.get_position() - -0.05) <= 0.02:
                 self.stop_deploy()
             else:
                 self.deploy_motor.set_control(controls.MotionMagicTorqueCurrentFOC(-0.05))
@@ -150,16 +153,22 @@ class Intake(Subsystem):
             self.stop_intake()
             self.set_position(0.19)
         elif self.robot.clear_jam:
-            self.set_intake_speed(-0.8)
+            self.set_intake_speed(-0.3)
             self.set_position(-0.05)
         elif self.robot.is_intaking:
             # if self.robot.fieldConstants.LinesVertical.starting < self.robot.poseEstimator.curEstPose.X() < self.robot.fieldConstants.fieldLength - self.robot.fieldConstants.LinesVertical.starting: # neutral zone
-            self.set_intake_speed(0.8) # TUNE
+            self.set_intake_speed(0.67) # TUNE
             self.set_position(-0.05) # TUNE
-        elif self.robot.pulse_pivot :
-            if not self.robot.in_autonomous_mode or True:
-                self.set_position(0.21)
-            self.set_intake_speed(0.8)
+        elif self.robot.pulse_pivot:
+            # if not self.robot.in_autonomous_mode or True:
+            #     self.set_position(0.21)
+            if self.tick_count % 8 < 4:
+                # print("switch to out")
+                self.set_position(0.2)
+            else:
+                # print("switch to in")
+                self.set_position(-0.05)
+            self.set_intake_speed(0.3)
         else:
             self.stop_intake()
             self.set_position(-0.05)

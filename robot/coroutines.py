@@ -149,7 +149,7 @@ class Coroutines:
             robot.running_pid_lineup = True
             robot.shoot_intent = True
             robot.run_p1 = True
-            while not (robot.done_p1 or robot.poseEstimator.cur_pos_in_zone(3.7)):
+            while not (robot.done_p1 or robot.poseEstimator.cur_pos_in_zone(3.45)):
                 yield
             robot.running_pid_lineup = False
             robot.run_p1 = False
@@ -167,7 +167,7 @@ class Coroutines:
             robot.running_pid_lineup = True
             robot.shoot_intent = True
             robot.run_p2 = True
-            while not robot.done_p2:
+            while not (robot.done_p2 or robot.poseEstimator.cur_pos_in_zone(3.45)):
                 yield
             robot.running_pid_lineup = False
             robot.run_p2 = False

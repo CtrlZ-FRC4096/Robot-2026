@@ -108,6 +108,8 @@ class OI:
         self.right_trigger_being_held = False
         self.left_trigger_being_held = False
 
+        self.wait_one_tick = True
+
         self.accel_shoot_limiter = SlewRateLimiter(0.2, -3)
 
         @self.rumble_button_d1.whenPressed
@@ -162,6 +164,7 @@ class OI:
 
                 SmartDashboard.putNumber("Test/Limit accel", self.accel_shoot_limiter.lastValue())
                 if self.robot.running_pid_lineup:
+                    SmartDashboard.putBoolean("Wheels to X", False)
                     # Cancel drive with pid if robot is moving manually
                     if (
 						abs(self.driver1.LEFT_JOY_X()) > 0.05
@@ -189,20 +192,20 @@ class OI:
                     rotation_2d = self.robot.drivetrain.get_target_angle(self.robot.time_of_flight, self.robot.static_target)
                     rotation = rotation_2d.degrees()
                     mag_vel = Translation2d(forward_back, left_right).norm()
-                    wheels_to_x = mag_vel <= 0.02 and abs((self.robot.poseEstimator.curEstPose.rotation().degrees() - rotation_2d.degrees())) <= 5
-                    SmartDashboard.putBoolean("Wheels to X", wheels_to_x)
+                    wheels_to_x = mag_vel <= 0.1 and abs((self.robot.poseEstimator.curEstPose.rotation().degrees() - rotation_2d.degrees())) <= 5
                     if wheels_to_x:
+                        SmartDashboard.putBoolean("Wheels to X", True)
                         self.robot.poseEstimator.set_wheels_to_x()
                     else:
-
+                        SmartDashboard.putBoolean("Wheels to X", False)
                         if mag_vel > 1e-6:
                             direction = Translation2d(forward_back, left_right) / mag_vel
                         else:
                             direction = Translation2d(0, 0)
 
                         if mag_vel >= 0.25:
-                            forward_back = (forward_back / mag_vel) * 0.1
-                            left_right = (left_right / mag_vel) * 0.1
+                            forward_back = (forward_back / mag_vel) * 0.25
+                            left_right = (left_right / mag_vel) * 0.25
                         new_mag_vel = Translation2d(forward_back, left_right).norm()
 
                         limit_mag = self.accel_shoot_limiter.calculate(new_mag_vel)
@@ -235,6 +238,7 @@ class OI:
                         SmartDashboard.putNumber("Test/Diff Y", diff_vec.Y())
                         self.robot.drivetrain.go_to_pose_profiled_pid(final_pose)
                 else:
+                    SmartDashboard.putBoolean("Wheels to X", False)
                     if abs(rotate) >= 0.02:
                         self.cardinal_directing = False
                         self.find_heading = True
@@ -252,16 +256,16 @@ class OI:
                         )
                         self.tick_count_max = 5
                     else:
-                        # if not self.cardinal_directing:
-                        #     if self.find_heading:
-                        #         if self.wait_one_tick:
-                        #             self.robot_oriented_angle = (
-                        #                 self.robot.poseEstimator.getYaw().degrees()
-                        #             )
-                        #             self.find_heading = False
-                        #         else:
-                        #             self.wait_one_tick = True
-                        # if not self.cardinal_directing:
+                        if not self.cardinal_directing:
+                            if self.find_heading:
+                                if self.wait_one_tick:
+                                    self.robot_oriented_angle = (
+                                        self.robot.poseEstimator.getYaw().degrees()
+                                    )
+                                    self.find_heading = False
+                                else:
+                                    self.wait_one_tick = True
+                         # if not self.cardinal_directing:
                         #     if self.find_heading:
                         #         if self.tick_count <= self.tick_count_max:
                         #             self.robot_oriented_angle = (
@@ -269,7 +273,9 @@ class OI:
                         #             )
                         #             self.tick_count += 1
                         #         else:
-                        #             self.find_heading = False\[]
+                        #             self.find_heading = False
+
+
 
                         self.robot.drivetrain.drive_with_pid(
                             Translation2d(forward_back, left_right)

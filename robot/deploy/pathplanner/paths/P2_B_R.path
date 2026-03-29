@@ -152,7 +152,7 @@
     "unlimited": false
   },
   "goalEndState": {
-    "velocity": 2.1,
+    "velocity": 1.25,
     "rotation": 0.0
   },
   "reversed": false,

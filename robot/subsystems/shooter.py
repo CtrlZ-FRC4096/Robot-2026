@@ -46,7 +46,7 @@ class Shooter(Subsystem):
         self.hood_cancoder.configurator.apply(hood_cancoder_config)
 
 
-        self.fly_motor_config = self.robot.get_motor_config(0, 10.0, 0, 0, 0.015, 0, 0, 3.5)
+        self.fly_motor_config = self.robot.get_motor_config(0, 15.0, 0, 0, 0.015, 0, 0, 3.5)
         # self.right_fly_motor_config = self.robot.get_motor_config(0, 12.0, 0.1, 0, 0, 0, 0, 0)
         self.fly_motor_config.current_limits.supply_current_limit = 80
         self.fly_motor_config.torque_current.peak_forward_torque_current = 80
@@ -168,9 +168,14 @@ class Shooter(Subsystem):
 
     def ready_to_shoot(self):
         rotation = self.robot.drivetrain.get_target_angle(self.robot.time_of_flight, self.robot.static_target)
-        if (abs(abs(self.get_fly_speed()) - self.commanded_fly_speed <= 3)) and (abs(abs(self.get_hood_position()) - self.commanded_hood_position) < 2) and (self.robot.down_bad or abs((self.robot.poseEstimator.curEstPose.rotation() - rotation).degrees()) <= 10): #and pointed at hub   
+        cur_speeds = self.robot.drivetrain.get_field_relative_speeds()
+        if (abs(abs(self.get_fly_speed()) - self.commanded_fly_speed <= 3)) and (abs(abs(self.get_hood_position()) - self.commanded_hood_position) < 2) and (self.robot.down_bad or abs((self.robot.poseEstimator.curEstPose.rotation() - rotation).degrees()) <= 12 or (abs((self.robot.poseEstimator.curEstPose.rotation() - rotation).degrees()) <= 30 and Translation2d(cur_speeds.vx, cur_speeds.vy).norm() > 0.3)):# and self.robot.drivetrain.cur_accel.norm() > 0.28)): #and pointed at hub   
             self.shoot_ready = True
             return True
+        # elif:
+        # if (abs(abs(self.get_fly_speed()) - self.commanded_fly_speed <= 3)) and (abs(abs(self.get_hood_position()) - self.commanded_hood_position) < 2) and (self.robot.down_bad or abs((self.robot.poseEstimator.curEstPose.rotation() - rotation).degrees()) <= 20): #and pointed at hub   
+        #     self.shoot_ready = True
+        #     return True
         else:
             self.shoot_ready = False
             return False     
@@ -197,7 +202,7 @@ class Shooter(Subsystem):
                     self.set_hood_position(hood_angle + self.robot.hood_fudge_value)
                     rotation = self.robot.drivetrain.get_target_angle(self.robot.time_of_flight, self.robot.static_target)
                     SmartDashboard.putNumber("rotation lock error", (self.robot.poseEstimator.curEstPose.rotation() - rotation).degrees())
-                    if self.robot.shoot_fuel or self.ready_to_shoot() or self.shoot_ready:
+                    if self.robot.shoot_fuel or self.shoot_ready or self.ready_to_shoot():
                         self.set_accelerator_speed(self.test_accelerator_speed)
                         if self.robot.shoot_fuel or (abs(abs(self.get_accelerator_speed()) - self.commanded_accelerator_speed) <= 4 or self.accel_good) and (not self.robot.in_autonomous_mode or self.robot.poseEstimator.cur_pos_in_zone()):
                             if not self.accel_good:

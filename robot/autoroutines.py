@@ -54,16 +54,16 @@ class AutoRoutines:
             self.robot.coroutines.drive_to_zone_trench_2
         )
     
-    def trench_right_counter_auto(self):
-        return SequentialCommandGroup(
-            ParallelCommandGroup(self.robot.P1_T_R_ROBUST_1,
-                                 self.robot.coroutines.intake),
-            self.robot.coroutines.reline_up_with_right_trench.withTimeout(4),
-            self.robot.P1_T_R_ROBUST_2,
-            self.robot.coroutines.drive_to_zone_trench.withTimeout(6.5),
-            ParallelCommandGroup(self.robot.P2_B_R,
-                                self.robot.coroutines.intake_2)
-        )
+    # def trench_right_counter_auto(self):
+    #     return SequentialCommandGroup(
+    #         ParallelCommandGroup(self.robot.P1_T_R_ROBUST_1,
+    #                              self.robot.coroutines.intake),
+    #         self.robot.coroutines.reline_up_with_right_trench.withTimeout(4),
+    #         self.robot.P1_T_R_ROBUST_2,
+    #         self.robot.coroutines.drive_to_zone_trench.withTimeout(6.5),
+    #         ParallelCommandGroup(self.robot.P2_B_R,
+    #                             self.robot.coroutines.intake_2)
+        # )
     
     def right_trench_bump_robust(self):
         return SequentialCommandGroup(
