@@ -57,6 +57,7 @@ from wpimath.filter import SlewRateLimiter
 from wpimath.units import degreesToRadians, inchesToMeters, radiansToDegrees
 from collections import deque
 from lookup_table import LookupTableAll, LookupTableAngle, LookupTableVel
+import wpilib
 
 # from shapely import Polygon, Point
 # from shapely.affinity import translate, rotate
@@ -669,7 +670,7 @@ class Drivetrain(Subsystem):
             
         #     shooter_pos = est_pose.transformBy(Transform2d())
 
-
+        start_time = wpilib.RobotController.getFPGATime()
 
 
         cur_speeds = self.log_chassis #self.get_robot_relative_speeds()
@@ -699,9 +700,9 @@ class Drivetrain(Subsystem):
             temp_time_of_flight = self.dist_lookup_table.interpolate(dist_from_shooter)[2]
             temp_virtual_goal = Translation2d()
             field_relative_speeds = self.get_field_relative_speeds()
-            SmartDashboard.putNumber("Test/ Actual Field Rel X", field_relative_speeds.vx)
-            SmartDashboard.putNumber("Test/ Actual Field Rel Y", field_relative_speeds.vy)
-            for _ in range(2):
+            # SmartDashboard.putNumber("Test/ Actual Field Rel X", field_relative_speeds.vx)
+            # SmartDashboard.putNumber("Test/ Actual Field Rel Y", field_relative_speeds.vy)
+            for _ in range(3):
                 if True: # CHANGE TO CASES ON ALLIANCE ZONE AND NEUTRAL ZONE
                     temp_virtual_goal = Translation2d(
                         self.robot.static_target.X() - (temp_time_of_flight + 0.2) * field_relative_speeds.vx, self.robot.static_target.Y() - (temp_time_of_flight + 0.2) * field_relative_speeds.vy 
@@ -745,7 +746,7 @@ class Drivetrain(Subsystem):
                 if self.robot.shoot_intent and self.robot.poseEstimator.cur_pos_in_zone(4.5):
                         rotation = self.robot.drivetrain.get_hub_angle(self.robot.time_of_flight)
                         lineup  = Pose2d(self.robot.final_lineup_pose.X(), self.robot.final_lineup_pose.Y(), rotation)
-                        SmartDashboard.putNumber("Shooter/Rotation to Hub", rotation.degrees())
+                        # SmartDashboard.putNumber("Shooter/Rotation to Hub", rotation.degrees())
                 else:
                     lineup = self.robot.final_lineup_pose
                 self.go_to_pose_profiled_pid(lineup)
@@ -755,6 +756,9 @@ class Drivetrain(Subsystem):
             elif self.robot.should_rotate_trench_auto:
                 self.drive_with_pid(Translation2d(0, 0), self.robot.auto_rotation_trench)
             # self.go_to_pose_profiled_pid(self.robot.final_lineup_pose)
+
+        elapsed_ms = (wpilib.RobotController.getFPGATime() - start_time) / 1000
+        SmartDashboard.putNumber("Loop Times/Drivetrain", elapsed_ms)
 
     def log(self):
         SmartDashboard.putData("PID Controller Reef XY", self.xy_controller)

@@ -148,9 +148,9 @@ class OI:
 
                 rotate = -self.driver1.RIGHT_JOY_X()
 
-                SmartDashboard.putNumber("Forward_Back", forward_back)
-                SmartDashboard.putNumber("Left_Right", left_right)
-                SmartDashboard.putNumber("Rotate", rotate)
+                # SmartDashboard.putNumber("Forward_Back", forward_back)
+                # SmartDashboard.putNumber("Left_Right", left_right)
+                # SmartDashboard.putNumber("Rotate", rotate)
 
                 if not self.robot.shoot_intent:
                     cur_speeds = self.robot.drivetrain.get_field_relative_speeds()
@@ -162,9 +162,9 @@ class OI:
                     raw_mag_2 = Translation2d(cur_speeds.vx, cur_speeds.vy).norm()
                     dummy_val_2 = self.robot.drivetrain.accel_shoot_limiter.calculate(raw_mag_2)
 
-                SmartDashboard.putNumber("Test/Limit accel", self.accel_shoot_limiter.lastValue())
+                # SmartDashboard.putNumber("Test/Limit accel", self.accel_shoot_limiter.lastValue())
                 if self.robot.running_pid_lineup:
-                    SmartDashboard.putBoolean("Wheels to X", False)
+                    # SmartDashboard.putBoolean("Wheels to X", False)
                     # Cancel drive with pid if robot is moving manually
                     if (
 						abs(self.driver1.LEFT_JOY_X()) > 0.05
@@ -194,10 +194,10 @@ class OI:
                     mag_vel = Translation2d(forward_back, left_right).norm()
                     wheels_to_x = mag_vel <= 0.1 and abs((self.robot.poseEstimator.curEstPose.rotation().degrees() - rotation_2d.degrees())) <= 2.2
                     if wheels_to_x:
-                        SmartDashboard.putBoolean("Wheels to X", True)
+                        # SmartDashboard.putBoolean("Wheels to X", True)
                         self.robot.poseEstimator.set_wheels_to_x()
                     else:
-                        SmartDashboard.putBoolean("Wheels to X", False)
+                        # SmartDashboard.putBoolean("Wheels to X", False)
                         if mag_vel > 1e-6:
                             direction = Translation2d(forward_back, left_right) / mag_vel
                         else:
@@ -238,7 +238,7 @@ class OI:
                         SmartDashboard.putNumber("Test/Diff Y", diff_vec.Y())
                         self.robot.drivetrain.go_to_pose_profiled_pid(final_pose)
                 else:
-                    SmartDashboard.putBoolean("Wheels to X", False)
+                    # SmartDashboard.putBoolean("Wheels to X", False)
                     if abs(rotate) >= 0.02:
                         self.cardinal_directing = False
                         self.find_heading = True

@@ -149,6 +149,8 @@ class Intake(Subsystem):
         return angle
 
     def periodic(self):
+        start_time = wpilib.RobotController.getFPGATime()
+
         if self.robot.intake_at_default:
             self.stop_intake()
             self.set_position(0.19)
@@ -174,6 +176,9 @@ class Intake(Subsystem):
             self.set_position(-0.05)
 
         self.tick_count += 1
+
+        elapsed_ms = (wpilib.RobotController.getFPGATime() - start_time) / 1000
+        SmartDashboard.putNumber("Loop Times/Intake", elapsed_ms)
 
     def log(self):
         SmartDashboard.putBoolean("States/Is Intaking", self.robot.is_intaking)

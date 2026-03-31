@@ -77,6 +77,8 @@ from photoncamera import WrapperedPhotonCameraTag, WrapperedPhotonCameraIntakeFu
 from wpimath.units import degreesToRadians, inchesToMeters
 from robotpy_apriltag import AprilTagField, AprilTagFieldLayout
 
+from wpilib import RobotController
+
 
 
 class PoseEstimator(Subsystem):
@@ -417,6 +419,8 @@ class PoseEstimator(Subsystem):
             module.set_desired_state(desired_states[idx], False, ignore_speed_for_angle=True)        
 
     def periodic(self):
+        start_time = RobotController.getFPGATime()
+
         self.single_tag_IDs = set()
         single_tag_poses = []
 
@@ -503,6 +507,9 @@ class PoseEstimator(Subsystem):
 
         # self.odometry.update(self.getYaw(), self.get_module_positions())
 
+
+        elapsed_ms = (RobotController.getFPGATime() - start_time) / 1000
+        SmartDashboard.putNumber("Loop Times/Pose Estimator", elapsed_ms)
 
     def log(self):
         for idx in range(len(self.cams)):

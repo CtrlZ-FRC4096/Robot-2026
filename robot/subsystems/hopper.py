@@ -54,6 +54,8 @@ class Hopper(Subsystem):
         self.indexer_motor.set_control(controls.DutyCycleOut(0.0))
 
     def periodic(self):
+        start_time = wpilib.RobotController.getFPGATime()
+        
         if not self.robot.shoot_intent and self.robot.is_intaking:
             # self.commanded_speed = -0.95
             # self.indexer_motor.set_control(controls.DutyCycleOut(-0.95, enable_foc=False))
@@ -69,6 +71,8 @@ class Hopper(Subsystem):
         # ADD WEIGHT CODE HERE
         # weight_ratio = self.robot.poseEstimator.get_weight_by_accel()
         
+        elapsed_ms = (wpilib.RobotController.getFPGATime() - start_time) / 1000
+        SmartDashboard.putNumber("Loop Times/Hopper", elapsed_ms)
 
     def log(self):
         SmartDashboard.putNumber("Hopper/Actual Speed", self.get_speed())
