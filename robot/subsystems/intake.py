@@ -41,7 +41,7 @@ class Intake(Subsystem):
         )  # Apply settings to angle encoder
 
         self.intake_motor_config = self.robot.get_motor_config(0, 5, 0, 0, 0.21, 0, 0, 11)
-        self.deploy_motor_config = self.robot.get_motor_config(1, 140, 0, 15, 0, 0, 9, 8)
+        self.deploy_motor_config = self.robot.get_motor_config(1, 140, 0, 15, 0, 0, 0, 8)
         self.deploy_motor_config.current_limits.supply_current_limit = 60
         self.deploy_motor_config.torque_current.peak_forward_torque_current = 60
         self.deploy_motor_config.torque_current.peak_reverse_torque_current = -60
@@ -157,7 +157,7 @@ class Intake(Subsystem):
             self.set_position(-0.05)
         elif self.robot.is_intaking:
             # if self.robot.fieldConstants.LinesVertical.starting < self.robot.poseEstimator.curEstPose.X() < self.robot.fieldConstants.fieldLength - self.robot.fieldConstants.LinesVertical.starting: # neutral zone
-            self.set_intake_speed(0.67) # TUNE
+            self.set_intake_speed(0.85) # TUNE
             self.set_position(-0.05) # TUNE
         elif self.robot.pulse_pivot:
             # if not self.robot.in_autonomous_mode or True:

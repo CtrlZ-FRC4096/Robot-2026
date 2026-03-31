@@ -192,7 +192,7 @@ class OI:
                     rotation_2d = self.robot.drivetrain.get_target_angle(self.robot.time_of_flight, self.robot.static_target)
                     rotation = rotation_2d.degrees()
                     mag_vel = Translation2d(forward_back, left_right).norm()
-                    wheels_to_x = mag_vel <= 0.1 and abs((self.robot.poseEstimator.curEstPose.rotation().degrees() - rotation_2d.degrees())) <= 5
+                    wheels_to_x = mag_vel <= 0.1 and abs((self.robot.poseEstimator.curEstPose.rotation().degrees() - rotation_2d.degrees())) <= 2.2
                     if wheels_to_x:
                         SmartDashboard.putBoolean("Wheels to X", True)
                         self.robot.poseEstimator.set_wheels_to_x()
@@ -203,9 +203,9 @@ class OI:
                         else:
                             direction = Translation2d(0, 0)
 
-                        if mag_vel >= 0.25:
-                            forward_back = (forward_back / mag_vel) * 0.25
-                            left_right = (left_right / mag_vel) * 0.25
+                        if mag_vel >= 0.175:
+                            forward_back = (forward_back / mag_vel) * 0.175
+                            left_right = (left_right / mag_vel) * 0.175
                         new_mag_vel = Translation2d(forward_back, left_right).norm()
 
                         limit_mag = self.accel_shoot_limiter.calculate(new_mag_vel)

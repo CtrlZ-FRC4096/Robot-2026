@@ -145,11 +145,11 @@ class Coroutines:
             robot.intake_at_default = False
             robot.pulse_pivot = False
 
-            robot.final_lineup_pose = robot.fieldConstants.flip_Pose2d(Pose2d(2.807, 2.4, Rotation2d.fromDegrees(-41)))
+            robot.final_lineup_pose = robot.fieldConstants.flip_Pose2d(Pose2d(2.807, 2.513, Rotation2d.fromDegrees(-90)))
             robot.running_pid_lineup = True
             robot.shoot_intent = True
             robot.run_p1 = True
-            while not (robot.done_p1 or robot.poseEstimator.cur_pos_in_zone(3.45)):
+            while not (robot.done_p1 or robot.poseEstimator.cur_pos_in_zone(3.35)):
                 yield
             robot.running_pid_lineup = False
             robot.run_p1 = False
@@ -163,11 +163,11 @@ class Coroutines:
             robot.intake_at_default = False
             robot.pulse_pivot = False
 
-            robot.final_lineup_pose = robot.fieldConstants.flip_Pose2d(Pose2d(2.807, 2.482, Rotation2d.fromDegrees(145)))
+            robot.final_lineup_pose = robot.fieldConstants.flip_Pose2d(Pose2d(2.807, 2.48, Rotation2d.fromDegrees(-90)))
             robot.running_pid_lineup = True
             robot.shoot_intent = True
             robot.run_p2 = True
-            while not (robot.done_p2 or robot.poseEstimator.cur_pos_in_zone(3.45)):
+            while not (robot.done_p2 or robot.poseEstimator.cur_pos_in_zone(3.35)):
                 yield
             robot.running_pid_lineup = False
             robot.run_p2 = False

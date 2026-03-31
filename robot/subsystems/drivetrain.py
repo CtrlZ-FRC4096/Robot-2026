@@ -626,8 +626,8 @@ class Drivetrain(Subsystem):
         self.dist_lookup_table.add_entry(8.0, 9.2, 61.0, 1.374)
         
     def create_launch_vel_table(self):
-        self.vel_lookup_table.add_entry(5.95, 50)
-        self.vel_lookup_table.add_entry(7.2, 60)
+        self.vel_lookup_table.add_entry(6.05, 50)
+        self.vel_lookup_table.add_entry(7.3, 60)
         self.vel_lookup_table.add_entry(7.95, 67)
         self.vel_lookup_table.add_entry(8.3, 70)
         self.vel_lookup_table.add_entry(8.9, 80)

@@ -71,13 +71,13 @@ class AutoRoutines:
                 self.robot.P1_T_B_R_ROBUST,
                 self.robot.coroutines.intake),
             self.robot.coroutines.p1_over_right_bump,
-            self.robot.coroutines.drive_to_zone_trench.withTimeout(3.5),
+            self.robot.coroutines.drive_to_zone_trench.withTimeout(4.25),
             ParallelCommandGroup(
                 self.robot.P2_B_R,
                 self.robot.coroutines.intake_2
             ),
             self.robot.coroutines.p2_over_right_bump,
-            self.robot.coroutines.drive_to_zone_trench_2.withTimeout(3.5)
+            self.robot.coroutines.drive_to_zone_trench_2.withTimeout(4.25)
         )
 
     def trench_left_safe_auto(self):
