@@ -357,7 +357,7 @@ class PoseEstimator(Subsystem):
         cur_jerk_y = abs(cur_accel_y - self.last_periodic_accel_y) / 0.05
 
         self.last_period_accel_x = cur_accel_x
-        self.last_period_accel_y = cur_accel_x
+        self.last_period_accel_y = cur_accel_y
 
         return np.sqrt(cur_jerk_x**2 + cur_jerk_y**2)
     
