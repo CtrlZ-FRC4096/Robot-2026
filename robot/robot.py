@@ -524,6 +524,9 @@ class Robot(CoroutineRobot):
         self.shoot_intent = False
         self.shooter_at_default = True
         self.shoot_fuel = False
+        self.pulse_pivot = False
+        self.shooter.shoot_ready = False
+        self.shooter.accel_good = False
 
         self.running_pid_lineup = False
         self.in_autonomous_mode = False
