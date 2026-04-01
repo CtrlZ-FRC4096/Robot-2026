@@ -477,7 +477,12 @@ class PoseEstimator(Subsystem):
                     self.camera_X[cam.camName] = avg_x
                     self.camera_Y[cam.camName] = avg_y
                     self.camera_theta[cam.camName] = avg_pose.rotation()
+
                     cur_speeds = self.robot.drivetrain.get_field_relative_speeds()
+                    # if self.robot.shoot_intent:
+                    #     omega = abs(cur_speeds.omega)
+                    # else:
+                    #     omega = 0.2
                     omega = abs(cur_speeds.omega)
                     self.poseEst.addVisionMeasurement(
                         avg_pose,
