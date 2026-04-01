@@ -209,6 +209,9 @@ class PoseEstimator(Subsystem):
         self.last_periodic_accel_x = 0
         self.last_periodic_accel_y = 0
 
+        self.vision_update_counter = 0
+
+
         self.temp_rotation_check = Rotation2d()
 
         self.tag_layout = AprilTagFieldLayout.loadField(AprilTagField.k2026RebuiltWelded)
@@ -421,89 +424,92 @@ class PoseEstimator(Subsystem):
     def periodic(self):
         start_time = RobotController.getFPGATime()
 
+        self.vision_update_counter += 1
+
         self.single_tag_IDs = set()
         single_tag_poses = []
 
         z_sum = 0
         z_count = 0
-        for cam in self.cams:
-            cam.update(
-                self.curEstPose,
-                cam.getObsTime()
-            )
-            single_tag_poses : list[(Pose2d, int)] = cam.getPoseSingleTag()
-            self.single_tag_IDs.update(cam.getSingleTagIDs())
-            zEstimates = cam.getZEstimates()
-            z_sum += sum(zEstimates)
-            z_count += len(zEstimates)
-            valid_poses = []
-           
-            for combined in single_tag_poses:
-                pose : Pose2d = combined[0]
-                # tgt_id = combined[1]
-                # ambiguity = combined[2]
-                # # print(f"tgtZEst: {tgtZEst}")
-                # # print(f"ambiguity : {ambiguity}")
-                # tag_pose = self.tag_layout.getTagPose(tgt_id)
-                # distance = tag_pose.translation().toTranslation2d().distance(pose.translation())
-            
-                # self.poseEst.addVisionMeasurement(
-                #     pose,
-                #     cam.getObsTime(),
-                #     (
-                #         self.xystd_single_tag * (distance ** 2),  # * (min_ambiguity / 0.4),
-                #         self.xystd_single_tag * (distance ** 2),  # * (min_ambiguity / 0.4),
-                #         self.thetastd_single_tag * (distance ** 2),  # * (min_ambiguity / 0.4),
-                #     ),
-                # )
-                valid_poses.append(pose)
-                
-            if len(valid_poses) > 0:
-                avg_x = sum(pose.X() for pose in valid_poses) / len(valid_poses)
-                avg_y = sum(pose.Y() for pose in valid_poses) / len(valid_poses)
-
-                avg_cos = sum(pose.rotation().cos() for pose in valid_poses) / len(valid_poses)
-                avg_sin = sum(pose.rotation().sin() for pose in valid_poses) / len(valid_poses)
-
-                avg_rot = Rotation2d(avg_cos, avg_sin)
-                avg_pose = Pose2d(avg_x, avg_y, avg_rot)
-                
-                self.camera_X[cam.camName] = avg_x
-                self.camera_Y[cam.camName] = avg_y
-                self.camera_theta[cam.camName] = avg_pose.rotation()
-                cur_speeds = self.robot.drivetrain.get_field_relative_speeds()
-                omega = abs(cur_speeds.omega)
-                self.poseEst.addVisionMeasurement(
-                    avg_pose,
-                    cam.getObsTime(),
-                    (
-                        self.xystd_single_tag * (omega * 5),  # * (min_ambiguity / 0.4),
-                        self.xystd_single_tag * (omega * 5),  # * (min_ambiguity / 0.4),
-                        self.thetastd_single_tag * (omega * 5),  # * (min_ambiguity / 0.4),
-                    ),
+        if self.vision_update_counter % 2 == 0 or self.robot.in_autonomous_mode:
+            for cam in self.cams:
+                cam.update(
+                    self.curEstPose,
+                    cam.getObsTime()
                 )
+                single_tag_poses : list[(Pose2d, int)] = cam.getPoseSingleTag()
+                self.single_tag_IDs.update(cam.getSingleTagIDs())
+                zEstimates = cam.getZEstimates()
+                z_sum += sum(zEstimates)
+                z_count += len(zEstimates)
+                valid_poses = []
+            
+                for combined in single_tag_poses:
+                    pose : Pose2d = combined[0]
+                    # tgt_id = combined[1]
+                    # ambiguity = combined[2]
+                    # # print(f"tgtZEst: {tgtZEst}")
+                    # # print(f"ambiguity : {ambiguity}")
+                    # tag_pose = self.tag_layout.getTagPose(tgt_id)
+                    # distance = tag_pose.translation().toTranslation2d().distance(pose.translation())
+                
+                    # self.poseEst.addVisionMeasurement(
+                    #     pose,
+                    #     cam.getObsTime(),
+                    #     (
+                    #         self.xystd_single_tag * (distance ** 2),  # * (min_ambiguity / 0.4),
+                    #         self.xystd_single_tag * (distance ** 2),  # * (min_ambiguity / 0.4),
+                    #         self.thetastd_single_tag * (distance ** 2),  # * (min_ambiguity / 0.4),
+                    #     ),
+                    # )
+                    valid_poses.append(pose)
                     
-        # if z_count > 0:
-        #     self.estZ = z_sum / z_count
-        
-        # UPDATING OBJECT DETECTION CAMERAS
-        # self.intake_cam.update(self.curEstPose, self.estZ, self.gyro.getRotation3d())
-        # self.fuel_map = [pose for (pose, timestamp) in self.intake_cam.getFuelMemory()]
-        # if self.robot.is_intaking:
-        #     self.update_fuel_intake_tgt()
+                if len(valid_poses) > 0:
+                    avg_x = sum(pose.X() for pose in valid_poses) / len(valid_poses)
+                    avg_y = sum(pose.Y() for pose in valid_poses) / len(valid_poses)
+
+                    avg_cos = sum(pose.rotation().cos() for pose in valid_poses) / len(valid_poses)
+                    avg_sin = sum(pose.rotation().sin() for pose in valid_poses) / len(valid_poses)
+
+                    avg_rot = Rotation2d(avg_cos, avg_sin)
+                    avg_pose = Pose2d(avg_x, avg_y, avg_rot)
+                    
+                    self.camera_X[cam.camName] = avg_x
+                    self.camera_Y[cam.camName] = avg_y
+                    self.camera_theta[cam.camName] = avg_pose.rotation()
+                    cur_speeds = self.robot.drivetrain.get_field_relative_speeds()
+                    omega = abs(cur_speeds.omega)
+                    self.poseEst.addVisionMeasurement(
+                        avg_pose,
+                        cam.getObsTime(),
+                        (
+                            self.xystd_single_tag * (omega * 5),  # * (min_ambiguity / 0.4),
+                            self.xystd_single_tag * (omega * 5),  # * (min_ambiguity / 0.4),
+                            self.thetastd_single_tag * (omega * 5),  # * (min_ambiguity / 0.4),
+                        ),
+                    )
+                        
+            # if z_count > 0:
+            #     self.estZ = z_sum / z_count
+            
+            # UPDATING OBJECT DETECTION CAMERAS
+            # self.intake_cam.update(self.curEstPose, self.estZ, self.gyro.getRotation3d())
+            # self.fuel_map = [pose for (pose, timestamp) in self.intake_cam.getFuelMemory()]
+            # if self.robot.is_intaking:
+            #     self.update_fuel_intake_tgt()
 
 
 
 
-        # Update poses with drivetrain information
-        self.poseEst.update(self.getYaw(), self.get_module_positions())
+            # Update poses with drivetrain information
+            self.poseEst.update(self.getYaw(), self.get_module_positions())
 
-        possible_pose = self.poseEst.getEstimatedPosition()
+            possible_pose = self.poseEst.getEstimatedPosition()
 
-        if not self.robot.isSimulation() and self.candidate_pose_OK(possible_pose):
-            self.curEstPose = possible_pose
+            if not self.robot.isSimulation() and self.candidate_pose_OK(possible_pose):
+                self.curEstPose = possible_pose
 
-        self.poseConverge = True
+            self.poseConverge = True
 
         # self.odometry.update(self.getYaw(), self.get_module_positions())
 

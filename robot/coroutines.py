@@ -48,6 +48,8 @@ class Coroutines:
             robot.should_rotate_trench_auto = False
             robot.pulse_pivot = False
             robot.shoot_intent = False
+            robot.shooter.shoot_ready = False
+            robot.shooter.accel_good = False
             robot.shooter_at_default = True
             robot.running_pid_lineup = False
             robot.intake_at_default = False
@@ -149,7 +151,7 @@ class Coroutines:
             robot.running_pid_lineup = True
             robot.shoot_intent = True
             robot.run_p1 = True
-            while not (robot.done_p1 or robot.poseEstimator.cur_pos_in_zone(3.35)):
+            while not (robot.done_p1 or robot.poseEstimator.cur_pos_in_zone(3.25)):
                 yield
             robot.running_pid_lineup = False
             robot.run_p1 = False
@@ -167,7 +169,7 @@ class Coroutines:
             robot.running_pid_lineup = True
             robot.shoot_intent = True
             robot.run_p2 = True
-            while not (robot.done_p2 or robot.poseEstimator.cur_pos_in_zone(3.35)):
+            while not (robot.done_p2 or robot.poseEstimator.cur_pos_in_zone(3.2)):
                 yield
             robot.running_pid_lineup = False
             robot.run_p2 = False

@@ -71,7 +71,7 @@ class AutoRoutines:
                 self.robot.P1_T_B_R_ROBUST,
                 self.robot.coroutines.intake),
             self.robot.coroutines.p1_over_right_bump,
-            self.robot.coroutines.drive_to_zone_trench.withTimeout(4.25),
+            self.robot.coroutines.drive_to_zone_trench.withTimeout(4.5),
             ParallelCommandGroup(
                 self.robot.P2_B_R,
                 self.robot.coroutines.intake_2
