@@ -188,20 +188,21 @@ class Robot(CoroutineRobot):
 
 		# PATHS
         # self.LB_DEPOT = self.getPathCommand(PathPlannerPath.fromPathFile("LB_DEPOT"))
-        self.P1_B_L = self.getPathCommand(PathPlannerPath.fromPathFile("P1_B_L"))
-        self.P1_B_R = self.getPathCommand(PathPlannerPath.fromPathFile("P1_B_R"))
-        self.P1_T_L = self.getPathCommand(PathPlannerPath.fromPathFile("P1_T_L"))
-        self.P1_T_L_SAFE = self.getPathCommand(PathPlannerPath.fromPathFile("P1_T_L_Safe"))
+        # self.P1_B_L = self.getPathCommand(PathPlannerPath.fromPathFile("P1_B_L"))
+        # self.P1_B_R = self.getPathCommand(PathPlannerPath.fromPathFile("P1_B_R"))
+        # self.P1_T_L = self.getPathCommand(PathPlannerPath.fromPathFile("P1_T_L"))
+        # self.P1_T_L_SAFE = self.getPathCommand(PathPlannerPath.fromPathFile("P1_T_L_Safe"))
         self.P2_B_L = self.getPathCommand(PathPlannerPath.fromPathFile("P2_B_L"))
         self.P2_B_R = self.getPathCommand(PathPlannerPath.fromPathFile("P2_B_R"))
-        self.P2_T_L = self.getPathCommand(PathPlannerPath.fromPathFile("P2_T_L"))
-        self.P2_T_R = self.getPathCommand(PathPlannerPath.fromPathFile("P2_T_R"))
-        self.P1_T_R_SAFE = self.getPathCommand(PathPlannerPath.fromPathFile("P1_T_R_Safe"))
+        # self.P2_T_L = self.getPathCommand(PathPlannerPath.fromPathFile("P2_T_L"))
+        # self.P2_T_R = self.getPathCommand(PathPlannerPath.fromPathFile("P2_T_R"))
+        # self.P1_T_R_SAFE = self.getPathCommand(PathPlannerPath.fromPathFile("P1_T_R_Safe"))
 
-        self.P1_T_R_ROBUST_1 = self.getPathCommand(PathPlannerPath.fromPathFile("P1_T_R_Robust_1"))
-        self.P1_T_R_ROBUST_2 = self.getPathCommand(PathPlannerPath.fromPathFile("P1_T_R_Robust_2"))
+        # self.P1_T_R_ROBUST_1 = self.getPathCommand(PathPlannerPath.fromPathFile("P1_T_R_Robust_1"))
+        # self.P1_T_R_ROBUST_2 = self.getPathCommand(PathPlannerPath.fromPathFile("P1_T_R_Robust_2"))
 
         self.P1_T_B_R_ROBUST = self.getPathCommand(PathPlannerPath.fromPathFile("P1_T_B_R_Robust"))
+        self.P1_T_B_L_ROBUST = self.getPathCommand(PathPlannerPath.fromPathFile("P1_T_B_L_Robust"))
 
         # self.P1_T_L_SOM = self.getPathCommand(PathPlannerPath.fromPathFile("P1_T_L_SOM"))
         # self.P1_T_L_SOM_2 = self.getPathCommand(PathPlannerPath.fromPathFile("P1_T_L_SOM_2"))
@@ -329,7 +330,7 @@ class Robot(CoroutineRobot):
             self.fuel_sim.start()
 
        
-        # test_path = self.flip_path_cmd_across_x(self.getPathCommand(PathPlannerPath.fromPathFile("P1_T_R_Safe")))._originalPath
+        # test_path = self.flip_path_cmd_across_x(self.getPathCommand(PathPlannerPath.fromPathFile("P2_B_R")))._originalPath
         # test_path_waypoints = test_path.getWaypoints()
         # for idx, waypoint in enumerate(test_path_waypoints):
         #     if idx == 0:

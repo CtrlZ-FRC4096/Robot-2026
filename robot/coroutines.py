@@ -151,7 +151,7 @@ class Coroutines:
             robot.running_pid_lineup = True
             robot.shoot_intent = True
             robot.run_p1 = True
-            while not (robot.done_p1 or robot.poseEstimator.cur_pos_in_zone(3.25)):
+            while not (robot.done_p1 or robot.poseEstimator.cur_pos_in_zone(2.95)):
                 yield
             robot.running_pid_lineup = False
             robot.run_p1 = False
@@ -169,13 +169,51 @@ class Coroutines:
             robot.running_pid_lineup = True
             robot.shoot_intent = True
             robot.run_p2 = True
-            while not (robot.done_p2 or robot.poseEstimator.cur_pos_in_zone(3.2)):
+            while not (robot.done_p2 or robot.poseEstimator.cur_pos_in_zone(3.1)):
                 yield
             robot.running_pid_lineup = False
             robot.run_p2 = False
             robot.done_p2 = False
         
         self.p2_over_right_bump = (p2_over_right_bump)
+
+
+        @commandify
+        def p1_over_left_bump():
+            robot.is_intaking = False
+            robot.intake_at_default = False
+            robot.pulse_pivot = False
+
+            robot.final_lineup_pose = robot.fieldConstants.flip_Pose2d(Pose2d(2.807, robot.fieldConstants.fieldWidth - 2.513, Rotation2d.fromDegrees(-90)))
+            robot.running_pid_lineup = True
+            robot.shoot_intent = True
+            robot.run_p1 = True
+            while not (robot.done_p1 or robot.poseEstimator.cur_pos_in_zone(2.95)):
+                yield
+            robot.running_pid_lineup = False
+            robot.run_p1 = False
+            robot.done_p1 = False
+
+        self.p1_over_left_bump = (p1_over_left_bump)
+
+        @commandify
+        def p2_over_left_bump():
+            robot.is_intaking = False
+            robot.intake_at_default = False
+            robot.pulse_pivot = False
+
+            robot.final_lineup_pose = robot.fieldConstants.flip_Pose2d(Pose2d(2.807, robot.fieldConstants.fieldWidth - 2.48, Rotation2d.fromDegrees(-90)))
+            robot.running_pid_lineup = True
+            robot.shoot_intent = True
+            robot.run_p2 = True
+            while not (robot.done_p2 or robot.poseEstimator.cur_pos_in_zone(3.1)):
+                yield
+            robot.running_pid_lineup = False
+            robot.run_p2 = False
+            robot.done_p2 = False
+        
+        self.p2_over_left_bump = (p2_over_left_bump)
+
 
         @commandify
         def drive_to_zone_trench_pid():

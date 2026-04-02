@@ -477,8 +477,12 @@ class PoseEstimator(Subsystem):
                     self.camera_X[cam.camName] = avg_x
                     self.camera_Y[cam.camName] = avg_y
                     self.camera_theta[cam.camName] = avg_pose.rotation()
-                    cur_speeds = self.robot.drivetrain.get_field_relative_speeds()
-                    omega = abs(cur_speeds.omega)
+
+                    if self.robot.shoot_intent:
+                        cur_speeds = self.robot.drivetrain.get_field_relative_speeds()
+                        omega = abs(cur_speeds.omega)
+                    else:
+                        omega = 0.2
                     self.poseEst.addVisionMeasurement(
                         avg_pose,
                         cam.getObsTime(),
@@ -502,14 +506,14 @@ class PoseEstimator(Subsystem):
 
 
             # Update poses with drivetrain information
-            self.poseEst.update(self.getYaw(), self.get_module_positions())
+        self.poseEst.update(self.getYaw(), self.get_module_positions())
 
-            possible_pose = self.poseEst.getEstimatedPosition()
+        possible_pose = self.poseEst.getEstimatedPosition()
 
-            if not self.robot.isSimulation() and self.candidate_pose_OK(possible_pose):
-                self.curEstPose = possible_pose
+        if not self.robot.isSimulation() and self.candidate_pose_OK(possible_pose):
+            self.curEstPose = possible_pose
 
-            self.poseConverge = True
+        self.poseConverge = True
 
         # self.odometry.update(self.getYaw(), self.get_module_positions())
 

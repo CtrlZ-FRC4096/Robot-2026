@@ -34,7 +34,7 @@ class Intake(Subsystem):
         deploy_cancoder_config.magnet_sensor.sensor_direction = (
             signals.InvertedValue(0)
         )
-        deploy_cancoder_config.magnet_sensor.magnet_offset = 0.72
+        deploy_cancoder_config.magnet_sensor.magnet_offset = 0.8
 
         self.deploy_cancoder.configurator.apply(
             deploy_cancoder_config  # type: ignore
@@ -83,11 +83,11 @@ class Intake(Subsystem):
         '''
         
         if self.intake_pose_in_trench():
-            self.commanded_position = -0.05
-            if abs(self.get_position() - -0.05) <= 0.02:
+            self.commanded_position = -0.35
+            if abs(self.get_position() + 0.35) <= 0.02:
                 self.stop_deploy()
             else:
-                self.deploy_motor.set_control(controls.MotionMagicTorqueCurrentFOC(-0.05))
+                self.deploy_motor.set_control(controls.MotionMagicTorqueCurrentFOC(-0.35))
         else:
             self.commanded_position = position
             if abs(self.get_position() - self.commanded_position) <= 0.02:
@@ -153,27 +153,27 @@ class Intake(Subsystem):
 
         if self.robot.intake_at_default:
             self.stop_intake()
-            self.set_position(0.19)
+            self.set_position(-0.04)
         elif self.robot.clear_jam:
             self.set_intake_speed(-0.3)
-            self.set_position(-0.05)
+            self.set_position(-0.35)
         elif self.robot.is_intaking:
             # if self.robot.fieldConstants.LinesVertical.starting < self.robot.poseEstimator.curEstPose.X() < self.robot.fieldConstants.fieldLength - self.robot.fieldConstants.LinesVertical.starting: # neutral zone
             self.set_intake_speed(0.85) # TUNE
-            self.set_position(-0.05) # TUNE
+            self.set_position(-0.35) # TUNE
         elif self.robot.pulse_pivot:
             # if not self.robot.in_autonomous_mode or True:
             #     self.set_position(0.21)
             if self.tick_count % 8 < 4:
                 # print("switch to out")
-                self.set_position(0.2)
+                self.set_position(-0.07)
             else:
                 # print("switch to in")
-                self.set_position(-0.05)
+                self.set_position(-0.35)
             self.set_intake_speed(0.3)
         else:
             self.stop_intake()
-            self.set_position(-0.05)
+            self.set_position(-0.35)
 
         self.tick_count += 1
 
