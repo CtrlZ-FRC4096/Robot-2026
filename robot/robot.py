@@ -204,6 +204,9 @@ class Robot(CoroutineRobot):
         self.P1_T_B_R_ROBUST = self.getPathCommand(PathPlannerPath.fromPathFile("P1_T_B_R_Robust"))
         self.P1_T_B_L_ROBUST = self.getPathCommand(PathPlannerPath.fromPathFile("P1_T_B_L_Robust"))
 
+        self.P2_B_R_NEW = self.getPathCommand(PathPlannerPath.fromPathFile("P2_B_R_New")) 
+        self.P2_B_L_NEW = self.getPathCommand(PathPlannerPath.fromPathFile("P2_B_L_New"))
+
         # self.P1_T_L_SOM = self.getPathCommand(PathPlannerPath.fromPathFile("P1_T_L_SOM"))
         # self.P1_T_L_SOM_2 = self.getPathCommand(PathPlannerPath.fromPathFile("P1_T_L_SOM_2"))
         # self.P1_T_L_SOM_3 = self.getPathCommand(PathPlannerPath.fromPathFile("P1_T_L_SOM_3"))
@@ -310,7 +313,7 @@ class Robot(CoroutineRobot):
         # self.auto_win_found = False
 
         
-        self.auto = self.autoroutines.right_trench_bump_robust()
+        self.auto = self.autoroutines.right_trench_bump_robust_new()
         self.poseEstimator.poseEst.resetPose(Pose2d(self.fieldConstants.flip_Translation2d(Translation2d(4.47, 0.6)), self.poseEstimator.getYaw())) # for right auto
         # self.poseEstimator.poseEst.resetPose(Pose2d(self.fieldConstants.flip_Translation2d(Translation2d(4.471, 7.587)), self.poseEstimator.getYaw())) # for left auto
 

@@ -80,6 +80,21 @@ class AutoRoutines:
             self.robot.coroutines.drive_to_zone_trench_2.withTimeout(4.25)
         )
     
+    def right_trench_bump_robust_new(self):
+        return SequentialCommandGroup(
+            ParallelCommandGroup(
+                self.robot.P1_T_B_R_ROBUST,
+                self.robot.coroutines.intake),
+            self.robot.coroutines.p1_over_right_bump,
+            self.robot.coroutines.drive_to_zone_trench.withTimeout(4.5),
+            ParallelCommandGroup(
+                self.robot.P2_B_R_NEW,
+                self.robot.coroutines.intake_2
+            ),
+            self.robot.coroutines.p2_over_right_bump,
+            self.robot.coroutines.drive_to_zone_trench_2.withTimeout(4.25)
+        )
+    
     def left_trench_bump_robust(self):
         return SequentialCommandGroup(
             ParallelCommandGroup(
@@ -90,6 +105,22 @@ class AutoRoutines:
             self.robot.coroutines.drive_to_zone_trench.withTimeout(4.5),
             ParallelCommandGroup(
                 self.robot.P2_B_L,
+                self.robot.coroutines.intake_2
+            ),
+            self.robot.coroutines.p2_over_left_bump,
+            self.robot.coroutines.drive_to_zone_trench_2.withTimeout(4.25)
+        )
+
+    def left_trench_bump_robust_new(self):
+        return SequentialCommandGroup(
+            ParallelCommandGroup(
+                self.robot.P1_T_B_L_ROBUST,
+                self.robot.coroutines.intake
+            ),
+            self.robot.coroutines.p1_over_left_bump,
+            self.robot.coroutines.drive_to_zone_trench.withTimeout(4.5),
+            ParallelCommandGroup(
+                self.robot.P2_B_L_NEW,
                 self.robot.coroutines.intake_2
             ),
             self.robot.coroutines.p2_over_left_bump,
