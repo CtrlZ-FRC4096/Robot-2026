@@ -520,7 +520,53 @@ class Robot(CoroutineRobot):
 
         self.scheduler.schedule(self.auto)
 
-    
+    def autonomousExit(self):
+        for idx in range(len(self.poseEstimator.modules)):
+            swerve_drive_motor_config = configs.TalonFXConfiguration()
+            # self.drive_motor.configurator.apply(swerve_drive_motor_config)  # type: ignore
+            swerve_drive_motor_config.slot0.k_p = 5  # 2.2
+            swerve_drive_motor_config.slot0.k_s = 7
+            swerve_drive_motor_config.slot0.k_v = 0.5  # 0.24
+            ## Feed Forward
+            # swerve_drive_motor_config.slot0.k_v = const.SWERVE_DRIVE_KV
+            # swerve_drive_motor_config.slot0.k_a = const.SWERVE_DRIVE_KA
+            swerve_drive_motor_config.current_limits.supply_current_limit = (
+                60  # 80; I am not sure if this is correct
+            )
+
+            swerve_drive_motor_config.torque_current.peak_forward_torque_current = (
+                60  # Set 60 to save battery; Up this to 80 for more zip
+            )
+            swerve_drive_motor_config.torque_current.peak_reverse_torque_current = (
+                -60
+            )
+            ##Ramps
+            swerve_drive_motor_config.closed_loop_ramps.torque_closed_loop_ramp_period = (
+                0.02
+            )
+            swerve_drive_motor_config.open_loop_ramps.torque_open_loop_ramp_period = 0.02
+            swerve_drive_motor_config.closed_loop_ramps.duty_cycle_closed_loop_ramp_period = (
+                0.02
+            )
+            swerve_drive_motor_config.open_loop_ramps.duty_cycle_open_loop_ramp_period = (
+                0.02
+            )
+            swerve_drive_motor_config.closed_loop_ramps.voltage_closed_loop_ramp_period = (
+                0.02
+            )
+            swerve_drive_motor_config.open_loop_ramps.voltage_open_loop_ramp_period = 0.02
+
+            swerve_drive_motor_config.current_limits.supply_current_limit_enable = True
+            swerve_drive_motor_config.motor_output.inverted = (
+                self.poseEstimator.modules[idx].drive_invert
+            )  # signals.InvertedValue(1)  # This is no longer a boolean; 0 for CCW 1 for CW
+            swerve_drive_motor_config.motor_output.neutral_mode = signals.NeutralModeValue(
+                1
+            )  # set to brake
+            swerve_drive_motor_config.current_limits.stator_current_limit = 100
+
+            self.poseEstimator.modules[idx].drive_motor.configurator.apply(swerve_drive_motor_config)
+
     ### TELEOPERATED ###
     def teleop_mode(self):
         self.scheduler.cancelAll()
@@ -591,6 +637,7 @@ class Robot(CoroutineRobot):
         # SmartDashboard.putString("Shooting Values/")
         # SmartDashboard.putNumber("Auto Currently Chosen", self.auto_chooser.getSelected())
         SmartDashboard.putNumberArray("Empty Pose", [0,0,0,1,0,0,0])
+        SmartDashboard.putNumber("Battery Voltage", self.driverstation.getBatteryVoltage())
         # if self.isDisabled():
         #     SmartDashboard.putData("Auto Chooser", self.auto_chooser)
         #     SmartDashboard.putNumber("Current Auto Chosen", self.auto_chooser.getSelected())
