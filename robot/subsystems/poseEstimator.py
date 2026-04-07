@@ -435,7 +435,7 @@ class PoseEstimator(Subsystem):
             for cam in self.cams:
                 cam.update(
                     self.curEstPose,
-                    cam.getObsTime()
+                    self.gyro.getRotation3d()
                 )
                 single_tag_poses : list[(Pose2d, int)] = cam.getPoseSingleTag()
                 self.single_tag_IDs.update(cam.getSingleTagIDs())

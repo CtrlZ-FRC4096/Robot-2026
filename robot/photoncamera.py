@@ -64,7 +64,7 @@ class WrapperedPhotonCameraTag:
     def update(
         self,
         prevEstPoseSingleTag: Pose2d,
-        prevObsTime : float
+        gyroRotation : Rotation3d
     ):
         # self.counter += 1
         self.poseEstimates = []
@@ -109,6 +109,38 @@ class WrapperedPhotonCameraTag:
 
         for target in res.getTargets():
            
+            # tgtID = target.getFiducialId()
+
+            # tagFieldPose = self.tag_map.getTagPose(tgtID)
+
+            # target_x_angle = math.radians(target.getYaw())
+            # target_y_angle = -1 * math.radians(target.getPitch())
+
+            # distance_3d = target.getBestCameraToTarget().translation().norm()
+            
+            # if distance_3d > 5:
+            #     continue
+            # ambiguity = target.getPoseAmbiguity()
+            # if ambiguity > 0.3:
+            #     continue
+
+            
+            # camera_to_tag_trans_x = distance_3d * math.cos(target_y_angle) * math.cos(target_x_angle)
+            # camera_to_tag_trans_y = distance_3d * math.cos(target_y_angle) * math.sin(target_x_angle)
+            # camera_to_tag_trans_z = distance_3d * math.sin(target_y_angle)
+            # tag_to_camera_trans = Translation3d(- camera_to_tag_trans_x, - camera_to_tag_trans_y, - camera_to_tag_trans_z)
+
+            # tag_to_camera_trans_field_rel = tag_to_camera_trans.rotateBy(self.robotToCam.rotation()).rotateBy(gyroRotation)
+
+            # field_rel_camera = self.tag_map.getTagPose(tgtID).translation() + tag_to_camera_trans_field_rel
+
+            # camera_transform_rotated = self.robotToCam.translation().rotateBy(gyroRotation)
+
+            # robot_pose_3d = field_rel_camera - camera_transform_rotated
+
+            # robot_pose = Pose2d(robot_pose_3d.X(), robot_pose_3d.Y(), gyroRotation.toRotation2d())
+
+
             # Transform both poses to on-field poses
             tgtID = target.getFiducialId()
 
@@ -321,60 +353,60 @@ class WrapperedPhotonCameraIntakeFuel:
     def getFuelMemory(self):
         return self.fuel_memory
 
-class WrapperedPhotonCameraBin:
-    def __init__(self, camName, robotToCam):
-        self.cam = PhotonCamera(camName)
-        self.camName = camName
-        self.robotToCam = robotToCam
+# class WrapperedPhotonCameraBin:
+#     def __init__(self, camName, robotToCam):
+#         self.cam = PhotonCamera(camName)
+#         self.camName = camName
+#         self.robotToCam = robotToCam
 
-        self.count = 0
-        self.highest = 0
+#         self.count = 0
+#         self.highest = 0
 
-        self.hopper_fill = 10 # fuel to fill the bottom of the hopper
-        self.offset = 0
-        self.layers = 0
-        self.layers_old = 0
+#         self.hopper_fill = 10 # fuel to fill the bottom of the hopper
+#         self.offset = 0
+#         self.layers = 0
+#         self.layers_old = 0
 
-        self.tsw = False # timer switch
-        self.tsw_old = False
-        self.mem = []
-        self.timer = wpilib.Timer()
-        self.timer.start()
+#         self.tsw = False # timer switch
+#         self.tsw_old = False
+#         self.mem = []
+#         self.timer = wpilib.Timer()
+#         self.timer.start()
     
-    def update(self):
-        res = self.cam.getLatestResult()
-        fuel = res.getTargets()
+#     def update(self):
+#         res = self.cam.getLatestResult()
+#         fuel = res.getTargets()
 
-        self.mem.append(len(fuel))
-        if len(self.mem) > 1000:
-            del self.mem[0]
-        if (self.timer.get())%0.05 == 0:
-            self.tsw = not self.tsw
-        if self.tsw != self.tsw_old:
-            if self.tsw:
-                count1 = len(fuel)
-            else:
-                count2 = len(fuel)
-            if abs(count1-count2) <= 2:
-                self.count = (min(self.mem)+max(self.mem))/2 # median
-            else:
-                self.count = self.get_mode(self.mem)
-            self.tsw_old = self.tsw
+#         self.mem.append(len(fuel))
+#         if len(self.mem) > 1000:
+#             del self.mem[0]
+#         if (self.timer.get())%0.05 == 0:
+#             self.tsw = not self.tsw
+#         if self.tsw != self.tsw_old:
+#             if self.tsw:
+#                 count1 = len(fuel)
+#             else:
+#                 count2 = len(fuel)
+#             if abs(count1-count2) <= 2:
+#                 self.count = (min(self.mem)+max(self.mem))/2 # median
+#             else:
+#                 self.count = self.get_mode(self.mem)
+#             self.tsw_old = self.tsw
         
-        if self.count > self.highest:
-            self.highest = self.count
+#         if self.count > self.highest:
+#             self.highest = self.count
 
-        if self.count-self.offset > self.hopper_fill:
-            self.layers += 1
-            self.offset += self.hopper_fill
+#         if self.count-self.offset > self.hopper_fill:
+#             self.layers += 1
+#             self.offset += self.hopper_fill
 
-    def is_full(self):
-        return self.layers >= 2
+#     def is_full(self):
+#         return self.layers >= 2
     
-    def get_mode(x):
-        log = []
-        for item in x:
-            if (not item in [f[0] for f in log]) or (len(log) == 0):
-                log.append([item, 0])
-            log[[f[0] for f in log].index(item)][1] += 1
-        return sorted(log, key=lambda x:x[1], reverse=True)[0][0]
+#     def get_mode(x):
+#         log = []
+#         for item in x:
+#             if (not item in [f[0] for f in log]) or (len(log) == 0):
+#                 log.append([item, 0])
+#             log[[f[0] for f in log].index(item)][1] += 1
+#         return sorted(log, key=lambda x:x[1], reverse=True)[0][0]
