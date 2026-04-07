@@ -162,9 +162,9 @@ class Intake(Subsystem):
             self.set_intake_speed(0.85) # TUNE
             self.set_position(-0.35) # TUNE
         elif self.robot.pulse_pivot:
-            if self.tick_count <= 6:
+            if self.tick_count <= (6 * 3):
                 pass
-            elif self.tick_count % 8 < 4:
+            elif self.tick_count % (8 * 3) < (4* 3):
                 # print("switch to out")
                 self.set_position(-0.35)
             else:
@@ -182,6 +182,7 @@ class Intake(Subsystem):
 
     def log(self):
         SmartDashboard.putBoolean("States/Is Intaking", self.robot.is_intaking)
+        SmartDashboard.putNumber("Intake/Tick Count", self.tick_count )
         SmartDashboard.putNumber("Intake/Commanded Intake Speed", self.commanded_intake_speed)
         SmartDashboard.putNumber("Intake/Commanded Intake Position", self.commanded_position)
         SmartDashboard.putNumber("Intake/Actual Intake Position", self.get_position())

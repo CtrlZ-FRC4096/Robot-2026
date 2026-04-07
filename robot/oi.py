@@ -105,6 +105,8 @@ class OI:
         self.tick_count = 0
         self.tick_count_max = 5
 
+        self.rotation_boost = 1
+
         self.right_trigger_being_held = False
         self.left_trigger_being_held = False
 
@@ -146,7 +148,7 @@ class OI:
                     forward_back *= -1
                     left_right *= -1
 
-                rotate = -self.driver1.RIGHT_JOY_X()
+                rotate = -self.driver1.RIGHT_JOY_X() * self.rotation_boost
 
                 # SmartDashboard.putNumber("Forward_Back", forward_back)
                 # SmartDashboard.putNumber("Left_Right", left_right)
@@ -283,6 +285,15 @@ class OI:
                             self.robot_oriented_angle,
                         )
 
+
+        @self.driver1.RIGHT_STICK.whenHeld
+        def _():
+            self.rotation_boost = 2
+
+        @self.driver1.RIGHT_STICK.whenReleased
+        def _():
+            self.rotation_boost = 1
+
         ## D1 - POV
         
         @self.driver1.A.whenPressed
@@ -325,17 +336,17 @@ class OI:
             self.robot.snake_intake = not self.robot.snake_intake
             self.robot_oriented_angle = self.robot.poseEstimator.curEstPose.rotation().degrees()
         
-        @self.driver1.POV.UP.whenPressed
+        @self.driver1.POV.UP.whenHeld
         def _():
-            self.robot.shooter_at_default = True
-            self.robot.intake_at_default = True
-            self.robot.is_intaking = False
-            self.robot.shoot_fuel = False
-            self.robot.shoot_intent = False
+            self.robot.coast_intake = True
+
+        # @self.driver1.POV.UP.whenReleased
+        # def _():
+        #     self.robot.coast_intake = False
         
-        @self.driver1.POV.RIGHT.whenHeld
-        def _():
-            self.robot.shoot_fuel = True
+        # @self.driver1.POV.RIGHT.whenHeld
+        # def _():
+        #     self.robot.shoot_fuel = True
 
         @self.driver1.POV.RIGHT.whenReleased
         def _():

@@ -196,7 +196,7 @@ class Shooter(Subsystem):
             self.set_accelerator_speed(0)
             self.robot.hopper.commanded_speed = 0
             self.robot.hopper.indexer_motor.set_control(controls.DutyCycleOut(0.0))
-            if abs(self.robot.hopper.get_speed()) <= 3 and abs(self.get_accelerator_speed()) <= 5:
+            if abs(self.robot.hopper.get_speed()) <= 5 and abs(self.get_accelerator_speed()) <= 5:
                 self.robot.spin_down = False
                 self.robot.shoot_intent = False
                 self.shoot_ready = False
