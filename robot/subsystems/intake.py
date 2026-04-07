@@ -162,14 +162,14 @@ class Intake(Subsystem):
             self.set_intake_speed(0.85) # TUNE
             self.set_position(-0.35) # TUNE
         elif self.robot.pulse_pivot:
-            # if not self.robot.in_autonomous_mode or True:
-            #     self.set_position(0.21)
-            if self.tick_count % 8 < 4:
+            if self.tick_count <= 6:
+                pass
+            elif self.tick_count % 8 < 4:
                 # print("switch to out")
-                self.set_position(-0.07)
+                self.set_position(-0.35)
             else:
                 # print("switch to in")
-                self.set_position(-0.35)
+                self.set_position(-0.07)
             self.set_intake_speed(0.3)
         else:
             self.stop_intake()
@@ -192,4 +192,6 @@ class Intake(Subsystem):
         SmartDashboard.putData("Intake/Deploy PID Controller", self.deploy_pid_controller)
 
         SmartDashboard.putNumber("Test/Test intake speed", self.test_intake_speed)
+
+        
         # SmartDashboard.putNumber("Intake/Snake Angle", self.get_snake_intake_angle())
