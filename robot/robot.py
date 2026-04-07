@@ -231,6 +231,7 @@ class Robot(CoroutineRobot):
         self.shooter_at_default = True
         self.trench = True
         self.down_bad = False
+        self.spin_down = False
 
         self.static_target = Translation2d()
 
@@ -238,7 +239,6 @@ class Robot(CoroutineRobot):
 
         self.shoot_fuel = False
         self.shoot_intent = False
-        self.spin_up = False
         self.is_intaking = False
         self.pulse_indexer = False
         self.pulse_pivot = False
@@ -572,6 +572,7 @@ class Robot(CoroutineRobot):
         self.scheduler.cancelAll()
 
         self.shoot_intent = False
+        self.spin_down = False
         self.shooter_at_default = True
         self.shoot_fuel = False
         self.pulse_pivot = False
@@ -650,6 +651,7 @@ class Robot(CoroutineRobot):
         SmartDashboard.putBoolean("States/Pulse Pivot", self.pulse_pivot)
         SmartDashboard.putBoolean("States/Down Bad", self.down_bad)
         SmartDashboard.putBoolean("States/Clear Jam", self.clear_jam)
+        SmartDashboard.putBoolean("States/Spin Down", self.spin_down)
 
         SmartDashboard.putNumber("Shooting Values/Distance to Hub", self.distance)
         SmartDashboard.putNumber("Shooting Values/Time of Flight", self.time_of_flight)
