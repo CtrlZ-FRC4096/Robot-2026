@@ -357,9 +357,10 @@ class OI:
 
         @self.driver1.RIGHT_TRIGGER_AS_BUTTON.whenReleased
         def _():
-            self.robot.shoot_intent = False
+            self.robot.shoot_intent = True
+            self.robot.spin_down = True
             self.robot.shoot_fuel = False
-            self.robot.shooter_at_default = True
+            # self.robot.shooter_at_default = True
 
             self.robot.shooter.shoot_ready = False
             self.robot.shooter.accel_good = False
@@ -393,11 +394,12 @@ class OI:
         @self.driver2.POV.RIGHT.whenReleased
         def _():
             self.robot.down_bad = False
-            self.robot.shooter_at_default = True
+            # self.robot.shooter_at_default = True
             self.robot.pulse_pivot  = False
             self.robot.shooter.shoot_ready = False
             self.robot.shooter.accel_good = False
-            self.robot.shoot_intent = False
+            self.robot.shoot_intent = True
+            self.robot.spin_down = True
             self.robot.shoot_fuel = False
 
 

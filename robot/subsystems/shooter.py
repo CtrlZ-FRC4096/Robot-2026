@@ -182,7 +182,7 @@ class Shooter(Subsystem):
 
     def periodic(self):
         start_time = wpilib.RobotController.getFPGATime()
-
+    
         if self.robot.shooter_at_default:
             self.set_hood_position(0.0)
             self.stop_accelerator()
@@ -192,6 +192,18 @@ class Shooter(Subsystem):
             self.set_accelerator_speed(-50)
             self.set_fly_speed(-50)
             self.robot.hopper.indexer_motor.set_control(controls.DutyCycleOut(-0.7))
+        elif self.robot.spin_down:
+            self.set_accelerator_speed(0)
+            self.robot.hopper.commanded_speed = 0
+            self.robot.hopper.indexer_motor.set_control(controls.DutyCycleOut(0.0))
+            if abs(self.robot.hopper.get_speed()) <= 3 and abs(self.get_accelerator_speed()) <= 5:
+                self.robot.spin_down = False
+                self.robot.shoot_intent = False
+                self.shoot_ready = False
+                self.accel_good = False
+                self.robot.pulse_pivot = False
+                self.robot.shooter_at_default = True
+                self.set_hood_position(0.0)
         elif self.robot.shoot_intent or self.robot.down_bad:
                 if not self.robot.in_autonomous_mode or (self.robot.in_autonomous_mode and self.robot.poseEstimator.cur_pos_in_zone()):
                     if self.robot.down_bad:
@@ -209,7 +221,7 @@ class Shooter(Subsystem):
                                 self.robot.intake.tick_count = 0
                             self.accel_good = True
                             self.robot.hopper.commanded_speed = 1
-                            self.robot.hopper.indexer_motor.set_control(controls.DutyCycleOut(1))
+                            self.robot.hopper.indexer_motor.set_control(controls.DutyCycleOut(1.0))
                             self.robot.pulse_pivot = True 
 
                             # self.robot.hopper.set_speed(self.robot.hopper.test_indexer_speed) 
