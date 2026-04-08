@@ -54,7 +54,7 @@ class Intake(Subsystem):
         self.right_intake_motor.configurator.apply(self.intake_motor_config)
         self.deploy_motor.configurator.apply(self.deploy_motor_config)
 
-        self.right_intake_motor.set_control(controls.Follower(const.LEFT_INTAKE_MOTOR_ID, signals.MotorAlignmentValue(1)))
+        self.right_intake_motor.set_control(controls.Follower(const.LEFT_INTAKE_MOTOR_ID, True))#signals.MotorAlignmentValue(1)))
 
         # self.deploy_encoder = wpilib.DutyCycleEncoder(6)
         self.commanded_intake_speed = 0.0
