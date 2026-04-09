@@ -6,12 +6,13 @@ from commands2 import Command
 from typing import Callable, Optional, Union, Dict, Set, List, Tuple
 from dataclasses import dataclass, field, replace
 from wpimath.geometry import Pose2d, Rotation2d, Translation2d
-from .path import Path, PathElement, Waypoint, TranslationTarget, RotationTarget, EventTrigger, TranslationTargetConstraint, RotationTargetConstraint
+from path import Path, PathElement, Waypoint, TranslationTarget, RotationTarget, EventTrigger, TranslationTargetConstraint, RotationTargetConstraint
 from wpimath.controller import PIDController
 from wpimath.kinematics import ChassisSpeeds
 import math
 from wpilibextra.coroutine.subsystem import Subsystem
 from wpimath.units import degreesToRadians
+import wpimath
 
 
 # SEGMENT_EPSILON = 1e-6
@@ -48,6 +49,7 @@ class Builder:
             pose_supplier: Callable[[], Pose2d],
             robot_relative_speeds_supplier: Callable[[], ChassisSpeeds],
             robot_relative_speeds_consumer: Callable[[ChassisSpeeds], None],
+            timestamp_supplier : Callable[[], float],
             translation_controller: PIDController,
             rotation_controller: PIDController,
             cross_track_controller: PIDController,
@@ -60,6 +62,7 @@ class Builder:
             self.translation_controller = translation_controller
             self.rotation_controller = rotation_controller
             self.cross_track_controller = cross_track_controller
+            self.timestamp_supplier = timestamp_supplier
 
             # Default optional settings
             self.should_flip_path_supplier: Callable[[], bool] = lambda: False
@@ -100,15 +103,18 @@ class Builder:
 
             return BLineCommand(
                 path=path,
+                driveSubsystem=self.drive_subsystem,
                 pose_supplier=self.pose_supplier,
                 robot_relative_speeds_supplier=self.robot_relative_speeds_supplier,
                 robot_relative_speeds_consumer=self.robot_relative_speeds_consumer,
+                timestamp_supplier=self.timestamp_supplier,
                 translation_controller=self.translation_controller,
                 rotation_controller=self.rotation_controller,
                 cross_track_controller=self.cross_track_controller,
                 should_flip_path_supplier=self.should_flip_path_supplier,
                 should_mirror_path_supplier=self.should_mirror_path_supplier,
-                pose_reset_consumer=self.pose_reset_consumer,
+                use_t_ratio_based_translation_handoff=self.use_t_ratio_based_translation_handoffs,
+                pose_reset_consumer=self.pose_reset_consumer
                 # Ensure your BLineCommand.__init__ accepts this new flag:
                 # use_t_ratio=self.use_t_ratio_based_translation_handoffs 
             )
@@ -275,7 +281,7 @@ class BLineCommand(Command):
         for i in reversed(range(0, min(start_index, len(self.path_elements_with_constraints) - 1))):
             if isinstance(self.path_elements_with_constraints[i][0], TranslationTarget):
                 return i
-            return -1
+        return -1
     
     def get_translation_at_index(self, translation_index : int):
         if translation_index >= 0 and translation_index < len(self.path_elements_with_constraints) and isinstance(self.path_elements_with_constraints[translation_index][0], TranslationTarget):
@@ -368,7 +374,7 @@ class BLineCommand(Command):
         if last_rotation_element_index != self.rotation_element_index:
             pass #log
 
-        self.process_event_triggers()
+        self.process_event_triggers(cur_pose)
 
         target_translation = self.path_elements_with_constraints[self.translation_element_index][0].translation if self.is_translation_target_at(self.translation_element_index) else cur_pose.translation()
         remaining_distance = self.calculate_remaining_path_distance()
@@ -389,6 +395,153 @@ class BLineCommand(Command):
 
 
         cross_track_error = self.caclulate_cross_track_error()
+        cross_track_controller_output = -self.cross_track_controller.calculate(cross_track_error, 0)
+
+        vx += cross_track_controller_output * math.cos(angle_to_target - math.pi / 2)
+        vy += cross_track_controller_output * math.sin(angle_to_target - math.pi / 2)
+
+        target_rotation_rad = None
+        rotation_constraint = None
+
+        if rotation_selection.active_rotation_index >= 0 and self.is_rotation_target_at(rotation_selection.active_rotation_index):
+            current_rotation_target = self.path_elements_with_constraints[rotation_selection.active_rotation_index][0]
+            if not isinstance(self.path_elements_with_constraints[rotation_selection.active_rotation_index][1], RotationTargetConstraint):
+                self.stop_commanded_motion()
+                return
+            
+            rotation_constraint = self.path_elements_with_constraints[rotation_selection.active_rotation_index][1]
+            self.current_rotation_target_rad = current_rotation_target.rotation
+
+            if current_rotation_target.profiled_rotation:
+                rotation_start = self.path_init_start_pose.translation() if rotation_selection.previous_rotation_index < 0 else self.calculate_rotation_target_translation(rotation_selection.previous_rotation_index)
+                rotation_end = self.calculate_rotation_target_translation(rotation_selection.active_rotation_index)
+                rotation_segment_length = rotation_start.distance(rotation_end)
+
+                segment_progress = 1.0 if rotation_segment_length < 1e-6 else self.calculate_segment_projection_t(rotation_start, rotation_end, cur_pose.translation())
+
+                end_translation_tolerance = self.path.get_end_translation_tolerance_m()
+                if rotation_segment_length > 1e-6 and end_translation_tolerance > 0:
+                    effective_tolerance = min(end_translation_tolerance, rotation_segment_length)
+                    tolerance_threshold = 1.0 - (effective_tolerance / rotation_segment_length)
+                    if segment_progress >= tolerance_threshold:
+                        segment_progress = 1.0
+                
+                end_rotation = current_rotation_target.rotation.radians()
+                rotation_difference = wpimath.angleModulus(end_rotation - self.previous_rotation_element_target_rad)
+
+                target_rotation_rad = self.previous_rotation_element_target_rad + segment_progress * rotation_difference
+            else:
+                target_rotation_rad = wpimath.angleModulus(current_rotation_target.rotation.radians())
+        else:
+            target_rotation_rad = self.previous_rotation_element_target_rad
+            self.current_rotation_target_rad = Rotation2d(target_rotation_rad)
+            rotation_constraint = RotationTargetConstraint(
+                self.path.get_default_global_constraints().getMaxVelocityDps(),
+                self.path.get_default_global_constraints().getMaxAccelerationDps2()
+            )
+
+        target_rotation_rad = wpimath.angleModulus(target_rotation_rad)
+        omega = self.rotation_controller.calculate(cur_pose.rotation().radians(), target_rotation_rad)
+
+
+        target_speeds = ChassisSpeeds(vx, vy, omega)
+        target_speeds = self.limit_speeds(
+            target_speeds,
+            self.last_speeds,
+            dt,
+            translation_constraint.max_acceleration_mps2,
+            degreesToRadians(rotation_constraint.max_acceleration_dps2),
+            translation_constraint.max_velocity_mps,
+            degreesToRadians(rotation_constraint.max_velocity_dps)
+        )
+
+        self.robot_relative_speeds_consumer(ChassisSpeeds.fromFieldRelativeSpeeds(target_speeds, cur_pose.rotation()))
+        self.last_speeds = target_speeds
+
+        self.log_counter += 1
+        if self.log_counter % 3 == 0:
+            self.robot_translations.append(cur_pose.translation())
+
+            if len(self.robot_translations) > 300:
+                del self.robot_translations[:len(self.robot_translations) - 250]
+
+    def isFinished(self):
+        if not self.path.is_valid():
+            return True
+        
+        is_last_rotation_element = self.rotation_element_index == self.NO_ACTIVE_ROTATION_INDEX
+        if not is_last_rotation_element:
+            is_last_rotation_element = True
+            for i in range(self.rotation_element_index + 1, len(self.path_elements_with_constraints)):
+                if isinstance(self.path_elements_with_constraints[i][0], RotationTarget):
+                    is_last_rotation_element = False
+                    break
+
+        is_last_translation_element = True
+        for i in range(self.translation_element_index + 1, len(self.path_elements_with_constraints)):
+            if isinstance(self.path_elements_with_constraints[i][0], TranslationTarget):
+                is_last_translation_element = False
+                break
+
+        translation_at_setpoint = self.translation_controller.atSetpoint()
+        rotation_at_setpoint = abs((self.current_rotation_target_rad - self.pose_supplier().rotation()).radians()) < degreesToRadians(self.path.get_end_rotation_tolerance_deg())
+
+        finished = is_last_rotation_element and is_last_translation_element and translation_at_setpoint and rotation_at_setpoint
+
+        return finished
+
+    def end(self, interrupted : bool):
+        self.stop_commanded_motion()
+
+    def limit_speeds(self, desired_speeds : ChassisSpeeds, last_speeds : ChassisSpeeds, dt : float, max_translation_accel : float, max_angular_accel : float, max_translation_velocity : float, max_angular_velocity : float):
+        if max_translation_velocity > 0 and max_angular_velocity > 0:
+            desired_velocity = math.hypot(desired_speeds.vx, desired_speeds.vy)
+            if desired_velocity > max_translation_velocity:
+                scale_factor = max_translation_velocity / desired_velocity
+                desired_speeds = ChassisSpeeds(
+                    desired_speeds.vx * scale_factor,
+                    desired_speeds.vy * scale_factor,
+                    desired_speeds.omega
+                )
+            desired_speeds.omega = max(-max_angular_velocity, min(desired_speeds.omega, max_angular_velocity))
+
+        if dt <= 0:
+            return desired_speeds
+        
+        desired_acceleration = math.hypot(
+            desired_speeds.vx - last_speeds.vx,
+            desired_speeds.vy - last_speeds.vy
+        ) / dt
+        obtainable_acceleration = max(0, min(desired_acceleration, max_translation_accel))
+
+        theta = math.atan2(
+            desired_speeds.vy - last_speeds.vy,
+            desired_speeds.vx - last_speeds.vx)
+        
+        desired_omega_acceleration = (desired_speeds.omega - last_speeds.omega) / dt
+        obtainable_omega_acceleration = max(-max_angular_accel, min(desired_omega_acceleration, max_angular_accel))
+
+        return ChassisSpeeds(
+            last_speeds.vx + math.cos(theta) * obtainable_acceleration * dt,
+            last_speeds.vy + math.sin(theta) * obtainable_acceleration * dt,
+            last_speeds.omega + obtainable_omega_acceleration * dt
+        )
+
+    def calculate_rotation_target_translation(self, index : int):
+        if index < 0 or index >= len(self.path_elements_with_constraints) or not isinstance(self.path_elements_with_constraints[index][0], RotationTarget):
+            return Translation2d()
+        
+        bounds = self.get_rotation_segment_bounds(index)
+        if bounds is None:
+            return Translation2d()
+        
+        rotation_target = self.path_elements_with_constraints[index][0]
+        t_ratio = self.clamp_t_ratio(rotation_target.t_ratio)
+        point_on_segment = Translation2d(
+            bounds.start_translation.X() + (bounds.end_translation.X() - bounds.start_translation.X()) * t_ratio,
+            bounds.start_translation.Y() + (bounds.end_translation.Y() - bounds.start_translation.Y()) * t_ratio
+        )
+        return point_on_segment
 
     def caclulate_cross_track_error(self):
         target_translation = self.path_elements_with_constraints[self.translation_element_index][0].translation
@@ -400,7 +553,15 @@ class BLineCommand(Command):
         closest_point = self.calculate_projected_point_on_segment(previous_translation, target_translation, robot_position)
 
         path_vector_x = target_translation.X() - previous_translation.X()
-        path_vcetor_y = target
+        path_vector_y = target_translation.Y() - previous_translation.Y()
+        robot_vector_x = robot_position.X() - previous_translation.X()
+        robot_vector_y = robot_position.Y() - previous_translation.Y()
+
+        cross_product = path_vector_x * robot_vector_y - path_vector_y * robot_vector_x
+        signed_error = robot_position.distance(closest_point)
+        if cross_product < 0:
+            signed_error *= -1
+        return signed_error
 
     def calculate_projected_point_on_segment(self, segment_start : Translation2d, segment_end : Translation2d, point : Translation2d):
         t = self.calculate_segment_projection_t(segment_start, segment_end, point)
@@ -540,7 +701,7 @@ class BLineCommand(Command):
 
     def get_max_t_ratio_on_segment(self, segment_end_translation_index : int):
         max_t_ratio = -1000000000000000
-        for i in range(self.path_elements_with_constraints):
+        for i in range(len(self.path_elements_with_constraints)):
             if not isinstance(self.path_elements_with_constraints[i][0], RotationTarget):
                 continue
 

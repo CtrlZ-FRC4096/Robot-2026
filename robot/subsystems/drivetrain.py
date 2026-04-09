@@ -329,7 +329,7 @@ class Drivetrain(Subsystem):
         # print(in_motion)
 
     def drive_robot_relative(
-        self, chassis_speeds: ChassisSpeeds, feedfoward : DriveFeedforwards
+        self, chassis_speeds: ChassisSpeeds, feedfoward=None
     ):  # only use for pathplannerlib
         # PathPlanner returns robot-relative chassis speeds with +ω = CCW.
         # Our kinematics/modules expect the opposite sign, so flip it here.
@@ -442,6 +442,9 @@ class Drivetrain(Subsystem):
 
     def stop(self):
         self.drive(Translation2d(0, 0), 0, False, True)
+
+    def get_timestamp(self):
+        return wpilib.RobotController.getFPGATime() / 1000000
 
     def get_pose(self):
         return self.robot.poseEstimator.curEstPose

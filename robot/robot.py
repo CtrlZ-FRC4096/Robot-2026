@@ -23,7 +23,9 @@ from commands2 import (
     SequentialCommandGroup,
     CommandScheduler,
 )
+from path import Path, DefaultGlobalConstraints, Waypoint, TranslationTarget, RotationTarget, PathConstraints, RangedConstraint
 import wpilib
+from wpimath.controller import PIDController
 from wpilib import Timer, DataLogManager, DriverStation, Field2d, SmartDashboard
 from wpilib.simulation import DriverStationSim
 import wpilib.sysid
@@ -61,7 +63,7 @@ import inspect
 import autoroutines
 
 from pathplannerlib.path import PathPlannerPath, Waypoint, IdealStartingState, GoalEndState, PathPoint
-from pathplannerlib.auto import AutoBuilder, PathPlannerAuto, NamedCommands, FollowPathCommand, PathConstraints
+from pathplannerlib.auto import AutoBuilder, PathPlannerAuto, NamedCommands, FollowPathCommand#, PathConstraints
 from pathplannerlib.config import PIDConstants, RobotConfig, ModuleConfig
 from pathplannerlib.controller import PPHolonomicDriveController
 
@@ -83,6 +85,7 @@ from pathplannerlib.controller import PathFollowingController, PPHolonomicDriveC
 from pathplannerlib.path import DriveFeedforwards
 
 from wpimath.kinematics import ChassisSpeeds, SwerveModuleState
+from bline_command import BLineCommand, Builder
 
 from fuel_sim import FuelSim
 
@@ -187,19 +190,8 @@ class Robot(CoroutineRobot):
         self.remote_shell = RemoteShell(self)
 
 		# PATHS
-        # self.LB_DEPOT = self.getPathCommand(PathPlannerPath.fromPathFile("LB_DEPOT"))
-        # self.P1_B_L = self.getPathCommand(PathPlannerPath.fromPathFile("P1_B_L"))
-        # self.P1_B_R = self.getPathCommand(PathPlannerPath.fromPathFile("P1_B_R"))
-        # self.P1_T_L = self.getPathCommand(PathPlannerPath.fromPathFile("P1_T_L"))
-        # self.P1_T_L_SAFE = self.getPathCommand(PathPlannerPath.fromPathFile("P1_T_L_Safe"))
         self.P2_B_L = self.getPathCommand(PathPlannerPath.fromPathFile("P2_B_L"))
         self.P2_B_R = self.getPathCommand(PathPlannerPath.fromPathFile("P2_B_R"))
-        # self.P2_T_L = self.getPathCommand(PathPlannerPath.fromPathFile("P2_T_L"))
-        # self.P2_T_R = self.getPathCommand(PathPlannerPath.fromPathFile("P2_T_R"))
-        # self.P1_T_R_SAFE = self.getPathCommand(PathPlannerPath.fromPathFile("P1_T_R_Safe"))
-
-        # self.P1_T_R_ROBUST_1 = self.getPathCommand(PathPlannerPath.fromPathFile("P1_T_R_Robust_1"))
-        # self.P1_T_R_ROBUST_2 = self.getPathCommand(PathPlannerPath.fromPathFile("P1_T_R_Robust_2"))
 
         self.P1_T_B_R_ROBUST = self.getPathCommand(PathPlannerPath.fromPathFile("P1_T_B_R_Robust"))
         self.P1_T_B_L_ROBUST = self.getPathCommand(PathPlannerPath.fromPathFile("P1_T_B_L_Robust"))
@@ -207,9 +199,21 @@ class Robot(CoroutineRobot):
         self.P2_B_R_NEW = self.getPathCommand(PathPlannerPath.fromPathFile("P2_B_R_New")) 
         self.P2_B_L_NEW = self.getPathCommand(PathPlannerPath.fromPathFile("P2_B_L_New"))
 
-        # self.P1_T_L_SOM = self.getPathCommand(PathPlannerPath.fromPathFile("P1_T_L_SOM"))
-        # self.P1_T_L_SOM_2 = self.getPathCommand(PathPlannerPath.fromPathFile("P1_T_L_SOM_2"))
-        # self.P1_T_L_SOM_3 = self.getPathCommand(PathPlannerPath.fromPathFile("P1_T_L_SOM_3"))
+
+        self.bline_translation_controller = PIDController(1, 0, 0)
+        self.bline_rotation_controller = PIDController(1, 0, 0)
+        self.bline_cross_track_controller = PIDController(1, 0, 0)
+        self.bline_builder = Builder(self.drivetrain, 
+                                     self.drivetrain.get_pose,
+                                     self.drivetrain.get_robot_relative_speeds,
+                                     self.drivetrain.drive_robot_relative,
+                                     self.drivetrain.get_timestamp,
+                                     self.bline_translation_controller,
+                                     self.bline_rotation_controller,
+                                     self.bline_cross_track_controller,
+                                     True)
+
+        self.bline_path_1 = self.get_bline_path_command(Path([TranslationTarget(Translation2d(6.0, 0.6), 0.5), TranslationTarget(Translation2d(7.0, 4.0), 0.5)]))
 
         self.autoroutines = autoroutines.AutoRoutines(self)
 
@@ -313,8 +317,9 @@ class Robot(CoroutineRobot):
         # self.auto_win_found = False
 
         
-        self.auto = self.autoroutines.right_trench_bump_robust_new()
+        self.auto = self.autoroutines.test_bline_right()
         self.poseEstimator.poseEst.resetPose(Pose2d(self.fieldConstants.flip_Translation2d(Translation2d(4.47, 0.6)), self.poseEstimator.getYaw())) # for right auto
+        self.poseEstimator.curEstPose = Pose2d(self.fieldConstants.flip_Translation2d(Translation2d(4.47, 0.6)), self.poseEstimator.getYaw())
         # self.poseEstimator.poseEst.resetPose(Pose2d(self.fieldConstants.flip_Translation2d(Translation2d(4.471, 7.587)), self.poseEstimator.getYaw())) # for left auto
 
 
@@ -412,6 +417,9 @@ class Robot(CoroutineRobot):
             self.drivetrain.shouldFlipPath, # Supplier to control path flipping based on alliance color
             self.drivetrain # Reference to this subsystem to set requirements
         )
+
+    def get_bline_path_command(self, path : Path):
+        return self.bline_builder.build(path)
 
     def getPathCommand(self, path : PathPlannerPath):
         return FollowPathCommand(

@@ -207,7 +207,8 @@ class DefaultGlobalConstraints:
         self.intermediate_handoff_radius = intermediate_handoff_radius
 
     def copy(self):
-        return replace(self)
+        c = DefaultGlobalConstraints(self.max_velocity, self.max_acceleration, self.max_velocity_omega, self.max_acceleration_omega, self.end_translation_tolerance, self.end_rotation_tolerance, self.intermediate_handoff_radius)
+        return c
     
     def getMaxVelocityMps(self):
         return self.max_velocity
@@ -311,26 +312,14 @@ class PathConstraints:
             
         return c
     
-    
-    
-
-    
-
-    def copy(self):
-        return replace(self,
-            max_velocity_mps=list(self.max_velocity_mps) if self.max_velocity_mps else None,
-            max_acceleration_mps2=list(self.max_acceleration_mps2) if self.max_acceleration_mps2 else None,
-            max_velocity_dps=list(self.max_velocity_dps) if self.max_velocity_dps else None,
-            max_acceleration_dps2=list(self.max_acceleration_dps2) if self.max_acceleration_dps2 else None
-        )
 
 # --- Path Class ---
 
 class Path:
     def __init__(self,
                  path_elements: List[PathElement],
-                 path_constraints : PathConstraints,
-                 default_global_constraints: Optional[DefaultGlobalConstraints] = None,
+                 path_constraints=None,
+                #  default_global_constraints: Optional[DefaultGlobalConstraints] = None,
                  flipped = False,
                  is_valid = True):
         if path_elements is None:
@@ -339,15 +328,15 @@ class Path:
         if path_constraints is None:
             path_constraints = PathConstraints()
 
-        if default_global_constraints is None:
-            raise NameError("deez nuts")
+        # if default_global_constraints is None:
+        #     raise NameError("deez nuts")
         
         self.flipped = flipped
         self.isValid = is_valid
 
         self.path_elements = path_elements
         self.path_constraints = path_constraints
-        self.default_global_constraints = default_global_constraints
+        self.default_global_constraints = DefaultGlobalConstraints(4.0, 4.0, 540.0, 720.0, 0.05, 4.0, 0.2)
 
         self._validate_path_endpoints()
 
