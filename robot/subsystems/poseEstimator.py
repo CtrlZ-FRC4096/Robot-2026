@@ -552,6 +552,7 @@ class PoseEstimator(Subsystem):
         # )
         SmartDashboard.putNumber("Gyro/Yaw", self.getYaw().degrees())
         SmartDashboard.putNumber("Gyro/Roll", self.gyro.get_roll().value)
+        SmartDashboard.putNumber("Gyro/Pitch", self.gyro.get_pitch().value)
 
         SmartDashboard.putData("Field", self.field)
         self.field.setRobotPose(self.poseEst.getEstimatedPosition())

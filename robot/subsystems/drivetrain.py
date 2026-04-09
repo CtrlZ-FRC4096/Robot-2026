@@ -719,8 +719,8 @@ class Drivetrain(Subsystem):
 
             self.robot.fly_speed = self.vel_lookup_table.interpolate(vals[0])
             self.robot.hood_angle = self.angle_lookup_table.interpolate(vals[1])
-            if self.robot.fly_speed >= 85:
-                self.robot.fly_speed = 85
+            if self.robot.fly_speed >= 55:
+                self.robot.fly_speed = 55
 
             if self.robot.hood_angle >= 45:
                 self.robot.hood_angle = 45
