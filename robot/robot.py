@@ -41,6 +41,7 @@ from wpimath.estimator import SwerveDrive4PoseEstimator
 from wpilib.interfaces import GenericHID
 
 from phoenix6 import controls, signals, configs
+from bline_json import JsonUtils
 
 # import subsystems.limelight
 import subsystems.leds
@@ -213,9 +214,11 @@ class Robot(CoroutineRobot):
                                      self.bline_cross_track_controller,
                                      True)
 
-        self.bline_path_1 = self.get_bline_path_command(Path([TranslationTarget(Translation2d(6.0, 0.6), 0.5), TranslationTarget(Translation2d(7.0, 4.0), 0.5)]))
+        # self.bline_path_1 = self.get_bline_path_command(Path([TranslationTarget(Translation2d(6.0, 0.6), 0.5), TranslationTarget(Translation2d(7.0, 4.0), 0.5)]))
 
         self.autoroutines = autoroutines.AutoRoutines(self)
+        # print(f"{wpilib.getDeployDirectory()} \n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n")
+        self.bline_path_1 = self.get_bline_path_command(JsonUtils.load_path("testing_path"))
 
 
         # self.auto_chooser = wpilib.SendableChooser()

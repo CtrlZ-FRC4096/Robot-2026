@@ -336,7 +336,7 @@ class Path:
 
         self.path_elements = path_elements
         self.path_constraints = path_constraints
-        self.default_global_constraints = DefaultGlobalConstraints(4.0, 4.0, 540.0, 720.0, 0.05, 4.0, 0.2)
+        self.default_global_constraints = DefaultGlobalConstraints(4.0, 4.5, 540.0, 720.0, 0.05, 4.0, 0.2)
 
         self._validate_path_endpoints()
 

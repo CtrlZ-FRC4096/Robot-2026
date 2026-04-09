@@ -239,7 +239,7 @@ class FuelSim:
 
     def start(self):
         self.running = True
-        print("starting\n\n\n\n\n\n\n\n\n\n\n")
+        # print("starting\n\n\n\n\n\n\n\n\n\n\n")
         self.spawnStartingFuel()
 
     def stop(self):
