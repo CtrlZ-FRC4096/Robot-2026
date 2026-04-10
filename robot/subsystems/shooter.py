@@ -68,8 +68,8 @@ class Shooter(Subsystem):
         # self.hood_motor_config.feedback.feedback_sensor_source = signals.FeedbackSensorSourceValue.REMOTE_CANCODER
         self.hood_motor.configurator.apply(self.hood_motor_config)
 
-        self.right_fly_motor.set_control(controls.Follower(const.LEFT_UP_FLY_ID, True))#signals.MotorAlignmentValue(1)))
-        self.left_down_fly_motor.set_control(controls.Follower(const.LEFT_UP_FLY_ID, False))#signals.MotorAlignmentValue(0)))
+        self.right_fly_motor.set_control(controls.Follower(const.LEFT_UP_FLY_ID, signals.MotorAlignmentValue(1)))
+        self.left_down_fly_motor.set_control(controls.Follower(const.LEFT_UP_FLY_ID, signals.MotorAlignmentValue(0)))
 
         self.test_fly_speed = 60
         self.test_accelerator_speed = 70
