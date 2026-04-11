@@ -12,6 +12,7 @@ from wpimath.kinematics import ChassisSpeeds
 import math
 from wpilibextra.coroutine.subsystem import Subsystem
 from wpimath.units import degreesToRadians
+from wpilib import SmartDashboard
 import wpimath
 
 
@@ -141,6 +142,9 @@ class BLineCommand(Command):
                  ):
         super().__init__()
 
+        self.isFinished = self.realIsFinished
+        self.end = self.realEnd
+
         if translation_controller is None or rotation_controller is None or cross_track_controller is None:
             raise RuntimeError("give me controllers")
         self.path = path.copy()
@@ -175,7 +179,7 @@ class BLineCommand(Command):
         self.fired_event_trigger_count = 0
         self.finished = False
 
-        self.addRequirements(driveSubsystem)
+        # self.addRequirements(driveSubsystem)
 
     def configure_controllers(self):
         self.translation_controller.setTolerance(self.path.get_end_translation_tolerance_m())
@@ -348,6 +352,11 @@ class BLineCommand(Command):
             self.stop_commanded_motion()
             return
         
+        SmartDashboard.putNumber("BLine/Rotation Element Index", self.rotation_element_index)
+        SmartDashboard.putNumber("BLine/Translation Element Index", self.translation_element_index)
+        
+
+
         previous_translation_index = self.translation_element_index
         self.advance_translation_targets(cur_pose)
         translation_handoff_occured = self.translation_element_index != previous_translation_index
@@ -465,32 +474,46 @@ class BLineCommand(Command):
             if len(self.robot_translations) > 300:
                 del self.robot_translations[:len(self.robot_translations) - 250]
 
-    def isFinished(self):
-        if not self.path.is_valid():
-            return True
+    def realIsFinished(self):
+        # if not self.path.is_valid():
+        #     return True
         
-        is_last_rotation_element = self.rotation_element_index == self.NO_ACTIVE_ROTATION_INDEX
-        if not is_last_rotation_element:
-            is_last_rotation_element = True
-            for i in range(self.rotation_element_index + 1, len(self.path_elements_with_constraints)):
-                if isinstance(self.path_elements_with_constraints[i][0], RotationTarget):
-                    is_last_rotation_element = False
-                    break
+        # 1. Find the actual last indices in the path
+        last_trans_idx = -1
+        last_rot_idx = -1
+        for i, (elem, _) in enumerate(self.path_elements_with_constraints):
+            if isinstance(elem, TranslationTarget):
+                last_trans_idx = i
+            if isinstance(elem, RotationTarget):
+                last_rot_idx = i
 
-        is_last_translation_element = True
-        for i in range(self.translation_element_index + 1, len(self.path_elements_with_constraints)):
-            if isinstance(self.path_elements_with_constraints[i][0], TranslationTarget):
-                is_last_translation_element = False
-                break
+        # 2. Check if we have actually reached those final indices
+        reached_last_translation = self.translation_element_index >= last_trans_idx
+        
+        # Rotation is trickier: if NO_ACTIVE_ROTATION_INDEX, we might be done or haven't started.
+        # If there are NO rotation targets in the path, reached_last_rotation should be True.
+        if last_rot_idx == -1:
+            reached_last_rotation = True
+        else:
+            reached_last_rotation = self.rotation_element_index >= last_rot_idx
 
+        # 3. Use your setpoint logic
         translation_at_setpoint = self.translation_controller.atSetpoint()
-        rotation_at_setpoint = abs((self.current_rotation_target_rad - self.pose_supplier().rotation()).radians()) < degreesToRadians(self.path.get_end_rotation_tolerance_deg())
+        
+        # Ensure current_rotation_target_rad is valid before subtracting
+        rotation_error = abs(wpimath.angleModulus(
+            self.current_rotation_target_rad.radians() - self.pose_supplier().rotation().radians()
+        ))
+        rotation_at_setpoint = rotation_error < degreesToRadians(self.path.get_end_rotation_tolerance_deg())
 
-        finished = is_last_rotation_element and is_last_translation_element and translation_at_setpoint and rotation_at_setpoint
+        SmartDashboard.putBoolean("BLine/Reached Last Translation", reached_last_translation)
+        SmartDashboard.putBoolean("BLine/Reached Last Rotation", reached_last_rotation)
+        SmartDashboard.putBoolean("BLine/Rotation Done", rotation_at_setpoint)
+        SmartDashboard.putBoolean("BLine/Translation Done", translation_at_setpoint)
+        return reached_last_translation and reached_last_rotation and translation_at_setpoint and rotation_at_setpoint
 
-        return finished
 
-    def end(self, interrupted : bool):
+    def realEnd(self, interrupted : bool):
         self.stop_commanded_motion()
 
     def limit_speeds(self, desired_speeds : ChassisSpeeds, last_speeds : ChassisSpeeds, dt : float, max_translation_accel : float, max_angular_accel : float, max_translation_velocity : float, max_angular_velocity : float):

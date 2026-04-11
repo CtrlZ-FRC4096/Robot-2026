@@ -870,7 +870,7 @@ class FuelSim:
         vy = v_horiz * math.sin(total_yaw) + field_speeds.vy
         # print("vx: ", vx)
         # print("vy: ", vy)
-        vz = v_vert
+        vz = -1 * v_vert
         
         self.spawnFuel(launch_pos, Translation3d(vx, vy, vz))
     

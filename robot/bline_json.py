@@ -101,7 +101,6 @@ class JsonUtils:
                     # fileContent = sb.toString();
                     file_content = "".join(sb)
             except OSError as e:
-                print("AHHHHH\n\n\n\n\n\n\n\n\n")
                 # This inner try-catch specifically handles the reading IO
                 raise e
 

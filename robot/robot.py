@@ -201,9 +201,9 @@ class Robot(CoroutineRobot):
         self.P2_B_L_NEW = self.getPathCommand(PathPlannerPath.fromPathFile("P2_B_L_New"))
 
 
-        self.bline_translation_controller = PIDController(1, 0, 0)
-        self.bline_rotation_controller = PIDController(1, 0, 0)
-        self.bline_cross_track_controller = PIDController(1, 0, 0)
+        self.bline_translation_controller = PIDController(5, 0, 0)
+        self.bline_rotation_controller = PIDController(3, 0, 0)
+        self.bline_cross_track_controller = PIDController(2, 0, 0)
         self.bline_builder = Builder(self.drivetrain, 
                                      self.drivetrain.get_pose,
                                      self.drivetrain.get_robot_relative_speeds,
@@ -215,10 +215,12 @@ class Robot(CoroutineRobot):
                                      True)
 
         # self.bline_path_1 = self.get_bline_path_command(Path([TranslationTarget(Translation2d(6.0, 0.6), 0.5), TranslationTarget(Translation2d(7.0, 4.0), 0.5)]))
+        self.P1_T_B_R_ROBUST_BL = self.get_bline_path_command(JsonUtils.load_path("P1_T_B_R_Robust_BL"))
+        self.P2_B_R_NEW_BL = self.get_bline_path_command(JsonUtils.load_path("P2_B_R_New_BL"))
 
         self.autoroutines = autoroutines.AutoRoutines(self)
         # print(f"{wpilib.getDeployDirectory()} \n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n")
-        self.bline_path_1 = self.get_bline_path_command(JsonUtils.load_path("testing_path"))
+        
 
 
         # self.auto_chooser = wpilib.SendableChooser()
@@ -318,7 +320,6 @@ class Robot(CoroutineRobot):
         self.alliance_shift_time_remaining = 0
         self.auto_win = None  # false = BLUE, true = RED
         # self.auto_win_found = False
-
         
         self.auto = self.autoroutines.test_bline_right()
         self.poseEstimator.poseEst.resetPose(Pose2d(self.fieldConstants.flip_Translation2d(Translation2d(4.47, 0.6)), self.poseEstimator.getYaw())) # for right auto

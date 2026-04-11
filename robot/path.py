@@ -246,20 +246,20 @@ class PathConstraints:
         self.end_translation_tolerance = end_translation_tolerance_m
         self.end_rotation_tolerance = end_rotation_tolerance_deg
 
-    def setMaxVelocityMps(self, *constraints : RangedConstraint):
-        self.max_velocity_mps = list(constraints)
-        return self
-    
-    def setMaxAccelerationMps2(self, *constraints : RangedConstraint):
-        self.max_acceleration_mps2 = list(constraints)
+    def setMaxVelocityMps(self, constraints: List[RangedConstraint]):
+        self.max_velocity_mps = list(constraints) if constraints else []
         return self
 
-    def setMaxVelocityDps(self, *constraints : RangedConstraint):
-        self.max_velocity_dps = list(constraints)
+    def setMaxAccelerationMps2(self, constraints: List[RangedConstraint]):
+        self.max_acceleration_mps2 = list(constraints) if constraints else []
         return self
 
-    def setMaxAccelerationDps2(self, *constraints : RangedConstraint):
-        self.max_acceleration_dps2 = list(constraints)
+    def setMaxVelocityDps(self, constraints: List[RangedConstraint]):
+        self.max_velocity_dps = list(constraints) if constraints else []
+        return self
+
+    def setMaxAccelerationDps2(self, constraints: List[RangedConstraint]):
+        self.max_acceleration_dps2 = list(constraints) if constraints else []
         return self
     
     def setEndTranslationTolerance(self, value):
@@ -290,26 +290,18 @@ class PathConstraints:
     
     def copy(self):
         c = PathConstraints()
-        
+        # Pass the lists directly, do not use * unpacking
         if self.max_velocity_mps is not None:
-            # The * unpacks the list so it works with your setter's *constraints arg
-            c.setMaxVelocityMps(*self.max_velocity_mps)
-            
+            c.setMaxVelocityMps(self.max_velocity_mps)
         if self.max_acceleration_mps2 is not None:
-            c.setMaxAccelerationMps2(*self.max_acceleration_mps2)
-            
+            c.setMaxAccelerationMps2(self.max_acceleration_mps2)
         if self.max_velocity_dps is not None:
-            c.setMaxVelocityDps(*self.max_velocity_dps)
-            
+            c.setMaxVelocityDps(self.max_velocity_dps)
         if self.max_acceleration_dps2 is not None:
-            c.setMaxAccelerationDps2(*self.max_acceleration_dps2)
+            c.setMaxAccelerationDps2(self.max_acceleration_dps2)
             
-        if self.end_translation_tolerance is not None:
-            c.setEndTranslationTolerance(self.end_translation_tolerance)
-            
-        if self.end_rotation_tolerance is not None:
-            c.setEndRotationToleranceDeg(self.end_rotation_tolerance)
-            
+        c.setEndTranslationTolerance(self.end_translation_tolerance)
+        c.setEndRotationToleranceDeg(self.end_rotation_tolerance)
         return c
     
 

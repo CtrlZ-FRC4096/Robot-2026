@@ -65,7 +65,14 @@ class AutoRoutines:
     #                             self.robot.coroutines.intake_2)
         # )
     def test_bline_right(self):
-        return self.robot.bline_path_1
+        return SequentialCommandGroup(
+            ParallelCommandGroup(self.robot.P1_T_B_R_ROBUST_BL,
+                                 self.robot.coroutines.intake),
+            self.robot.coroutines.drive_to_zone_trench.withTimeout(4.5),
+            ParallelCommandGroup(
+                
+            )
+                                 )
     def right_trench_bump_robust(self):
         return SequentialCommandGroup(
             ParallelCommandGroup(

@@ -311,6 +311,7 @@ class Drivetrain(Subsystem):
 
 
     def drive_with_pid(self, translation: Translation2d, target_angle):
+        print("still doing pid driving")
         cur_speeds = ChassisSpeeds.fromRobotRelativeSpeeds(self.log_chassis, self.robot.poseEstimator.curEstPose.rotation())
         
         if self.robot.shoot_intent and Translation2d(cur_speeds.vx, cur_speeds.vy).norm() > 0.2 and self.cur_accel.norm() > 0.28 and (self.robot.poseEstimator.curEstPose.rotation() - Rotation2d.fromDegrees(target_angle)).degrees() >= 30 and self.robot.shooter.shoot_ready and self.robot.shooter.accel_good:
@@ -333,6 +334,7 @@ class Drivetrain(Subsystem):
     ):  # only use for pathplannerlib
         # PathPlanner returns robot-relative chassis speeds with +ω = CCW.
         # Our kinematics/modules expect the opposite sign, so flip it here.
+        print("still doing robot relative driving")
         module_states = const.SWERVE_KINEMATICS.toSwerveModuleStates(chassis_speeds)
         module_states = const.SWERVE_KINEMATICS.desaturateWheelSpeeds(module_states, 4)
 
@@ -350,8 +352,8 @@ class Drivetrain(Subsystem):
             )
         else:
             for idx, module in enumerate(self.robot.poseEstimator.modules):
-                amps = feedfoward.torqueCurrentsAmps[idx]
-                module.set_desired_state(module_states[idx], is_open_loop=False, feed_forward=amps)
+                # amps = feedfoward.torqueCurrentsAmps[idx]
+                module.set_desired_state(module_states[idx], is_open_loop=False)#, feed_forward=amps)
     
     def should_flip_path(self):
         return self.robot.fieldConstants.shouldFlip
@@ -745,20 +747,21 @@ class Drivetrain(Subsystem):
             # if self.robot.fuel_in_hopper >= 9 and self:
             #     pass
 
-            if self.robot.running_pid_lineup:
-                if self.robot.shoot_intent and self.robot.poseEstimator.cur_pos_in_zone(4.5):
-                        rotation = self.robot.drivetrain.get_hub_angle(self.robot.time_of_flight)
-                        lineup  = Pose2d(self.robot.final_lineup_pose.X(), self.robot.final_lineup_pose.Y(), rotation)
-                        # SmartDashboard.putNumber("Shooter/Rotation to Hub", rotation.degrees())
-                else:
-                    lineup = self.robot.final_lineup_pose
-                self.go_to_pose_profiled_pid(lineup)
-            elif not self.robot.running_pid_lineup and self.robot.shoot_intent:
-                rotation = self.get_hub_angle(self.robot.time_of_flight)
-                self.drive_with_pid(Translation2d(0, 0), rotation.degrees())
-            elif self.robot.should_rotate_trench_auto:
-                self.drive_with_pid(Translation2d(0, 0), self.robot.auto_rotation_trench)
-            # self.go_to_pose_profiled_pid(self.robot.final_lineup_pose)
+            # if self.robot.running_pid_lineup:
+            #     if self.robot.shoot_intent and self.robot.poseEstimator.cur_pos_in_zone(4.5):
+            #             rotation = self.robot.drivetrain.get_hub_angle(self.robot.time_of_flight)
+            #             lineup  = Pose2d(self.robot.final_lineup_pose.X(), self.robot.final_lineup_pose.Y(), rotation)
+            #             # SmartDashboard.putNumber("Shooter/Rotation to Hub", rotation.degrees())
+            #     else:
+            #         lineup = self.robot.final_lineup_pose
+            #     self.go_to_pose_profiled_pid(lineup)
+            # elif not self.robot.running_pid_lineup and self.robot.shoot_intent:
+            #     rotation = self.get_hub_angle(self.robot.time_of_flight)
+            #     self.drive_with_pid(Translation2d(0, 0), rotation.degrees())
+            # elif self.robot.should_rotate_trench_auto:
+            #     self.drive_with_pid(Translation2d(0, 0), self.robot.auto_rotation_trench)
+            # # self.go_to_pose_profiled_pid(self.robot.final_lineup_pose)
+            pass
 
         elapsed_ms = (wpilib.RobotController.getFPGATime() - start_time) / 1000
         SmartDashboard.putNumber("Loop Times/Drivetrain", elapsed_ms)
