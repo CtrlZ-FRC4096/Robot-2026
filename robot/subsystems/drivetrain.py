@@ -353,7 +353,7 @@ class Drivetrain(Subsystem):
         else:
             for idx, module in enumerate(self.robot.poseEstimator.modules):
                 # amps = feedfoward.torqueCurrentsAmps[idx]
-                module.set_desired_state(module_states[idx], is_open_loop=False)#, feed_forward=amps)
+                module.set_desired_state(module_states[idx], is_open_loop=False, feed_forward=0.0)
     
     def should_flip_path(self):
         return self.robot.fieldConstants.shouldFlip
