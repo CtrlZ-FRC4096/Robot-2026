@@ -183,9 +183,6 @@ class Shooter(Subsystem):
     def periodic(self):
         start_time = wpilib.RobotController.getFPGATime()
     
-
-        SmartDashboard.putBoolean("BLine/Command is Finished", self.robot.bline_path_1.isFinished())
-
         if self.robot.shooter_at_default:
             self.set_hood_position(0.0)
             self.stop_accelerator()

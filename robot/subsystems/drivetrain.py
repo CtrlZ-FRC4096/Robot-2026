@@ -311,7 +311,6 @@ class Drivetrain(Subsystem):
 
 
     def drive_with_pid(self, translation: Translation2d, target_angle):
-        print("still doing pid driving")
         cur_speeds = ChassisSpeeds.fromRobotRelativeSpeeds(self.log_chassis, self.robot.poseEstimator.curEstPose.rotation())
         
         if self.robot.shoot_intent and Translation2d(cur_speeds.vx, cur_speeds.vy).norm() > 0.2 and self.cur_accel.norm() > 0.28 and (self.robot.poseEstimator.curEstPose.rotation() - Rotation2d.fromDegrees(target_angle)).degrees() >= 30 and self.robot.shooter.shoot_ready and self.robot.shooter.accel_good:
@@ -333,8 +332,7 @@ class Drivetrain(Subsystem):
         self, chassis_speeds: ChassisSpeeds, feedfoward=None
     ):  # only use for pathplannerlib
         # PathPlanner returns robot-relative chassis speeds with +ω = CCW.
-        # Our kinematics/modules expect the opposite sign, so flip it here.
-        print("still doing robot relative driving")
+        # Our kinematics/modules expect the opposite sign, so flip it here
         module_states = const.SWERVE_KINEMATICS.toSwerveModuleStates(chassis_speeds)
         module_states = const.SWERVE_KINEMATICS.desaturateWheelSpeeds(module_states, 4)
 
@@ -357,6 +355,10 @@ class Drivetrain(Subsystem):
     
     def should_flip_path(self):
         return self.robot.fieldConstants.shouldFlip
+    
+    def stop_intaking(self):
+        self.robot.is_intaking = False
+        print("HIHIH\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n")
 
     def go_to_pose_profiled_pid(self, target_pose : Translation2d, feedforward_x=0.0, feedforward_y=0.0, feedfoward_theta=0.0):
 

@@ -622,13 +622,13 @@ class BLineCommand(Command):
                 self.event_trigger_element_index += 1
                 continue
 
-            if not self.is_event_trigger_t_ratio_reached():
+            if not self.is_event_trigger_t_ratio_reached(self.event_trigger_element_index, cur_pose):
                 break
 
             trigger = element
             action = self.event_trigger_registry.get(trigger.lib_key)
             if action is not None:
-                action.run() # look at this
+                action() # look at this
             
             self.fired_event_trigger_indices.add(self.event_trigger_element_index)
             self.fired_event_trigger_count += 1
@@ -654,7 +654,7 @@ class BLineCommand(Command):
 
         for i in range(event_index + 1, len(self.path_elements_with_constraints)):
             if isinstance(self.path_elements_with_constraints[i][0], TranslationTarget):
-                translationB = self.path_elements_with_constraints[i][0].translation
+                translation_B = self.path_elements_with_constraints[i][0].translation
                 break
         
         if translation_A is None or translation_B is None:

@@ -215,8 +215,14 @@ class Robot(CoroutineRobot):
                                      True)
 
         # self.bline_path_1 = self.get_bline_path_command(Path([TranslationTarget(Translation2d(6.0, 0.6), 0.5), TranslationTarget(Translation2d(7.0, 4.0), 0.5)]))
+        BLineCommand.event_trigger_registry = {
+            "stop_intake" : self.drivetrain.stop_intaking
+        }
+        
         self.P1_T_B_R_ROBUST_BL = self.get_bline_path_command(JsonUtils.load_path("P1_T_B_R_Robust_BL"))
         self.P2_B_R_NEW_BL = self.get_bline_path_command(JsonUtils.load_path("P2_B_R_New_BL"))
+
+        
 
         self.autoroutines = autoroutines.AutoRoutines(self)
         # print(f"{wpilib.getDeployDirectory()} \n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n")
