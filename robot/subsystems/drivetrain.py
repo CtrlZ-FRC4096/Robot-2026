@@ -75,6 +75,10 @@ class Drivetrain(Subsystem):
         self.angle_pid_close.enableContinuousInput(0, 360)
         self.angle_pid_close.setTolerance(2)  # Set position tolerance to 0.5 degrees
 
+        self.angle_pid_default = PIDController(0.075, 0.0, 0.001)
+        self.angle_pid_default.enableContinuousInput(0, 360)
+        self.angle_pid_default.setTolerance(0.5)
+
         self.angle_pid_far_sotm = PIDController(0.06, 0.0, 0.005)
         self.angle_pid_far_sotm.enableContinuousInput(0, 360)
         self.angle_pid_far_sotm.setTolerance(2)
@@ -315,8 +319,10 @@ class Drivetrain(Subsystem):
         
         if self.robot.shoot_intent and Translation2d(cur_speeds.vx, cur_speeds.vy).norm() > 0.2 and self.cur_accel.norm() > 0.28 and (self.robot.poseEstimator.curEstPose.rotation() - Rotation2d.fromDegrees(target_angle)).degrees() >= 30 and self.robot.shooter.shoot_ready and self.robot.shooter.accel_good:
             pid_output = self.angle_pid_far_sotm.calculate(self.robot.poseEstimator.curEstPose.rotation().degrees(), target_angle)
+        elif self.robot.shoot_intent:
+            pid_output = self.angle_pid.calculate(self.robot.poseEstimator.curEstPose.rotation().degrees(), target_angle)
         else:
-            pid_output = self.angle_pid.calculate(self.robot.poseEstimator.curEstPose.rotation().degrees(), target_angle)  
+            pid_output = self.angle_pid_default.calculate(self.robot.poseEstimator.curEstPose.rotation().degrees(), target_angle)
         # else:
         #     pid_output = self.angle_pid.calculate(self.robot.poseEstimator.curEstPose.rotation().degrees(), target_angle) 
 
@@ -753,8 +759,6 @@ class Drivetrain(Subsystem):
             elif not self.robot.running_pid_lineup and self.robot.shoot_intent:
                 rotation = self.get_hub_angle(self.robot.time_of_flight)
                 self.drive_with_pid(Translation2d(0, 0), rotation.degrees())
-            elif self.robot.should_rotate_trench_auto:
-                self.drive_with_pid(Translation2d(0, 0), self.robot.auto_rotation_trench)
             # self.go_to_pose_profiled_pid(self.robot.final_lineup_pose)
 
         elapsed_ms = (wpilib.RobotController.getFPGATime() - start_time) / 1000

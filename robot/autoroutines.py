@@ -65,7 +65,7 @@ class AutoRoutines:
     #                             self.robot.coroutines.intake_2)
         # )
     
-    def right_trench_bump_robust(self):
+    def right_trench_bump_robust(self): # citrus type path 2
         return SequentialCommandGroup(
             ParallelCommandGroup(
                 self.robot.P1_T_B_R_ROBUST,
@@ -80,7 +80,7 @@ class AutoRoutines:
             self.robot.coroutines.drive_to_zone_trench_2.withTimeout(4.25)
         )
     
-    def right_trench_bump_robust_new(self):
+    def right_trench_bump_robust_new(self): # normal path 2
         return SequentialCommandGroup(
             ParallelCommandGroup(
                 self.robot.P1_T_B_R_ROBUST,
