@@ -54,7 +54,9 @@ class Builder:
             translation_controller: PIDController,
             rotation_controller: PIDController,
             cross_track_controller: PIDController,
-            use_t_ratio_based_translation : bool
+            use_t_ratio_based_translation : bool,
+            should_flip_path : Callable[[], bool],
+            should_mirror_path : Callable[[], bool],
         ):
             self.drive_subsystem = drive_subsystem
             self.pose_supplier = pose_supplier
@@ -66,9 +68,8 @@ class Builder:
             self.timestamp_supplier = timestamp_supplier
 
             # Default optional settings
-            self.should_flip_path_supplier: Callable[[], bool] = lambda: False
-            self.should_mirror_path_supplier: Callable[[], bool] = lambda: False
-            self.pose_reset_consumer: Callable[[Pose2d], None] = lambda pose: None
+            self.should_flip_path_supplier = should_flip_path
+            self.should_mirror_path_supplier = should_mirror_path
             self.use_t_ratio_based_translation_handoffs = use_t_ratio_based_translation
 
         def with_should_flip(self, supplier: Callable[[], bool]) -> "BLineCommand.Builder":
@@ -85,11 +86,6 @@ class Builder:
         def with_should_mirror(self, supplier: Callable[[], bool]) -> "BLineCommand.Builder":
             """Configures a custom supplier to determine if the path should be mirrored."""
             self.should_mirror_path_supplier = supplier
-            return self
-
-        def with_pose_reset(self, consumer: Callable[[Pose2d], None]) -> "BLineCommand.Builder":
-            """Consumer to reset odometry at the start of the path."""
-            self.pose_reset_consumer = consumer
             return self
 
         def with_t_ratio_handoffs(self, enabled: bool) -> "BLineCommand.Builder":
@@ -115,7 +111,6 @@ class Builder:
                 should_flip_path_supplier=self.should_flip_path_supplier,
                 should_mirror_path_supplier=self.should_mirror_path_supplier,
                 use_t_ratio_based_translation_handoff=self.use_t_ratio_based_translation_handoffs,
-                pose_reset_consumer=self.pose_reset_consumer
                 # Ensure your BLineCommand.__init__ accepts this new flag:
                 # use_t_ratio=self.use_t_ratio_based_translation_handoffs 
             )
@@ -137,8 +132,7 @@ class BLineCommand(Command):
                  cross_track_controller: PIDController,
                  should_flip_path_supplier: Callable[[], bool],
                  should_mirror_path_supplier: Callable[[], bool],
-                 use_t_ratio_based_translation_handoff : bool,
-                 pose_reset_consumer: Optional[Callable[[Pose2d], None]] = None,
+                 use_t_ratio_based_translation_handoff : bool
                  ):
         super().__init__()
 
@@ -156,7 +150,6 @@ class BLineCommand(Command):
         self.cross_track_controller = cross_track_controller
         self.should_flip_path_supplier = should_flip_path_supplier
         self.should_mirror_path_supplier = should_mirror_path_supplier
-        self.pose_reset_consumer = pose_reset_consumer
         self.timestamp_supplier = timestamp_supplier
 
         self.rotation_element_index = self.NO_ACTIVE_ROTATION_INDEX
@@ -179,7 +172,7 @@ class BLineCommand(Command):
         self.fired_event_trigger_count = 0
         self.finished = False
 
-        # self.addRequirements(driveSubsystem)
+        self.addRequirements(driveSubsystem)
 
     def configure_controllers(self):
         self.translation_controller.setTolerance(self.path.get_end_translation_tolerance_m())

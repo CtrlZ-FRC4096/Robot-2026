@@ -346,7 +346,7 @@ class Drivetrain(Subsystem):
             new_chassis_speeds = ChassisSpeeds.fromRobotRelativeSpeeds(chassis_speeds.vx, chassis_speeds.vy, chassis_speeds.omega, self.robot.poseEstimator.curEstPose.rotation())
             curPose = self.robot.poseEstimator.curEstPose
             self.robot.poseEstimator.curEstPose = Pose2d(
-                curPose.X() + new_chassis_speeds.vx / 15, curPose.Y() + new_chassis_speeds.vy / 15, Rotation2d(curPose.rotation().radians() + new_chassis_speeds.omega / 10)
+                curPose.X() + new_chassis_speeds.vx / 14, curPose.Y() + new_chassis_speeds.vy / 14, Rotation2d(curPose.rotation().radians() + new_chassis_speeds.omega / 10)
             )
         else:
             for idx, module in enumerate(self.robot.poseEstimator.modules):
@@ -356,9 +356,11 @@ class Drivetrain(Subsystem):
     def should_flip_path(self):
         return self.robot.fieldConstants.shouldFlip
     
+    def should_mirror_path(self):
+        return self.robot.mirror_bline_auto
+    
     def stop_intaking(self):
         self.robot.is_intaking = False
-        print("HIHIH\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n")
 
     def go_to_pose_profiled_pid(self, target_pose : Translation2d, feedforward_x=0.0, feedforward_y=0.0, feedfoward_theta=0.0):
 
@@ -479,9 +481,6 @@ class Drivetrain(Subsystem):
         )  # Check this in swervemodule.py, we need to convert kraken speed to m/s
         chassis_speeds = const.SWERVE_KINEMATICS.toChassisSpeeds(module_states)  # type: ignore
         return self.previous_sim_speeds if self.robot.isSimulation() else chassis_speeds
-
-    def shouldFlipPath(self):
-        return DriverStation.getAlliance() == DriverStation.Alliance.kRed
     
     def get_target_angle(self, tof, target : Translation2d):
         field_relative_speeds = ChassisSpeeds.fromRobotRelativeSpeeds(self.log_chassis, self.robot.poseEstimator.curEstPose.rotation()) #self.get_field_relative_speeds()
@@ -749,21 +748,20 @@ class Drivetrain(Subsystem):
             # if self.robot.fuel_in_hopper >= 9 and self:
             #     pass
 
-            # if self.robot.running_pid_lineup:
-            #     if self.robot.shoot_intent and self.robot.poseEstimator.cur_pos_in_zone(4.5):
-            #             rotation = self.robot.drivetrain.get_hub_angle(self.robot.time_of_flight)
-            #             lineup  = Pose2d(self.robot.final_lineup_pose.X(), self.robot.final_lineup_pose.Y(), rotation)
-            #             # SmartDashboard.putNumber("Shooter/Rotation to Hub", rotation.degrees())
-            #     else:
-            #         lineup = self.robot.final_lineup_pose
-            #     self.go_to_pose_profiled_pid(lineup)
-            # elif not self.robot.running_pid_lineup and self.robot.shoot_intent:
-            #     rotation = self.get_hub_angle(self.robot.time_of_flight)
-            #     self.drive_with_pid(Translation2d(0, 0), rotation.degrees())
-            # elif self.robot.should_rotate_trench_auto:
-            #     self.drive_with_pid(Translation2d(0, 0), self.robot.auto_rotation_trench)
-            # # self.go_to_pose_profiled_pid(self.robot.final_lineup_pose)
-            pass
+            if self.robot.running_pid_lineup:
+                if self.robot.shoot_intent and self.robot.poseEstimator.cur_pos_in_zone(4.5):
+                        rotation = self.robot.drivetrain.get_hub_angle(self.robot.time_of_flight)
+                        lineup  = Pose2d(self.robot.final_lineup_pose.X(), self.robot.final_lineup_pose.Y(), rotation)
+                        # SmartDashboard.putNumber("Shooter/Rotation to Hub", rotation.degrees())
+                else:
+                    lineup = self.robot.final_lineup_pose
+                self.go_to_pose_profiled_pid(lineup)
+            elif not self.robot.running_pid_lineup and self.robot.shoot_intent:
+                rotation = self.get_hub_angle(self.robot.time_of_flight)
+                self.drive_with_pid(Translation2d(0, 0), rotation.degrees())
+            elif self.robot.should_rotate_trench_auto:
+                self.drive_with_pid(Translation2d(0, 0), self.robot.auto_rotation_trench)
+            # self.go_to_pose_profiled_pid(self.robot.final_lineup_pose)
 
         elapsed_ms = (wpilib.RobotController.getFPGATime() - start_time) / 1000
         SmartDashboard.putNumber("Loop Times/Drivetrain", elapsed_ms)

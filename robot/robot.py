@@ -212,7 +212,9 @@ class Robot(CoroutineRobot):
                                      self.bline_translation_controller,
                                      self.bline_rotation_controller,
                                      self.bline_cross_track_controller,
-                                     True)
+                                     True,
+                                     self.drivetrain.should_flip_path,
+                                     self.drivetrain.should_mirror_path)
 
         # self.bline_path_1 = self.get_bline_path_command(Path([TranslationTarget(Translation2d(6.0, 0.6), 0.5), TranslationTarget(Translation2d(7.0, 4.0), 0.5)]))
         BLineCommand.event_trigger_registry = {
@@ -221,20 +223,14 @@ class Robot(CoroutineRobot):
         
         self.P1_T_B_R_ROBUST_BL = self.get_bline_path_command(JsonUtils.load_path("P1_T_B_R_Robust_BL"))
         self.P2_B_R_NEW_BL = self.get_bline_path_command(JsonUtils.load_path("P2_B_R_New_BL"))
+        self.SLOW_RIGHT_STEAL_OUT_BL = self.get_bline_path_command(JsonUtils.load_path("SLOW_RIGHT_STEAL_OUT"))
+        self.SLOW_RIGHT_STEAL_BL = self.get_bline_path_command(JsonUtils.load_path("SLOW_RIGHT_STEAL"))
+        self.SLOW_RIGHT_STEAL_DEPOT_BL = self.get_bline_path_command(JsonUtils.load_path("SLOW_RIGHT_STEAL_DEPOT"))
 
-        
+        self.mirror_bline_auto = False
 
         self.autoroutines = autoroutines.AutoRoutines(self)
-        # print(f"{wpilib.getDeployDirectory()} \n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n")
-        
 
-
-        # self.auto_chooser = wpilib.SendableChooser()
-        # self.auto_chooser.addOption("Left Trench Safe", 1)
-        # self.auto_chooser.addOption("Left Trench Aggressive", 2)
-        # self.auto_chooser.addOption("Left Trench-Bump Aggresive", 3)
-        # self.auto_chooser.setDefaultOption("Default (no auto)", 0)
-        
 
         DataLogManager.start()
         DriverStation.startDataLog(DataLogManager.getLog())
@@ -327,10 +323,11 @@ class Robot(CoroutineRobot):
         self.auto_win = None  # false = BLUE, true = RED
         # self.auto_win_found = False
         
-        self.auto = self.autoroutines.test_bline_right()
-        self.poseEstimator.poseEst.resetPose(Pose2d(self.fieldConstants.flip_Translation2d(Translation2d(4.47, 0.6)), self.poseEstimator.getYaw())) # for right auto
-        self.poseEstimator.curEstPose = Pose2d(self.fieldConstants.flip_Translation2d(Translation2d(4.47, 0.6)), self.poseEstimator.getYaw())
+        self.auto = self.autoroutines.right_trench_wait_steal(5.0)
+        self.poseEstimator.poseEst.resetPose(Pose2d(self.fieldConstants.flip_Translation2d(Translation2d(3.539, 0.6)), self.poseEstimator.getYaw())) # for right auto
         # self.poseEstimator.poseEst.resetPose(Pose2d(self.fieldConstants.flip_Translation2d(Translation2d(4.471, 7.587)), self.poseEstimator.getYaw())) # for left auto
+        self.poseEstimator.curEstPose = Pose2d(self.fieldConstants.flip_Translation2d(Translation2d(3.539, 0.6)), self.poseEstimator.getYaw())
+        
 
 
         ## SIMMING STUFF ##
@@ -424,7 +421,7 @@ class Robot(CoroutineRobot):
                 ),  # Rotation PID constants
             ),
             RobotConfig.fromGUISettings(), # The robot configuration
-            self.drivetrain.shouldFlipPath, # Supplier to control path flipping based on alliance color
+            self.drivetrain.should_flip_path, # Supplier to control path flipping based on alliance color
             self.drivetrain # Reference to this subsystem to set requirements
         )
 
@@ -499,32 +496,7 @@ class Robot(CoroutineRobot):
 
     def autonomous_mode(self):
         self.scheduler.cancelAll()
-        if self.in_autonomous_mode == False:
-            # self.fieldConstants.shouldFlip = self.driverstation.getAlliance() == self.driverstation.Alliance.kRed
-            if self.fieldConstants.shouldFlip:
-                self.auto_rotation_trench = -90
-            else:
-                self.auto_rotation_trench = 90
-            
-            # auto_chosen = self.auto_chooser.getSelected()
-            # if auto_chosen == 1:
-                # if self.fieldConstants.shouldFlip:
-                #     gyro_offset = 90
-                # else:
-                #     gyro_offset = -90
-                # self.poseEstimator.gyro.set_yaw(gyro_offset)
-                # self.poseEstimator.poseEst.resetPose(Pose2d(self.fieldConstants.flip_Translation2d(Translation2d(4.471, 7.381)), Rotation2d.fromDegrees(gyro_offset)))
-                # self.poseEstimator.curEstPose = Pose2d(self.fieldConstants.flip_Translation2d(Translation2d(4.471, 7.381)), Rotation2d.fromDegrees(gyro_offset))
 
-            #     self.auto = self.autoroutines.trench_left_safe_auto()
-            # elif auto_chosen == 2:
-            #     self.auto = self.autoroutines.trench_left_auto()
-            # elif auto_chosen == 3:
-            #     self.auto = self.autoroutines.trench_bump_left_auto()
-            # elif auto_chosen == 0:
-            #     self.auto = SequentialCommandGroup()
-            # else:
-            #     self.auto = SequentialCommandGroup()
         
         self.in_teleop_mode = False
         self.in_autonomous_mode = True

@@ -23,6 +23,7 @@ from commands2 import (
     ParallelCommandGroup,
     ParallelRaceGroup,
     SequentialCommandGroup,
+    WaitCommand
 )
 
 # Example for when we begin working on autonomous mode
@@ -88,6 +89,24 @@ class AutoRoutines:
             ),
             self.robot.coroutines.p2_over_right_bump,
             self.robot.coroutines.drive_to_zone_trench_2.withTimeout(4.25)
+        )
+    
+    def right_trench_wait_steal(self, time_to_wait=0.1):
+        return SequentialCommandGroup(
+            ParallelCommandGroup(
+                self.robot.SLOW_RIGHT_STEAL_OUT_BL,
+                WaitCommand(time_to_wait)
+            ),
+            ParallelCommandGroup(
+                self.robot.SLOW_RIGHT_STEAL_BL,
+                self.robot.coroutines.intake
+            ),
+            self.robot.coroutines.drive_to_zone_trench.withTimeout(4.5),
+            ParallelCommandGroup(
+                self.robot.SLOW_RIGHT_STEAL_DEPOT_BL,
+                self.robot.coroutines.intake_2
+            ),
+            self.robot.coroutines.drive_to_zone_trench_2.withTimeout(4.5)
         )
     
     def right_trench_bump_robust_new(self):
