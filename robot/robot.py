@@ -225,7 +225,7 @@ class Robot(CoroutineRobot):
         self.P2_B_R_NEW_BL = self.get_bline_path_command(JsonUtils.load_path("P2_B_R_New_BL"))
         self.SLOW_RIGHT_STEAL_OUT_BL = self.get_bline_path_command(JsonUtils.load_path("SLOW_RIGHT_STEAL_OUT"))
         self.SLOW_RIGHT_STEAL_BL = self.get_bline_path_command(JsonUtils.load_path("SLOW_RIGHT_STEAL"))
-        self.SLOW_RIGHT_STEAL_DEPOT_BL = self.get_bline_path_command(JsonUtils.load_path("SLOW_RIGHT_STEAL_DEPOT"))
+        self.SLOW_RIGHT_STEAL_BACK_BL = self.get_bline_path_command(JsonUtils.load_path("SLOW_RIGHT_STEAL_BACK"))
 
         self.mirror_bline_auto = False
 

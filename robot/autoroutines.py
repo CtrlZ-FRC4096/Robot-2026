@@ -103,10 +103,9 @@ class AutoRoutines:
             ),
             self.robot.coroutines.drive_to_zone_trench.withTimeout(4.5),
             ParallelCommandGroup(
-                self.robot.SLOW_RIGHT_STEAL_DEPOT_BL,
+                self.robot.SLOW_RIGHT_STEAL_BACK_BL,
                 self.robot.coroutines.intake_2
-            ),
-            self.robot.coroutines.drive_to_zone_trench_2.withTimeout(4.5)
+            )
         )
     
     def right_trench_bump_robust_new(self):
