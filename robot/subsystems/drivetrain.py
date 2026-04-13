@@ -79,6 +79,11 @@ class Drivetrain(Subsystem):
         self.angle_pid_default.enableContinuousInput(0, 360)
         self.angle_pid_default.setTolerance(0.5)
 
+        self.rotation_controller = ProfiledPIDController(0.05, 0.0, 0.0, TrapezoidProfile.Constraints(4.0, 4.0))
+        self.rotation_controller.enableContinuousInput(0, 360)
+        self.rotation_controller.setTolerance(0.5)
+        self.custom_kd_rotation = 0.0
+
         self.angle_pid_far_sotm = PIDController(0.06, 0.0, 0.005)
         self.angle_pid_far_sotm.enableContinuousInput(0, 360)
         self.angle_pid_far_sotm.setTolerance(2)
@@ -122,6 +127,8 @@ class Drivetrain(Subsystem):
 
         self.cur_accel = Translation2d()
         self.accel_shoot_limiter = SlewRateLimiter(0.2, -3)
+
+        self.last_target_angle = None
 
         # SIM STUFF
 
@@ -317,14 +324,20 @@ class Drivetrain(Subsystem):
     def drive_with_pid(self, translation: Translation2d, target_angle):
         cur_speeds = ChassisSpeeds.fromRobotRelativeSpeeds(self.log_chassis, self.robot.poseEstimator.curEstPose.rotation())
         
+
         if self.robot.shoot_intent and Translation2d(cur_speeds.vx, cur_speeds.vy).norm() > 0.2 and self.cur_accel.norm() > 0.28 and (self.robot.poseEstimator.curEstPose.rotation() - Rotation2d.fromDegrees(target_angle)).degrees() >= 30 and self.robot.shooter.shoot_ready and self.robot.shooter.accel_good:
             pid_output = self.angle_pid_far_sotm.calculate(self.robot.poseEstimator.curEstPose.rotation().degrees(), target_angle)
         elif self.robot.shoot_intent:
-            pid_output = self.angle_pid.calculate(self.robot.poseEstimator.curEstPose.rotation().degrees(), target_angle)
+            # pid_output = self.angle_pid.calculate(self.robot.poseEstimator.curEstPose.rotation().degrees(), target_angle)
+            omega = self.robot.poseEstimator.gyro.get_angular_velocity_z_world().value
+            if self.last_target_angle is not None and abs(target_angle - self.last_target_angle) > 15:
+                self.rotation_controller.reset(self.robot.poseEstimator.curEstPose.rotation().degrees(), omega)
+            self.last_target_angle = target_angle
+            rotation_output = self.rotation_controller.calculate(self.robot.poseEstimator.curEstPose.rotation().degrees(), target_angle)
+            damping = omega * self.custom_kd_rotation
+            pid_output = rotation_output - damping
         else:
             pid_output = self.angle_pid_default.calculate(self.robot.poseEstimator.curEstPose.rotation().degrees(), target_angle)
-        # else:
-        #     pid_output = self.angle_pid.calculate(self.robot.poseEstimator.curEstPose.rotation().degrees(), target_angle) 
 
         
 
