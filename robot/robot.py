@@ -226,6 +226,14 @@ class Robot(CoroutineRobot):
         self.SLOW_RIGHT_STEAL_OUT_BL = self.get_bline_path_command(JsonUtils.load_path("SLOW_RIGHT_STEAL_OUT"))
         self.SLOW_RIGHT_STEAL_BL = self.get_bline_path_command(JsonUtils.load_path("SLOW_RIGHT_STEAL"))
         self.SLOW_RIGHT_STEAL_BACK_BL = self.get_bline_path_command(JsonUtils.load_path("SLOW_RIGHT_STEAL_BACK"))
+        self.SLOW_RIGHT_STEAL_TRENCH_BL = self.get_bline_path_command(JsonUtils.load_path("SLOW_RIGHT_STEAL_TRENCH"))
+
+        self.SLOW_LEFT_STEAL_OUT_BL = self.get_bline_path_command(JsonUtils.load_path("SLOW_LEFT_STEAL_OUT"))
+        self.SLOW_LEFT_STEAL_BL = self.get_bline_path_command(JsonUtils.load_path("SLOW_LEFT_STEAL"))
+        self.SLOW_LEFT_STEAL_DEPOT_BL = self.get_bline_path_command(JsonUtils.load_path("SLOW_LEFT_STEAL_DEPOT"))
+        self.SLOW_LEFT_STEAL_TRENCH_BL = self.get_bline_path_command(JsonUtils.load_path("SLOW_LEFT_STEAL_TRENCH"))
+
+        self.DEFAULT_SLOW_DEPOT_BL = self.get_bline_path_command(JsonUtils.load_path("DEFAULT_SLOW_DEPOT"))
 
         self.mirror_bline_auto = False
 
@@ -322,11 +330,10 @@ class Robot(CoroutineRobot):
         self.alliance_shift_time_remaining = 0
         self.auto_win = None  # false = BLUE, true = RED
         # self.auto_win_found = False
-        
-        self.auto = self.autoroutines.right_trench_wait_steal(5.0)
-        self.poseEstimator.poseEst.resetPose(Pose2d(self.fieldConstants.flip_Translation2d(Translation2d(3.539, 0.6)), self.poseEstimator.getYaw())) # for right auto
+        self.auto = self.autoroutines.default_slow_depot()
+        self.poseEstimator.poseEst.resetPose(Pose2d(self.fieldConstants.flip_Translation2d(Translation2d(3.539, 4.049)), self.poseEstimator.getYaw())) # for right auto
         # self.poseEstimator.poseEst.resetPose(Pose2d(self.fieldConstants.flip_Translation2d(Translation2d(4.471, 7.587)), self.poseEstimator.getYaw())) # for left auto
-        self.poseEstimator.curEstPose = Pose2d(self.fieldConstants.flip_Translation2d(Translation2d(3.539, 0.6)), self.poseEstimator.getYaw())
+        self.poseEstimator.curEstPose = Pose2d(self.fieldConstants.flip_Translation2d(Translation2d(3.539, 4.049)), self.poseEstimator.getYaw())
         
 
 

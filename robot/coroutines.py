@@ -262,4 +262,21 @@ class Coroutines:
 
         self.p1_right_trench = (p1_right_trench)
         self.p2_right_trench = (p2_right_trench)
+
+
+        @commandify
+        def reset_after_shooting():
+            robot.should_rotate_trench_auto = False
+            robot.pulse_pivot = False
+            robot.shoot_intent = True
+            robot.spin_down = True
+            robot.shooter.shoot_ready = False
+            robot.shooter.accel_good = False
+            # robot.shooter_at_default = True
+            robot.running_pid_lineup = False
+            robot.intake_at_default = False
+            robot.is_intaking = False
+            yield
+
+        self.reset_after_shooting = (reset_after_shooting)
         

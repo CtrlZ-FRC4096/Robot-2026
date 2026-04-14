@@ -108,6 +108,68 @@ class AutoRoutines:
             )
         )
     
+    def left_trench_wait_steal(self, time_to_wait=0.1):
+        return SequentialCommandGroup(
+            ParallelCommandGroup(
+                self.robot.SLOW_LEFT_STEAL_OUT_BL,
+                WaitCommand(time_to_wait)
+            ),
+            ParallelCommandGroup(
+                self.robot.SLOW_LEFT_STEAL_BL,
+                self.robot.coroutines.intake
+            ),
+            self.robot.coroutines.drive_to_zone_trench.withTimeout(4.5),
+            ParallelCommandGroup(
+                self.robot.SLOW_LEFT_STEAL_DEPOT_BL,
+                self.robot.coroutines.intake_2
+            ),
+            self.robot.coroutines.drive_to_zone_trench_2.withTimeout(4.5)
+        )
+    
+    def left_trench_back_wait_steal(self, time_to_wait=0.1):
+        return SequentialCommandGroup(
+            ParallelCommandGroup(
+                self.robot.SLOW_LEFT_STEAL_OUT_BL,
+                WaitCommand(time_to_wait)
+            ),
+            ParallelCommandGroup(
+                self.robot.SLOW_LEFT_STEAL_TRENCH_BL,
+                self.robot.coroutines.intake
+            ),
+            self.robot.coroutines.drive_to_zone_trench.withTimeout(4.5),
+            ParallelCommandGroup(
+                self.robot.SLOW_LEFT_STEAL_DEPOT_BL,
+                self.robot.coroutines.intake_2
+            ),
+            self.robot.coroutines.drive_to_zone_trench_2.withTimeout(4.5)
+        )
+    
+    def right_trench_back_wait_steal(self, time_to_wait=0.1):
+        return SequentialCommandGroup(
+            ParallelCommandGroup(
+                self.robot.SLOW_RIGHT_STEAL_OUT_BL,
+                WaitCommand(time_to_wait)
+            ),
+            ParallelCommandGroup(
+                self.robot.SLOW_RIGHT_STEAL_TRENCH_BL,
+                self.robot.coroutines.intake
+            ),
+            self.robot.coroutines.drive_to_zone_trench.withTimeout(4.5),
+            ParallelCommandGroup(
+                self.robot.SLOW_RIGHT_STEAL_BACK_BL,
+                self.robot.coroutines.reset_after_shooting
+            )
+        )
+    
+    def default_slow_depot(self):
+        return SequentialCommandGroup(
+            ParallelCommandGroup(
+                self.robot.DEFAULT_SLOW_DEPOT_BL,
+                self.robot.coroutines.intake
+            ),
+            self.robot.coroutines.drive_to_zone_trench.withTimeout(6.0)
+        )
+    
     def right_trench_bump_robust_new(self):
         return SequentialCommandGroup(
             ParallelCommandGroup(
