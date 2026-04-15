@@ -108,7 +108,7 @@ class WrapperedPhotonCameraTag:
         # don't make sense.
 
         for target in res.getTargets():
-            if abs(radiansToDegrees(gyroRotation.X())) >= 10 or abs(radiansToDegrees(gyroRotation.Y())) >= 10:
+            if False and (abs(radiansToDegrees(gyroRotation.X())) >= 10 or abs(radiansToDegrees(gyroRotation.Y())) >= 10):
                 tgtID = target.getFiducialId()
 
                 tagFieldPose = self.tag_map.getTagPose(tgtID)
