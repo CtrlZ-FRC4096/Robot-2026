@@ -323,7 +323,7 @@ class Path:
         # if default_global_constraints is None:
         #     raise NameError("deez nuts")
         
-        self.flipped = flipped
+        self.flipped = False
         self.isValid = is_valid
 
         self.path_elements = path_elements
@@ -522,7 +522,10 @@ class Path:
     
     def flip(self):
         if not self.is_valid() or self.flipped:
+            print("flipping \n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n")
             return
+
+        
 
         # Save previous symmetry and force rotational for the flipping calculation
         previous_symmetry_type = FlippingUtil.symmetry_type

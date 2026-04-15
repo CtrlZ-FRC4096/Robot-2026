@@ -230,10 +230,12 @@ class Robot(CoroutineRobot):
         self.mirror_bline_auto = False
 
         self.autoroutines = autoroutines.AutoRoutines(self)
+        self.auto = None
 
         self.auto_chooser = wpilib.SendableChooser()
-        self.auto_chooser.addOption("Left Trench & Bump", 1)
-        self.auto_chooser.addOption("Right Trench & Bump", 2)
+        self.auto_chooser.addOption("Left Trench & Bump PP", 1)
+        self.auto_chooser.addOption("Right Trench & Bump PP", 2)
+        self.auto_chooser.addOption("Right Trench & Bump 3-Bot Safe BL", 3)
         self.auto_chooser.setDefaultOption("Default (no auto)", 0)
 
         SmartDashboard.putNumber("Submit Auto? (and FMS Connected)", int(0))
@@ -513,6 +515,8 @@ class Robot(CoroutineRobot):
 
         # if self.isSimulation():
         #     self.fuel_sim.running = True
+        if self.auto is None:
+            self.auto = SequentialCommandGroup()
 
         self.scheduler.schedule(self.auto)
 
