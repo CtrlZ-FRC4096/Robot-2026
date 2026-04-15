@@ -45,7 +45,6 @@ class Coroutines:
         
         @commandify
         def intake_2():
-            robot.should_rotate_trench_auto = False
             robot.pulse_pivot = False
             robot.shoot_intent = True
             robot.spin_down = True
@@ -56,18 +55,6 @@ class Coroutines:
             robot.intake_at_default = False
             robot.is_intaking = True
             yield
-        
-        @commandify
-        def spin_for_trench():
-            robot.intake_at_default = False
-            robot.shooter_at_default = True
-            robot.shoot_intent = False
-            robot.pulse_pivot = False
-            robot.running_pid_lineup = False
-            robot.should_rotate_trench_auto = True
-            while abs(robot.poseEstimator.curEstPose.rotation().degrees() - robot.auto_rotation_trench) >= 10:
-                yield
-            robot.drivetrain.stop()
         
         @commandify
         def stop_drive():
@@ -123,7 +110,6 @@ class Coroutines:
         self.shoot_in_place = (shoot_in_place)
         self.shoot_in_place_2 = (shoot_in_place_2)
 
-        self.spin_for_trench = (spin_for_trench)
         self.stop_drive = (stop_drive)
 
         @commandify
@@ -221,7 +207,6 @@ class Coroutines:
 
         @commandify
         def intake_2_pid():
-            robot.should_rotate_trench_auto = False
             robot.pulse_pivot = False
             robot.shoot_intent = False
             robot.shooter_at_default = True

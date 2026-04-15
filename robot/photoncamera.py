@@ -21,7 +21,7 @@ from wpilib import DriverStation, SmartDashboard, Timer, Field2d
 
 from robotpy_apriltag import AprilTagField, AprilTagFieldLayout
 from field_const import FieldConstants
-
+from wpimath.units import degreesToRadians, radiansToDegrees
 import numpy as np
 import math
 # import cv2
@@ -108,99 +108,98 @@ class WrapperedPhotonCameraTag:
         # don't make sense.
 
         for target in res.getTargets():
-           
-            # tgtID = target.getFiducialId()
+            if False and (abs(radiansToDegrees(gyroRotation.X())) >= 10 or abs(radiansToDegrees(gyroRotation.Y())) >= 10):
+                tgtID = target.getFiducialId()
 
-            # tagFieldPose = self.tag_map.getTagPose(tgtID)
+                tagFieldPose = self.tag_map.getTagPose(tgtID)
 
-            # target_x_angle = math.radians(target.getYaw())
-            # target_y_angle = -1 * math.radians(target.getPitch())
+                target_x_angle = math.radians(target.getYaw())
+                target_y_angle = -1 * math.radians(target.getPitch())
 
-            # distance_3d = target.getBestCameraToTarget().translation().norm()
-            
-            # if distance_3d > 5:
-            #     continue
-            # ambiguity = target.getPoseAmbiguity()
-            # if ambiguity > 0.3:
-            #     continue
+                distance_3d = target.getBestCameraToTarget().translation().norm()
+                
+                if distance_3d > 5:
+                    continue
+                ambiguity = target.getPoseAmbiguity()
+                if ambiguity > 0.3:
+                    continue
 
-            
-            # camera_to_tag_trans_x = distance_3d * math.cos(target_y_angle) * math.cos(target_x_angle)
-            # camera_to_tag_trans_y = distance_3d * math.cos(target_y_angle) * math.sin(target_x_angle)
-            # camera_to_tag_trans_z = distance_3d * math.sin(target_y_angle)
-            # tag_to_camera_trans = Translation3d(- camera_to_tag_trans_x, - camera_to_tag_trans_y, - camera_to_tag_trans_z)
+                
+                camera_to_tag_trans_x = distance_3d * math.cos(target_y_angle) * math.cos(target_x_angle)
+                camera_to_tag_trans_y = distance_3d * math.cos(target_y_angle) * math.sin(target_x_angle)
+                camera_to_tag_trans_z = distance_3d * math.sin(target_y_angle)
+                tag_to_camera_trans = Translation3d(- camera_to_tag_trans_x, - camera_to_tag_trans_y, - camera_to_tag_trans_z)
 
-            # tag_to_camera_trans_field_rel = tag_to_camera_trans.rotateBy(self.robotToCam.rotation()).rotateBy(gyroRotation)
+                tag_to_camera_trans_field_rel = tag_to_camera_trans.rotateBy(self.robotToCam.rotation()).rotateBy(gyroRotation)
 
-            # field_rel_camera = self.tag_map.getTagPose(tgtID).translation() + tag_to_camera_trans_field_rel
+                field_rel_camera = self.tag_map.getTagPose(tgtID).translation() + tag_to_camera_trans_field_rel
 
-            # camera_transform_rotated = self.robotToCam.translation().rotateBy(gyroRotation)
+                camera_transform_rotated = self.robotToCam.translation().rotateBy(gyroRotation)
 
-            # robot_pose_3d = field_rel_camera - camera_transform_rotated
+                robot_pose_3d = field_rel_camera - camera_transform_rotated
 
-            # robot_pose = Pose2d(robot_pose_3d.X(), robot_pose_3d.Y(), gyroRotation.toRotation2d())
+                robot_pose = Pose2d(robot_pose_3d.X(), robot_pose_3d.Y(), gyroRotation.toRotation2d())
+            else:
+                # Transform both poses to on-field poses
+                tgtID = target.getFiducialId()
 
+                tagFieldPose = self.tag_map.getTagPose(tgtID)
 
-            # Transform both poses to on-field poses
-            tgtID = target.getFiducialId()
+                target_x_angle = math.radians(target.getYaw())
+                target_y_angle = -1 * math.radians(target.getPitch())
 
-            tagFieldPose = self.tag_map.getTagPose(tgtID)
+                distance_3d = target.getBestCameraToTarget().translation().norm()
+                
+                if distance_3d > 5:
+                    continue
+                ambiguity = target.getPoseAmbiguity()
+                if ambiguity > 0.3:
+                    continue
 
-            target_x_angle = math.radians(target.getYaw())
-            target_y_angle = -1 * math.radians(target.getPitch())
+                distance_2d_to_tag = distance_3d * math.cos(
+                    (-1 * self.robotToCam.rotation().Y()) - target_y_angle
+                )  # cosine is even so we don't need to negate both
 
-            distance_3d = target.getBestCameraToTarget().translation().norm()
-            
-            if distance_3d > 5:
-                continue
-            ambiguity = target.getPoseAmbiguity()
-            if ambiguity > 0.3:
-                continue
-
-            distance_2d_to_tag = distance_3d * math.cos(
-                (-1 * self.robotToCam.rotation().Y()) - target_y_angle
-            )  # cosine is even so we don't need to negate both
-
-            # Calculate the rotation of the camera to the tag. The rotation of the robot + rotation of the camera - the angle of the target
-            cam_to_tag_rotation = Rotation2d(
-                prevEstPoseSingleTag.rotation().radians()
-                + self.robotToCam.rotation().Z()
-                - target_x_angle
-            )
-            # Calculate the translation of the camera to the tag. We take the position of the tag, transform by the distance to the tag, in the direction of the camera
-            field_to_camera_translation = (
-                Pose2d(
-                    tagFieldPose.toPose2d().translation(),
-                    Rotation2d(cam_to_tag_rotation.radians() + math.pi),
-                )
-                .transformBy(
-                    Transform2d(
-                        Translation2d(distance_2d_to_tag, 0.0), Rotation2d()
-                    )
-                )
-                .translation()
-            )
-
-            # Calculate the pose of the robot. We take the position of the camera to the tag and transform it by the robot to camera transform
-            robot_pose = Pose2d(
-                field_to_camera_translation,
-                Rotation2d(
+                # Calculate the rotation of the camera to the tag. The rotation of the robot + rotation of the camera - the angle of the target
+                cam_to_tag_rotation = Rotation2d(
                     prevEstPoseSingleTag.rotation().radians()
                     + self.robotToCam.rotation().Z()
-                ),
-            ).transformBy(
-                Transform2d(
-                    Pose2d(
-                        self.robotToCam.X(),
-                        self.robotToCam.Y(),
-                        self.robotToCam.rotation().Z(),
-                    ),
-                    Pose2d(),
+                    - target_x_angle
                 )
-            )
-            robot_pose = Pose2d(
-                robot_pose.translation(), prevEstPoseSingleTag.rotation()
-            )
+                # Calculate the translation of the camera to the tag. We take the position of the tag, transform by the distance to the tag, in the direction of the camera
+                field_to_camera_translation = (
+                    Pose2d(
+                        tagFieldPose.toPose2d().translation(),
+                        Rotation2d(cam_to_tag_rotation.radians() + math.pi),
+                    )
+                    .transformBy(
+                        Transform2d(
+                            Translation2d(distance_2d_to_tag, 0.0), Rotation2d()
+                        )
+                    )
+                    .translation()
+                )
+
+                # Calculate the pose of the robot. We take the position of the camera to the tag and transform it by the robot to camera transform
+                robot_pose = Pose2d(
+                    field_to_camera_translation,
+                    Rotation2d(
+                        prevEstPoseSingleTag.rotation().radians()
+                        + self.robotToCam.rotation().Z()
+                    ),
+                ).transformBy(
+                    Transform2d(
+                        Pose2d(
+                            self.robotToCam.X(),
+                            self.robotToCam.Y(),
+                            self.robotToCam.rotation().Z(),
+                        ),
+                        Pose2d(),
+                    )
+                )
+                robot_pose = Pose2d(
+                    robot_pose.translation(), prevEstPoseSingleTag.rotation()
+                )
             # zEst = tagFieldPose.Z() - self.robotToCam.Z() - math.sin(self.robotToCam.rotation().Y() +  target_y_angle) * distance_3d
             # self.zEstimates.append(zEst)
             self.poseSingleTag.append([robot_pose, tgtID, ambiguity])

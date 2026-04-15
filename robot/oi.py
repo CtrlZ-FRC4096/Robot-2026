@@ -286,7 +286,7 @@ class OI:
 
         @self.driver1.RIGHT_STICK.whenHeld
         def _():
-            self.rotation_boost = 2
+            self.rotation_boost = 1.5
 
         @self.driver1.RIGHT_STICK.whenReleased
         def _():

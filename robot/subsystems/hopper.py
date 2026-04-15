@@ -3,18 +3,19 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from robot import Robot
 
-from commands2 import Subsystem
+from commands2 import Subsystem, SequentialCommandGroup
 from wpilibextra.coroutine.subsystem import Subsystem
 from phoenix6 import controls, configs, hardware, signals
 import wpilib
 import wpimath
 import wpimath.controller
-from wpimath.geometry import Rotation2d, Translation2d
+from wpimath.geometry import Rotation2d, Translation2d, Pose2d
 from wpimath.trajectory import TrapezoidProfile
 from wpilib import Timer
 import math
 import const
 from wpilib import SmartDashboard
+
 from math import sin, pi
 
 class Hopper(Subsystem):
@@ -55,7 +56,45 @@ class Hopper(Subsystem):
 
     def periodic(self):
         start_time = wpilib.RobotController.getFPGATime()
-        
+
+        if not self.robot.did_autonomous:
+            if not self.robot.auto_submitted and SmartDashboard.getNumber("Submit Auto? (and FMS Connected)", 0):
+                self.robot.auto_submitted = True
+                self.robot.fieldConstants.shouldFlip = self.robot.driverstation.getAlliance() == self.robot.driverstation.Alliance.kRed
+                match self.robot.auto_chooser.getSelected():
+                    case 1: # Left Default Trench Bump PP Auto Robust
+                        if self.robot.fieldConstants.shouldFlip:
+                            gyro_offset = 90
+                        else:
+                            gyro_offset = -90
+                        
+                        self.robot.poseEstimator.gyro.set_yaw(gyro_offset)
+                        self.robot.poseEstimator.poseEst.resetPose(Pose2d(self.robot.fieldConstants.flip_Translation2d(Translation2d(4.471, 7.587)), Rotation2d.fromDegrees(gyro_offset)))
+                        self.robot.poseEstimator.curEstPose = Pose2d(self.robot.fieldConstants.flip_Translation2d(Translation2d(4.471, 7.587)), Rotation2d.fromDegrees(gyro_offset))
+                        
+                        self.robot.auto = self.robot.autoroutines.left_trench_bump_robust_new()
+                    case 2: # Right Default Trench Bump PP Auto Robust
+                        if self.robot.fieldConstants.shouldFlip:
+                            gyro_offset = 90
+                        else:
+                            gyro_offset = -90
+                        
+                        self.robot.poseEstimator.gyro.set_yaw(gyro_offset)
+                        self.robot.poseEstimator.poseEst.resetPose(Pose2d(self.robot.fieldConstants.flip_Translation2d(Translation2d(4.47, 0.6)), Rotation2d.fromDegrees(gyro_offset)))
+                        self.robot.poseEstimator.curEstPose = Pose2d(self.robot.fieldConstants.flip_Translation2d(Translation2d(4.47, 0.6)), Rotation2d.fromDegrees(gyro_offset))
+                        
+                        self.robot.auto = self.robot.autoroutines.right_trench_bump_robust_new()
+                    case 0:
+                        if self.robot.fieldConstants.shouldFlip:
+                            gyro_offset = 90
+                        else:
+                            gyro_offset = -90
+                        self.robot.poseEstimator.gyro.set_yaw(gyro_offset)
+                        self.robot.poseEstimator.poseEst.resetPose(Pose2d(self.robot.fieldConstants.flip_Translation2d(Translation2d(4.471, 4.411)), Rotation2d.fromDegrees(gyro_offset)))
+                        self.robot.poseEstimator.curEstPose = Pose2d(self.robot.fieldConstants.flip_Translation2d(Translation2d(4.471, 4.411)), Rotation2d.fromDegrees(gyro_offset))
+                        
+                        self.robot.auto = SequentialCommandGroup()
+                        
         if not self.robot.shoot_intent and self.robot.is_intaking:
             # self.commanded_speed = -0.95
             # self.indexer_motor.set_control(controls.DutyCycleOut(-0.95, enable_foc=False))

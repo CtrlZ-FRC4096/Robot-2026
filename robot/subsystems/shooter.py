@@ -16,6 +16,7 @@ from wpilib import Timer
 import math
 import const
 from wpilib import SmartDashboard
+from collections import deque
 # import shot_calc
 import numpy as np
 from lookup_table import LookupTableAll, LookupTableAngle, LookupTableVel
@@ -78,6 +79,13 @@ class Shooter(Subsystem):
         self.shoot_ready = False
         self.accel_good = False
 
+        self.flywheel_spun_deque_length = 22 # / 3.5
+        self.flywheel_spun = deque(maxlen=self.flywheel_spun_deque_length)
+        self.reset_flywheel_spun_deque()
+    
+    def reset_flywheel_spun_deque(self):
+        for i in range(self.flywheel_spun_deque_length):
+            self.flywheel_spun.append(False)
 
     def get_fly_speed(self):
         if self.robot.isSimulation():
@@ -178,11 +186,21 @@ class Shooter(Subsystem):
         #     return True
         else:
             self.shoot_ready = False
-            return False     
+            return False
+        
+    def done_with_shooting(self):
+        return self.accel_good and all(self.flywheel_spun)
 
     def periodic(self):
         start_time = wpilib.RobotController.getFPGATime()
-    
+        
+        if self.accel_good and (abs(abs(self.commanded_fly_speed) - abs(self.get_fly_speed())) >= 2.4 or abs(self.robot.hopper.get_speed()) <= 30):
+            self.flywheel_spun.append(False)
+        else:
+            self.flywheel_spun.append(True)
+
+
+
         if self.robot.shooter_at_default:
             self.set_hood_position(0.0)
             self.stop_accelerator()
@@ -202,7 +220,9 @@ class Shooter(Subsystem):
                 self.shoot_ready = False
                 self.accel_good = False
                 self.robot.pulse_pivot = False
+                self.stop_fly()
                 self.robot.shooter_at_default = True
+                self.reset_flywheel_spun_deque()
                 self.set_hood_position(0.0)
         elif self.robot.shoot_intent or self.robot.down_bad:
                 if not self.robot.in_autonomous_mode or (self.robot.in_autonomous_mode and self.robot.poseEstimator.cur_pos_in_zone()):
@@ -219,6 +239,7 @@ class Shooter(Subsystem):
                         if self.robot.shoot_fuel or (abs(abs(self.get_accelerator_speed()) - self.commanded_accelerator_speed) <= 50 or self.accel_good) and (not self.robot.in_autonomous_mode or self.robot.poseEstimator.cur_pos_in_zone()):
                             if not self.accel_good:
                                 self.robot.intake.tick_count = 0
+                                self.flywheel_spun.append(False) # to initialize not all True
                             self.accel_good = True
                             self.robot.hopper.commanded_speed = 1
                             self.robot.hopper.indexer_motor.set_control(controls.DutyCycleOut(1.0))
@@ -261,3 +282,6 @@ class Shooter(Subsystem):
         SmartDashboard.putNumber("Test/Test fly speed", self.test_fly_speed)
         SmartDashboard.putNumber("Test/Test accelerator speed", self.test_accelerator_speed)
         SmartDashboard.putNumber("Test/Test hood position", self.test_hood_position)
+
+        SmartDashboard.putBoolean("Test/Done with Shooting", self.done_with_shooting())
+        SmartDashboard.putBoolean("Test/Accel Good", self.accel_good)

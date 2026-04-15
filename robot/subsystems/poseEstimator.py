@@ -90,12 +90,15 @@ class PoseEstimator(Subsystem):
         self.gyro.configurator.apply(configs.Pigeon2Configuration().with_mount_pose(configs.MountPoseConfigs().with_mount_pose_roll(180)))
         
 
-        if self.robot.fieldConstants.shouldFlip:
-            self.gyro_offset = 90
-        else:
-            self.gyro_offset = -90
+        if not self.robot.using_auto:
+            if self.robot.fieldConstants.shouldFlip:
+                self.gyro_offset = 90
+            else:
+                self.gyro_offset = -90
 
-        self.gyro.set_yaw(self.gyro_offset)
+            self.gyro.set_yaw(self.gyro_offset)
+        else:
+            self.gyro.set_yaw(0)
         # self.gyro.set_yaw(0)
 
         self.field = Field2d()
@@ -552,6 +555,7 @@ class PoseEstimator(Subsystem):
         # )
         SmartDashboard.putNumber("Gyro/Yaw", self.getYaw().degrees())
         SmartDashboard.putNumber("Gyro/Roll", self.gyro.get_roll().value)
+        SmartDashboard.putNumber("Gyro/Pitch", self.gyro.get_pitch().value)
 
         SmartDashboard.putData("Field", self.field)
         self.field.setRobotPose(self.poseEst.getEstimatedPosition())
