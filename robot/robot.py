@@ -23,7 +23,9 @@ from commands2 import (
     SequentialCommandGroup,
     CommandScheduler,
 )
+from path import Path, DefaultGlobalConstraints, Waypoint, TranslationTarget, RotationTarget, PathConstraints, RangedConstraint
 import wpilib
+from wpimath.controller import PIDController
 from wpilib import Timer, DataLogManager, DriverStation, Field2d, SmartDashboard
 from wpilib.simulation import DriverStationSim
 import wpilib.sysid
@@ -39,6 +41,7 @@ from wpimath.estimator import SwerveDrive4PoseEstimator
 from wpilib.interfaces import GenericHID
 
 from phoenix6 import controls, signals, configs
+from bline_json import JsonUtils
 
 # import subsystems.limelight
 import subsystems.leds
@@ -61,7 +64,7 @@ import inspect
 import autoroutines
 
 from pathplannerlib.path import PathPlannerPath, Waypoint, IdealStartingState, GoalEndState, PathPoint
-from pathplannerlib.auto import AutoBuilder, PathPlannerAuto, NamedCommands, FollowPathCommand, PathConstraints
+from pathplannerlib.auto import AutoBuilder, PathPlannerAuto, NamedCommands, FollowPathCommand#, PathConstraints
 from pathplannerlib.config import PIDConstants, RobotConfig, ModuleConfig
 from pathplannerlib.controller import PPHolonomicDriveController
 
@@ -83,6 +86,7 @@ from pathplannerlib.controller import PathFollowingController, PPHolonomicDriveC
 from pathplannerlib.path import DriveFeedforwards
 
 from wpimath.kinematics import ChassisSpeeds, SwerveModuleState
+from bline_command import BLineCommand, Builder
 
 from fuel_sim import FuelSim
 
@@ -187,8 +191,45 @@ class Robot(CoroutineRobot):
         self.P2_B_R_NEW = self.getPathCommand(PathPlannerPath.fromPathFile("P2_B_R_New")) 
         self.P2_B_L_NEW = self.getPathCommand(PathPlannerPath.fromPathFile("P2_B_L_New"))
 
-        self.autoroutines = autoroutines.AutoRoutines(self)
 
+        self.bline_translation_controller = PIDController(5, 0, 0)
+        self.bline_rotation_controller = PIDController(3, 0, 0)
+        self.bline_cross_track_controller = PIDController(2, 0, 0)
+        self.bline_builder = Builder(self.drivetrain, 
+                                     self.drivetrain.get_pose,
+                                     self.drivetrain.get_robot_relative_speeds,
+                                     self.drivetrain.drive_robot_relative,
+                                     self.drivetrain.get_timestamp,
+                                     self.bline_translation_controller,
+                                     self.bline_rotation_controller,
+                                     self.bline_cross_track_controller,
+                                     True,
+                                     self.drivetrain.should_flip_path,
+                                     self.drivetrain.should_mirror_path)
+
+        # self.bline_path_1 = self.get_bline_path_command(Path([TranslationTarget(Translation2d(6.0, 0.6), 0.5), TranslationTarget(Translation2d(7.0, 4.0), 0.5)]))
+        BLineCommand.event_trigger_registry = {
+            "stop_intake" : self.drivetrain.stop_intaking
+        }
+        
+        self.P1_T_B_R_ROBUST_BL = self.get_bline_path_command(JsonUtils.load_path("P1_T_B_R_Robust_BL"))
+        self.P2_B_R_NEW_BL = self.get_bline_path_command(JsonUtils.load_path("P2_B_R_New_BL"))
+        self.SLOW_RIGHT_STEAL_OUT_BL = self.get_bline_path_command(JsonUtils.load_path("SLOW_RIGHT_STEAL_OUT"))
+        self.SLOW_RIGHT_STEAL_BL = self.get_bline_path_command(JsonUtils.load_path("SLOW_RIGHT_STEAL"))
+        self.SLOW_RIGHT_STEAL_BACK_BL = self.get_bline_path_command(JsonUtils.load_path("SLOW_RIGHT_STEAL_BACK"))
+        self.SLOW_RIGHT_STEAL_TRENCH_BL = self.get_bline_path_command(JsonUtils.load_path("SLOW_RIGHT_STEAL_TRENCH"))
+        self.SLOW_RIGHT_SAFE_BL = self.get_bline_path_command(JsonUtils.load_path("SLOW_RIGHT_SAFE"))
+
+        self.SLOW_LEFT_STEAL_OUT_BL = self.get_bline_path_command(JsonUtils.load_path("SLOW_LEFT_STEAL_OUT"))
+        self.SLOW_LEFT_STEAL_BL = self.get_bline_path_command(JsonUtils.load_path("SLOW_LEFT_STEAL"))
+        self.SLOW_LEFT_STEAL_DEPOT_BL = self.get_bline_path_command(JsonUtils.load_path("SLOW_LEFT_STEAL_DEPOT"))
+        self.SLOW_LEFT_STEAL_TRENCH_BL = self.get_bline_path_command(JsonUtils.load_path("SLOW_LEFT_STEAL_TRENCH"))
+
+        self.DEFAULT_SLOW_DEPOT_BL = self.get_bline_path_command(JsonUtils.load_path("DEFAULT_SLOW_DEPOT"))
+
+        self.mirror_bline_auto = False
+
+        self.autoroutines = autoroutines.AutoRoutines(self)
 
         self.auto_chooser = wpilib.SendableChooser()
         self.auto_chooser.addOption("Left Trench & Bump", 1)
@@ -387,9 +428,12 @@ class Robot(CoroutineRobot):
                 ),  # Rotation PID constants
             ),
             RobotConfig.fromGUISettings(), # The robot configuration
-            self.drivetrain.shouldFlipPath, # Supplier to control path flipping based on alliance color
+            self.drivetrain.should_flip_path, # Supplier to control path flipping based on alliance color
             self.drivetrain # Reference to this subsystem to set requirements
         )
+
+    def get_bline_path_command(self, path : Path):
+        return self.bline_builder.build(path)
 
     def getPathCommand(self, path : PathPlannerPath):
         return FollowPathCommand(

@@ -348,10 +348,10 @@ class Drivetrain(Subsystem):
         # print(in_motion)
 
     def drive_robot_relative(
-        self, chassis_speeds: ChassisSpeeds, feedfoward : DriveFeedforwards
+        self, chassis_speeds: ChassisSpeeds, feedfoward=None
     ):  # only use for pathplannerlib
         # PathPlanner returns robot-relative chassis speeds with +ω = CCW.
-        # Our kinematics/modules expect the opposite sign, so flip it here.
+        # Our kinematics/modules expect the opposite sign, so flip it here
         module_states = const.SWERVE_KINEMATICS.toSwerveModuleStates(chassis_speeds)
         module_states = const.SWERVE_KINEMATICS.desaturateWheelSpeeds(module_states, 4)
 
@@ -365,15 +365,21 @@ class Drivetrain(Subsystem):
             new_chassis_speeds = ChassisSpeeds.fromRobotRelativeSpeeds(chassis_speeds.vx, chassis_speeds.vy, chassis_speeds.omega, self.robot.poseEstimator.curEstPose.rotation())
             curPose = self.robot.poseEstimator.curEstPose
             self.robot.poseEstimator.curEstPose = Pose2d(
-                curPose.X() + new_chassis_speeds.vx / 15, curPose.Y() + new_chassis_speeds.vy / 15, Rotation2d(curPose.rotation().radians() + new_chassis_speeds.omega / 10)
+                curPose.X() + new_chassis_speeds.vx / 14, curPose.Y() + new_chassis_speeds.vy / 14, Rotation2d(curPose.rotation().radians() + new_chassis_speeds.omega / 10)
             )
         else:
             for idx, module in enumerate(self.robot.poseEstimator.modules):
-                amps = feedfoward.torqueCurrentsAmps[idx]
-                module.set_desired_state(module_states[idx], is_open_loop=False, feed_forward=amps)
+                # amps = feedfoward.torqueCurrentsAmps[idx]
+                module.set_desired_state(module_states[idx], is_open_loop=False, feed_forward=0.0)
     
     def should_flip_path(self):
         return self.robot.fieldConstants.shouldFlip
+    
+    def should_mirror_path(self):
+        return self.robot.mirror_bline_auto
+    
+    def stop_intaking(self):
+        self.robot.is_intaking = False
 
     def go_to_pose_profiled_pid(self, target_pose : Translation2d, feedforward_x=0.0, feedforward_y=0.0, feedfoward_theta=0.0):
 
@@ -462,6 +468,9 @@ class Drivetrain(Subsystem):
     def stop(self):
         self.drive(Translation2d(0, 0), 0, False, True)
 
+    def get_timestamp(self):
+        return wpilib.RobotController.getFPGATime() / 1000000
+
     def get_pose(self):
         return self.robot.poseEstimator.curEstPose
     
@@ -491,9 +500,6 @@ class Drivetrain(Subsystem):
         )  # Check this in swervemodule.py, we need to convert kraken speed to m/s
         chassis_speeds = const.SWERVE_KINEMATICS.toChassisSpeeds(module_states)  # type: ignore
         return self.previous_sim_speeds if self.robot.isSimulation() else chassis_speeds
-
-    def shouldFlipPath(self):
-        return DriverStation.getAlliance() == DriverStation.Alliance.kRed
     
     def get_target_angle(self, tof, target : Translation2d):
         field_relative_speeds = ChassisSpeeds.fromRobotRelativeSpeeds(self.log_chassis, self.robot.poseEstimator.curEstPose.rotation()) #self.get_field_relative_speeds()
