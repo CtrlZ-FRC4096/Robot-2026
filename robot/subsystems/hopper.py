@@ -57,7 +57,7 @@ class Hopper(Subsystem):
     def periodic(self):
         start_time = wpilib.RobotController.getFPGATime()
 
-        if not self.robot.did_autonomous:
+        if not self.robot.did_autonomous and self.robot.using_auto:
             if not self.robot.auto_submitted and SmartDashboard.getNumber("Submit Auto? (and FMS Connected)", 0):
                 self.robot.auto_submitted = True
                 self.robot.fieldConstants.shouldFlip = self.robot.driverstation.getAlliance() == self.robot.driverstation.Alliance.kRed
@@ -66,6 +66,7 @@ class Hopper(Subsystem):
                 else:
                     gyro_offset = -90
                 self.robot.poseEstimator.gyro.set_yaw(gyro_offset)
+                self.robot.robot_oriented_angle = gyro_offset
                 match self.robot.auto_chooser.getSelected():
                     case 1: # Left Default Trench Bump PP Auto Robust
                         self.robot.poseEstimator.poseEst.resetPose(Pose2d(self.robot.fieldConstants.flip_Translation2d(Translation2d(4.471, 7.587)), Rotation2d.fromDegrees(gyro_offset)))

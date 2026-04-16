@@ -264,6 +264,8 @@ class Robot(CoroutineRobot):
         self.pulse_pivot = False
         self.clear_jam = False
         self.ignore_shooter_in_jam = False
+
+        self.robot_oriented_angle = self.poseEstimator.getYaw().degrees()
         
         # AUTO FLAGS
         self.run_p1 = False
@@ -581,7 +583,7 @@ class Robot(CoroutineRobot):
 
         self.running_pid_lineup = False
         self.in_autonomous_mode = False
-        self.oi.robot_oriented_angle = self.poseEstimator.curEstPose.rotation().degrees()
+        self.robot_oriented_angle = self.poseEstimator.curEstPose.rotation().degrees()
         self.in_teleop_mode = True
         self.timer.start()
         self.match_timer.reset()
@@ -771,7 +773,7 @@ class Robot(CoroutineRobot):
             s.log()
         
         wpilib.SmartDashboard.putNumber(
-            "robot oriented angle", self.oi.robot_oriented_angle
+            "robot oriented angle", self.robot_oriented_angle
         )
 
         SmartDashboard.putBoolean("Rumble D1", self.rumble_d1)

@@ -79,10 +79,12 @@ class Drivetrain(Subsystem):
         self.angle_pid_default.enableContinuousInput(0, 360)
         self.angle_pid_default.setTolerance(0.5)
 
-        self.rotation_controller = ProfiledPIDController(0.05, 0.0, 0.0, TrapezoidProfile.Constraints(4.0, 4.0))
+        self.rotation_controller = ProfiledPIDController(0.032, 0.0, 0.000225, TrapezoidProfile.Constraints(28000.0, 34000.0))
         self.rotation_controller.enableContinuousInput(0, 360)
         self.rotation_controller.setTolerance(0.5)
         self.custom_kd_rotation = 0.0
+
+        SmartDashboard.putNumber("Kd custom rotation", self.custom_kd_rotation)
 
         self.angle_pid_far_sotm = PIDController(0.06, 0.0, 0.005)
         self.angle_pid_far_sotm.enableContinuousInput(0, 360)
@@ -322,22 +324,22 @@ class Drivetrain(Subsystem):
 
 
     def drive_with_pid(self, translation: Translation2d, target_angle):
-        cur_speeds = ChassisSpeeds.fromRobotRelativeSpeeds(self.log_chassis, self.robot.poseEstimator.curEstPose.rotation())
+        # cur_speeds = ChassisSpeeds.fromRobotRelativeSpeeds(self.log_chassis, self.robot.poseEstimator.curEstPose.rotation())
         
 
-        if self.robot.shoot_intent and Translation2d(cur_speeds.vx, cur_speeds.vy).norm() > 0.2 and self.cur_accel.norm() > 0.28 and (self.robot.poseEstimator.curEstPose.rotation() - Rotation2d.fromDegrees(target_angle)).degrees() >= 30 and self.robot.shooter.shoot_ready and self.robot.shooter.accel_good:
-            pid_output = self.angle_pid_far_sotm.calculate(self.robot.poseEstimator.curEstPose.rotation().degrees(), target_angle)
-        elif self.robot.shoot_intent:
+        # if self.robot.shoot_intent and Translation2d(cur_speeds.vx, cur_speeds.vy).norm() > 0.2 and self.cur_accel.norm() > 0.28 and (self.robot.poseEstimator.curEstPose.rotation() - Rotation2d.fromDegrees(target_angle)).degrees() >= 30 and self.robot.shooter.shoot_ready and self.robot.shooter.accel_good:
+        #     pid_output = self.angle_pid_far_sotm.calculate(self.robot.poseEstimator.curEstPose.rotation().degrees(), target_angle)
+        # elif self.robot.shoot_intent:
             # pid_output = self.angle_pid.calculate(self.robot.poseEstimator.curEstPose.rotation().degrees(), target_angle)
-            omega = self.robot.poseEstimator.gyro.get_angular_velocity_z_world().value
-            if self.last_target_angle is not None and abs(target_angle - self.last_target_angle) > 15:
-                self.rotation_controller.reset(self.robot.poseEstimator.curEstPose.rotation().degrees(), omega)
-            self.last_target_angle = target_angle
-            rotation_output = self.rotation_controller.calculate(self.robot.poseEstimator.curEstPose.rotation().degrees(), target_angle)
-            damping = omega * self.custom_kd_rotation
-            pid_output = rotation_output - damping
-        else:
-            pid_output = self.angle_pid_default.calculate(self.robot.poseEstimator.curEstPose.rotation().degrees(), target_angle)
+        omega = self.robot.poseEstimator.gyro.get_angular_velocity_z_world().value
+        # if self.last_target_angle is not None and abs(target_angle - self.last_target_angle) > 15:
+        #     self.rotation_controller.reset(self.robot.poseEstimator.curEstPose.rotation().degrees(), omega)
+        # self.last_target_angle = target_angle
+        rotation_output = self.rotation_controller.calculate(self.robot.poseEstimator.curEstPose.rotation().degrees(), target_angle)
+        damping = omega * self.custom_kd_rotation
+        pid_output = rotation_output - damping
+        # else:
+        #     pid_output = self.angle_pid_default.calculate(self.robot.poseEstimator.curEstPose.rotation().degrees(), target_angle)
 
         
 
@@ -744,8 +746,8 @@ class Drivetrain(Subsystem):
 
             self.robot.fly_speed = self.vel_lookup_table.interpolate(vals[0])
             self.robot.hood_angle = self.angle_lookup_table.interpolate(vals[1])
-            if self.robot.fly_speed >= 55:
-                self.robot.fly_speed = 55
+            if self.robot.fly_speed >= 85:
+                self.robot.fly_speed = 85
 
             if self.robot.hood_angle >= 45:
                 self.robot.hood_angle = 45
@@ -784,6 +786,7 @@ class Drivetrain(Subsystem):
         SmartDashboard.putNumber("Loop Times/Drivetrain", elapsed_ms)
 
     def log(self):
+        self.custom_kd_rotation = SmartDashboard.getNumber("Kd custom rotation", 0.0)
         SmartDashboard.putData("PID Controller Reef XY", self.xy_controller)
         SmartDashboard.putData("PID Controller for going to reef, x", self.x_controller)
         SmartDashboard.putData("PID Controller for going to reef, y", self.y_controller)
@@ -797,3 +800,4 @@ class Drivetrain(Subsystem):
         SmartDashboard.putBoolean("Angle at Setpoint", self.angle_pid.atSetpoint())
         SmartDashboard.putNumber("PID Controller Error", self.angle_pid.getError())
         SmartDashboard.putData("PID Controller (XY Inter)", self.xy_inter_controller)
+        SmartDashboard.putData("Profiled PID Lineup Angle", self.rotation_controller)

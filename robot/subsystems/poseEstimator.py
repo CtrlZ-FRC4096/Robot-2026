@@ -180,7 +180,7 @@ class PoseEstimator(Subsystem):
         ) # CLIMBER SIDE CAMERA
         
         ROBOT_TO_CAM2 = Transform3d(
-            Translation3d(0.0919, 0.335, 0.311),
+            Translation3d(0.206, 0.335, 0.311),
             Rotation3d.fromDegrees(0, -10, 90)
         ) # SHOOTER BACK CAMERA (TO DO)
 
@@ -193,7 +193,7 @@ class PoseEstimator(Subsystem):
         # ROBOT_TO_COLOR_2 = Transform3d() # TO DO
 
         self.cams = [
-            WrapperedPhotonCameraTag("flywheel", ROBOT_TO_CAM1),
+            # WrapperedPhotonCameraTag("flywheel", ROBOT_TO_CAM1),
             WrapperedPhotonCameraTag("shooter", ROBOT_TO_CAM2),
             WrapperedPhotonCameraTag("climber", ROBOT_TO_CAM3)
         ]

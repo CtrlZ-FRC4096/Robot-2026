@@ -94,7 +94,7 @@ class OI:
         ### Driving ###
         self.cardinal = 0
         self.cardinal_directing = False
-        self.robot_oriented_angle = self.robot.poseEstimator.getYaw().degrees()
+        self.robot.robot_oriented_angle = self.robot.poseEstimator.getYaw().degrees()
 
         self.rumble_button_d1 = Button(lambda: self.robot.rumble_d1)
         self.rumble_button_d2 = Button(lambda: self.robot.rumble_d2)
@@ -103,7 +103,7 @@ class OI:
 
         self.find_heading = True
         self.tick_count = 0
-        self.tick_count_max = 5
+        self.tick_count_max = 45
 
         self.rotation_boost = 1
 
@@ -214,7 +214,7 @@ class OI:
                         forward_back = direction.X() * limit_mag
                         left_right = direction.Y() * limit_mag
 
-                        self.robot_oriented_angle = rotation
+                        self.robot.robot_oriented_angle = rotation
                         self.robot.drivetrain.drive_with_pid(
                                 Translation2d(forward_back, left_right)
                                 * const.SWERVE_MAX_SPEED,
@@ -226,7 +226,7 @@ class OI:
                                 * const.SWERVE_MAX_SPEED,
                                 self.robot.intake.get_snake_intake_angle()
                             )
-                        self.robot_oriented_angle = self.robot.intake.get_snake_intake_angle()
+                        self.robot.robot_oriented_angle = self.robot.intake.get_snake_intake_angle()
                     elif self.robot.track_fuel and self.robot.poseEstimator.active_intake_tgt is not None and False:
                         diff_vec = self.robot.poseEstimator.active_intake_tgt - self.robot.poseEstimator.curEstPose.translation() 
                         rotation = Rotation2d(math.atan2(diff_vec.Y(), diff_vec.X()))
@@ -253,35 +253,35 @@ class OI:
                             True,
                             False,
                         )
-                        self.robot_oriented_angle = (
+                        self.robot.robot_oriented_angle = (
                             self.robot.poseEstimator.getYaw().degrees()
                         )
                         self.tick_count_max = 5
                     else:
+                        # if not self.cardinal_directing:
+                        #     if self.find_heading:
+                        #         if self.wait_one_tick:
+                        #             self.robot.robot_oriented_angle = (
+                        #                 self.robot.poseEstimator.getYaw().degrees()
+                        #             )
+                        #             self.find_heading = False
+                        #         else:
+                        #             self.wait_one_tick = True
                         if not self.cardinal_directing:
                             if self.find_heading:
-                                if self.wait_one_tick:
-                                    self.robot_oriented_angle = (
+                                if self.tick_count >= self.tick_count_max:
+                                    self.robot.robot_oriented_angle = (
                                         self.robot.poseEstimator.getYaw().degrees()
                                     )
                                     self.find_heading = False
                                 else:
-                                    self.wait_one_tick = True
-                         # if not self.cardinal_directing:
-                        #     if self.find_heading:
-                        #         if self.tick_count <= self.tick_count_max:
-                        #             self.robot_oriented_angle = (
-                        #                 self.robot.poseEstimator.getYaw().degrees()
-                        #             )
-                        #             self.tick_count += 1
-                        #         else:
-                        #             self.find_heading = False
+                                    self.tick_count += 1
 
-                        # self.robot.drivetrain.drive_with_pid(
-                        #     Translation2d(forward_back, left_right)
-                        #     * const.SWERVE_MAX_SPEED,
-                        #     self.robot_oriented_angle,
-                        # )
+                        self.robot.drivetrain.drive_with_pid(
+                            Translation2d(forward_back, left_right)
+                            * const.SWERVE_MAX_SPEED,
+                            self.robot.robot_oriented_angle,
+                        )
 
 
         @self.driver1.RIGHT_STICK.whenHeld
@@ -297,28 +297,28 @@ class OI:
         @self.driver1.A.whenPressed
         def _():
             self.cardinal_directing = True
-            self.robot_oriented_angle = self.robot.fieldConstants.flip_Rotation2d(Rotation2d.fromDegrees(-90)).degrees()
+            self.robot.robot_oriented_angle = self.robot.fieldConstants.flip_Rotation2d(Rotation2d.fromDegrees(-90)).degrees()
         
         @self.driver1.B.whenPressed
         def _():
             self.cardinal_directing = True
-            self.robot_oriented_angle = self.robot.fieldConstants.flip_Rotation2d(Rotation2d.fromDegrees(0)).degrees()
+            self.robot.robot_oriented_angle = self.robot.fieldConstants.flip_Rotation2d(Rotation2d.fromDegrees(0)).degrees()
         
         @self.driver1.X.whenPressed
         def _():
             self.cardinal_directing = True
-            self.robot_oriented_angle = self.robot.fieldConstants.flip_Rotation2d(Rotation2d.fromDegrees(180)).degrees()
+            self.robot.robot_oriented_angle = self.robot.fieldConstants.flip_Rotation2d(Rotation2d.fromDegrees(180)).degrees()
 
         @self.driver1.Y.whenPressed
         def _():
             self.cardinal_directing = True
-            self.robot_oriented_angle = self.robot.fieldConstants.flip_Rotation2d(Rotation2d.fromDegrees(90)).degrees()
+            self.robot.robot_oriented_angle = self.robot.fieldConstants.flip_Rotation2d(Rotation2d.fromDegrees(90)).degrees()
 
 
         @self.driver1.POV.DOWN.whenPressed
         def _():
             self.robot.poseEstimator.set_yaw(0.0)
-            self.robot_oriented_angle = 0.0
+            self.robot.robot_oriented_angle = 0.0
         
         @self.driver1.LEFT_TRIGGER_AS_BUTTON.whenHeld
         def _():
@@ -332,7 +332,7 @@ class OI:
         @self.driver1.BACK.whenPressed
         def _():
             self.robot.snake_intake = not self.robot.snake_intake
-            self.robot_oriented_angle = self.robot.poseEstimator.curEstPose.rotation().degrees()
+            self.robot.robot_oriented_angle = self.robot.poseEstimator.curEstPose.rotation().degrees()
         
         @self.driver1.POV.UP.whenHeld
         def _():
@@ -375,6 +375,7 @@ class OI:
             self.robot.shooter.accel_good = False
             self.robot.pulse_pivot = False
             self.robot.intake_at_default = False
+            self.robot.robot_oriented_angle = self.robot.poseEstimator.getYaw().degrees()
 
         @self.driver1.RIGHT_BUMPER.whenHeld
         def _():
@@ -384,7 +385,7 @@ class OI:
         @self.driver1.RIGHT_BUMPER.whenReleased
         def _():
             self.robot.running_pid_lineup = False
-            self.robot_oriented_angle = self.robot.poseEstimator.curEstPose.rotation().degrees()
+            self.robot.robot_oriented_angle = self.robot.poseEstimator.curEstPose.rotation().degrees()
 
         @self.driver1.LEFT_BUMPER.whenPressed
         def _():
