@@ -35,37 +35,7 @@ class AutoRoutines:
     def __init__(self, robot: "Robot"):
         self.robot = robot
 
-    # def trench_left_auto(self):
-    #     return SequentialCommandGroup(
-    #         ParallelCommandGroup(self.robot.P1_T_L,
-    #                              self.robot.coroutines.intake),
-    #         self.robot.coroutines.drive_to_zone_trench.withTimeout(3),
-    #         ParallelCommandGroup(self.robot.P2_T_L,
-    #                              self.robot.coroutines.intake_2),
-    #         self.robot.coroutines.drive_to_zone_trench_2.withTimeout(3),
-    #     )
-    # def trench_right_safe_auto(self):
-    #     return SequentialCommandGroup(
-    #         ParallelCommandGroup(self.robot.P1_T_R_SAFE,
-    #                              self.robot.coroutines.intake),
-    #         self.robot.coroutines.drive_to_zone_trench.withTimeout(6.5),
-    #         # self.robot.coroutines.spin_for_trench.withTimeout(0.3).andThen(self.robot.coroutines.stop_drive),
-    #         ParallelCommandGroup(self.robot.P2_B_R,
-    #                              self.robot.coroutines.intake_2),
-    #         self.robot.coroutines.drive_to_zone_trench_2
-    #     )
-    
-    # def trench_right_counter_auto(self):
-    #     return SequentialCommandGroup(
-    #         ParallelCommandGroup(self.robot.P1_T_R_ROBUST_1,
-    #                              self.robot.coroutines.intake),
-    #         self.robot.coroutines.reline_up_with_right_trench.withTimeout(4),
-    #         self.robot.P1_T_R_ROBUST_2,
-    #         self.robot.coroutines.drive_to_zone_trench.withTimeout(6.5),
-    #         ParallelCommandGroup(self.robot.P2_B_R,
-    #                             self.robot.coroutines.intake_2)
-        # )
-    def test_bline_right(self):
+    def test_bline_default_right(self):
         return SequentialCommandGroup(
             ParallelCommandGroup(self.robot.P1_T_B_R_ROBUST_BL,
                                  self.robot.coroutines.intake),
@@ -75,7 +45,7 @@ class AutoRoutines:
                 self.robot.coroutines.intake_2
             ),
             self.robot.coroutines.drive_to_zone_trench_2.withTimeout(4.5)
-                                 )
+        )
     def right_trench_bump_robust(self):
         return SequentialCommandGroup(
             ParallelCommandGroup(
