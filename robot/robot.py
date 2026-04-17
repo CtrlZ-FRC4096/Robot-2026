@@ -522,8 +522,6 @@ class Robot(CoroutineRobot):
         if self.auto is None:
             self.auto = SequentialCommandGroup()
 
-        self.auto = self.autoroutines.test_path()
-
         self.scheduler.schedule(self.auto)
 
     def autonomousExit(self):
