@@ -78,5 +78,9 @@
         "profiled_rotation": true
       }
     }
-  ]
+  ],
+  "constraints": {
+    "end_translation_tolerance_meters": 0.5,
+    "end_rotation_tolerance_deg": 30.0
+  }
 }

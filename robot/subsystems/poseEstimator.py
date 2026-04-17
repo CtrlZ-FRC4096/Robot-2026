@@ -434,7 +434,7 @@ class PoseEstimator(Subsystem):
 
         z_sum = 0
         z_count = 0
-        if self.vision_update_counter % 2 == 0 or self.robot.in_autonomous_mode:
+        if (self.vision_update_counter % 2 == 0 or self.robot.in_autonomous_mode) and (not self.robot.using_auto or self.robot.auto_submitted):
             for cam in self.cams:
                 cam.update(
                     self.curEstPose,

@@ -33,13 +33,6 @@
   ],
   "constraints": {
     "end_translation_tolerance_meters": 0.7,
-    "end_rotation_tolerance_deg": 20.0,
-    "max_velocity_meters_per_sec": [
-      {
-        "value": 0.9999999999999994,
-        "start_ordinal": 0,
-        "end_ordinal": 1
-      }
-    ]
+    "end_rotation_tolerance_deg": 20.0
   }
 }

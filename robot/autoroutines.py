@@ -61,6 +61,12 @@ class AutoRoutines:
             self.robot.coroutines.drive_to_zone_trench_2.withTimeout(4.25)
         )
     
+
+    def test_path(self):
+        return SequentialCommandGroup(
+            self.robot.new_path
+        )
+
     def right_trench_bump_safe(self, time_to_wait=0.1):
         return SequentialCommandGroup(
             WaitCommand(0.5),

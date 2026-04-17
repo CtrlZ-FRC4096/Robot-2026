@@ -192,9 +192,9 @@ class Robot(CoroutineRobot):
         self.P2_B_L_NEW = self.getPathCommand(PathPlannerPath.fromPathFile("P2_B_L_New"))
 
 
-        self.bline_translation_controller = PIDController(5, 0, 0)
-        self.bline_rotation_controller = PIDController(3, 0, 0)
-        self.bline_cross_track_controller = PIDController(2, 0, 0)
+        self.bline_translation_controller = PIDController(3, 0, 0)
+        self.bline_rotation_controller = PIDController(0, 0, 0)
+        self.bline_cross_track_controller = PIDController(0, 0, 0)
         self.bline_builder = Builder(self.drivetrain, 
                                      self.drivetrain.get_pose,
                                      self.drivetrain.get_robot_relative_speeds,
@@ -226,6 +226,8 @@ class Robot(CoroutineRobot):
         self.SLOW_LEFT_STEAL_TRENCH_BL = self.get_bline_path_command(JsonUtils.load_path("SLOW_LEFT_STEAL_TRENCH"))
 
         self.DEFAULT_SLOW_DEPOT_BL = self.get_bline_path_command(JsonUtils.load_path("DEFAULT_SLOW_DEPOT"))
+
+        self.new_path = self.get_bline_path_command(JsonUtils.load_path("new_path"))
 
         self.mirror_bline_auto = False
 
@@ -519,6 +521,8 @@ class Robot(CoroutineRobot):
         #     self.fuel_sim.running = True
         if self.auto is None:
             self.auto = SequentialCommandGroup()
+
+        self.auto = self.autoroutines.test_path()
 
         self.scheduler.schedule(self.auto)
 
