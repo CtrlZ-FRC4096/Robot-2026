@@ -124,3 +124,7 @@ class Hopper(Subsystem):
         SmartDashboard.putNumber("Hopper/Commanded Speed", self.commanded_speed)
         SmartDashboard.putNumber("Test/Test indexer speed", self.test_indexer_speed)
 
+        SmartDashboard.putData("BLine/Translation Controller", self.robot.bline_translation_controller)
+        SmartDashboard.putData("BLine/Rotation Controller", self.robot.bline_rotation_controller)
+        SmartDashboard.putData("BLine/Cross Track Controller", self.robot.bline_cross_track_controller)
+

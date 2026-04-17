@@ -522,7 +522,10 @@ class Robot(CoroutineRobot):
         if self.auto is None:
             self.auto = SequentialCommandGroup()
 
-        self.auto = self.autoroutines.test_path()
+        self.bline_builder.translation_controller = self.bline_translation_controller
+        self.bline_builder.rotation_controller = self.bline_rotation_controller
+        self.bline_builder.cross_track_controller = self.bline_cross_track_controller
+        self.auto = self.get_bline_path_command(JsonUtils.load_path("new_path"))
 
         self.scheduler.schedule(self.auto)
 
