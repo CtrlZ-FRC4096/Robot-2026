@@ -84,7 +84,31 @@ class Hopper(Subsystem):
                         self.robot.poseEstimator.curEstPose = Pose2d(self.robot.fieldConstants.flip_Translation2d(Translation2d(4.47, 0.6)), Rotation2d.fromDegrees(gyro_offset))
                         
                         self.robot.auto = self.robot.autoroutines.right_trench_bump_robust_new()
-                    case 3: # Rigth Trench Bump Safe / Default 3-BOT BL
+                    case 3: # Left Trench & Bump PP Auto Robust Citrus
+                        self.robot.poseEstimator.poseEst.resetPosition(
+                            Rotation2d.fromDegrees(gyro_offset),
+                            self.robot.poseEstimator.get_module_positions(),
+                            Pose2d(self.robot.fieldConstants.flip_Translation2d(Translation2d(4.471, 7.587)), Rotation2d.fromDegrees(gyro_offset)))
+                        self.robot.poseEstimator.curEstPose = Pose2d(self.robot.fieldConstants.flip_Translation2d(Translation2d(4.471, 7.587)), Rotation2d.fromDegrees(gyro_offset))
+
+                        self.robot.auto = self.robot.autoroutines.left_trench_bump_robust()
+                    case 4: # Right Trench & Bump PP Auto Robust Citrus
+                        self.robot.poseEstimator.poseEst.resetPosition(
+                            Rotation2d.fromDegrees(gyro_offset),
+                            self.robot.poseEstimator.get_module_positions(),
+                            Pose2d(self.robot.fieldConstants.flip_Translation2d(Translation2d(4.47, 0.6)), Rotation2d.fromDegrees(gyro_offset)))
+                        self.robot.poseEstimator.curEstPose = Pose2d(self.robot.fieldConstants.flip_Translation2d(Translation2d(4.47, 0.6)), Rotation2d.fromDegrees(gyro_offset))
+
+                        self.robot.auto = self.robot.autoroutines.right_trench_bump_robust()
+                    case 5: # Right Trench & Bump BL Auto No Citrus
+                        self.robot.poseEstimator.poseEst.resetPosition(
+                            Rotation2d.fromDegrees(gyro_offset),
+                            self.robot.poseEstimator.get_module_positions(),
+                            Pose2d(self.robot.fieldConstants.flip_Translation2d(Translation2d(4.439, 0.628)), Rotation2d.fromDegrees(gyro_offset)))
+                        self.robot.poseEstimator.curEstPose = Pose2d(self.robot.fieldConstants.flip_Translation2d(Translation2d(4.439, 0.628)), Rotation2d.fromDegrees(gyro_offset))
+
+                        self.robot.auto = self.robot.autoroutines.bline_default_right_main_bot()
+                    case 7: # Rigth Trench Bump Safe / Default 3-BOT BL
                         self.robot.poseEstimator.poseEst.resetPosition(
                             Rotation2d.fromDegrees(gyro_offset),
                             self.robot.poseEstimator.get_module_positions(),
@@ -92,7 +116,47 @@ class Hopper(Subsystem):
                         self.robot.poseEstimator.curEstPose = Pose2d(self.robot.fieldConstants.flip_Translation2d(Translation2d(3.539, 0.628)), Rotation2d.fromDegrees(gyro_offset))
 
                         self.robot.auto = self.robot.autoroutines.right_trench_bump_safe(5)
-                    case 0:
+                    case 9: # Right Trench & Bump Wait Default Steal Far Hub with Back NZ 3-Bot BL
+                        self.robot.poseEstimator.poseEst.resetPosition(
+                            Rotation2d.fromDegrees(gyro_offset),
+                            self.robot.poseEstimator.get_module_positions(),
+                            Pose2d(self.robot.fieldConstants.flip_Translation2d(Translation2d(3.539, 0.628)), Rotation2d.fromDegrees(gyro_offset)))
+                        self.robot.poseEstimator.curEstPose =  Pose2d(self.robot.fieldConstants.flip_Translation2d(Translation2d(3.539, 0.628)), Rotation2d.fromDegrees(gyro_offset))
+
+                        self.robot.auto = self.robot.autoroutines.right_trench_wait_steal()
+                    case 10: # Left Trench & Bump Wait Default Steal Far Hub + Depot After 3-Bot BL
+                        self.robot.poseEstimator.poseEst.resetPosition(
+                            Rotation2d.fromDegrees(gyro_offset),
+                            self.robot.poseEstimator.get_module_positions(),
+                            Pose2d(self.robot.fieldConstants.flip_Translation2d(Translation2d(3.539, 7.441)), Rotation2d.fromDegrees(gyro_offset)))
+                        self.robot.poseEstimator.curEstPose = Pose2d(self.robot.fieldConstants.flip_Translation2d(Translation2d(3.539, 7.441)), Rotation2d.fromDegrees(gyro_offset))
+
+                        self.robot.auto = self.robot.autoroutines.left_trench_wait_steal()
+                    case 11: # Right Trench Back Wait Default Steal Far Hub with Back NZ 3-Bot BL
+                        self.robot.poseEstimator.poseEst.resetPosition(
+                            Rotation2d.fromDegrees(gyro_offset),
+                            self.robot.poseEstimator.get_module_positions(),
+                            Pose2d(self.robot.fieldConstants.flip_Translation2d(Translation2d(3.539, 0.628)), Rotation2d.fromDegrees(gyro_offset)))
+                        self.robot.poseEstimator.curEstPose = Pose2d(self.robot.fieldConstants.flip_Translation2d(Translation2d(3.539, 0.628)), Rotation2d.fromDegrees(gyro_offset))
+
+                        self.robot.auto = self.robot.autoroutines.right_trench_back_wait_steal()
+                    case 12: # Left Trench Back Wait Default Steal Far Hub + Depot After 3-Bot BL
+                        self.robot.poseEstimator.poseEst.resetPosition(
+                            Rotation2d.fromDegrees(gyro_offset),
+                            self.robot.poseEstimator.get_module_positions(),
+                            Pose2d(self.robot.fieldConstants.flip_Translation2d(Translation2d(3.539, 7.441)), Rotation2d.fromDegrees(gyro_offset)))
+                        self.robot.poseEstimator.curEstPose = Pose2d(self.robot.fieldConstants.flip_Translation2d(Translation2d(3.539, 7.441)), Rotation2d.fromDegrees(gyro_offset))
+
+                        self.robot.auto = self.robot.autoroutines.left_trench_back_wait_steal()
+                    case 13: # Default Slow Depot from Front of Hub
+                        self.robot.poseEstimator.poseEst.resetPosition(
+                            Rotation2d.fromDegrees(gyro_offset),
+                            self.robot.poseEstimator.get_module_positions(),
+                            Pose2d(self.robot.fieldConstants.flip_Translation2d(Translation2d(3.409, 4.049)), Rotation2d.fromDegrees(gyro_offset)))
+                        self.robot.poseEstimator.curEstPose = Pose2d(self.robot.fieldConstants.flip_Translation2d(Translation2d(3.409, 4.049)), Rotation2d.fromDegrees(gyro_offset))
+
+                        self.robot.auto = self.robot.autoroutines.default_slow_depot()
+                    case 0: # NO AUTO SELECTED
                         self.robot.poseEstimator.poseEst.resetPosition(
                             Rotation2d.fromDegrees(gyro_offset),
                             self.robot.poseEstimator.get_module_positions(),
