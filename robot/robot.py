@@ -191,10 +191,14 @@ class Robot(CoroutineRobot):
         self.P2_B_R_NEW = self.getPathCommand(PathPlannerPath.fromPathFile("P2_B_R_New")) 
         self.P2_B_L_NEW = self.getPathCommand(PathPlannerPath.fromPathFile("P2_B_L_New"))
 
+        self.SLOW_LEFT_STEAL_OUT_PP = self.getPathCommand(PathPlannerPath.fromPathFile("SLOW_LEFT_STEAL_OUT"))
+        self.SLOW_LEFT_SAFE_PP = self.getPathCommand(PathPlannerPath.fromPathFile("SLOW_LEFT_SAFE"))
+        self.SLOW_LEFT_STEAL_DEPOT_PP = self.getPathCommand(PathPlannerPath.fromPathFile("SLOW_LEFT_STEAL_DEPOT"))
 
-        self.bline_translation_controller = PIDController(3, 0, 0)
-        self.bline_rotation_controller = PIDController(0, 0, 0)
-        self.bline_cross_track_controller = PIDController(0, 0, 0)
+
+        self.bline_translation_controller = PIDController(4, 0, 0)
+        self.bline_rotation_controller = PIDController(3, 0, 0)
+        self.bline_cross_track_controller = PIDController(2, 0, 0)
         self.bline_builder = Builder(self.drivetrain, 
                                      self.drivetrain.get_pose,
                                      self.drivetrain.get_robot_relative_speeds,
@@ -246,6 +250,7 @@ class Robot(CoroutineRobot):
         self.auto_chooser.addOption("Right Trench Back Wait Default Steal 3-Bot BL", 11)
         self.auto_chooser.addOption("Left Trench Back Wait Default Steal + Depot After 3-Bot BL", 12)
         self.auto_chooser.addOption("Default Slow Depot", 13)
+        self.auto_chooser.addOption("Left Trench Safe 3-Bot + Depot After PP", 14)
         self.auto_chooser.setDefaultOption("Default (no auto)", 0)
 
         SmartDashboard.putNumber("Submit Auto? (and FMS Connected)", int(0))

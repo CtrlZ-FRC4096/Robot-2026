@@ -27,9 +27,9 @@ class Hopper(Subsystem):
         # Flywheel motors
         self.indexer_motor = hardware.TalonFX(const.INDEXER_MOTOR_ID, "rio")  
         self.indexer_motor_config = self.robot.get_motor_config(1, 15.0, 0.0, 0.0, 0.55, 0, 0, 26.5)
-        self.indexer_motor_config.current_limits.supply_current_limit = 80
-        self.indexer_motor_config.torque_current.peak_forward_torque_current = 80
-        self.indexer_motor_config.torque_current.peak_reverse_torque_current = -80
+        self.indexer_motor_config.current_limits.supply_current_limit = 60
+        self.indexer_motor_config.torque_current.peak_forward_torque_current = 60
+        self.indexer_motor_config.torque_current.peak_reverse_torque_current = -60
         self.indexer_motor.configurator.apply(self.indexer_motor_config)
         self.test_indexer_speed = 80
 
@@ -156,6 +156,14 @@ class Hopper(Subsystem):
                         self.robot.poseEstimator.curEstPose = Pose2d(self.robot.fieldConstants.flip_Translation2d(Translation2d(3.409, 4.049)), Rotation2d.fromDegrees(gyro_offset))
 
                         self.robot.auto = self.robot.autoroutines.default_slow_depot()
+                    case 14: # Slow Left Safe 3-Bot + Depot After PP 
+                        self.robot.poseEstimator.poseEst.resetPosition(
+                            Rotation2d.fromDegrees(gyro_offset),
+                            self.robot.poseEstimator.get_module_positions(),
+                            Pose2d(self.robot.fieldConstants.flip_Translation2d(Translation2d(3.539, 7.441)), Rotation2d.fromDegrees(gyro_offset)))
+                        self.robot.poseEstimator.curEstPose = Pose2d(self.robot.fieldConstants.flip_Translation2d(Translation2d(3.539, 7.441)), Rotation2d.fromDegrees(gyro_offset))
+
+                        self.robot.auto = self.robot.autoroutines.left_trench_bump_3bot_safe()
                     case 0: # NO AUTO SELECTED
                         self.robot.poseEstimator.poseEst.resetPosition(
                             Rotation2d.fromDegrees(gyro_offset),

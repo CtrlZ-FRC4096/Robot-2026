@@ -168,6 +168,24 @@ class Coroutines:
         self.p1_over_left_bump = (p1_over_left_bump)
 
         @commandify
+        def p1_over_left_bump_3bot():
+            robot.is_intaking = False
+            robot.intake_at_default = False
+            robot.pulse_pivot = False
+
+            robot.final_lineup_pose = robot.fieldConstants.flip_Pose2d(Pose2d(1.396, 5.149, Rotation2d.fromDegrees(60)))
+            robot.running_pid_lineup = True
+            robot.shoot_intent = True
+            robot.run_p1 = True
+            while not (robot.done_p1 or robot.poseEstimator.cur_pos_in_zone(2)):
+                yield
+            robot.running_pid_lineup = False
+            robot.run_p1 = False
+            robot.done_p1 = False
+
+        self.p1_over_left_bump_3bot = (p1_over_left_bump_3bot)
+
+        @commandify
         def p2_over_left_bump():
             robot.is_intaking = False
             robot.intake_at_default = False

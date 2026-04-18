@@ -189,13 +189,15 @@ class PoseEstimator(Subsystem):
             Rotation3d.fromDegrees(0, -20, -90)
         ) # FLYWHEEL BAR CAMERA
 
+
+
         # ROBOT_TO_COLOR_1 = Transform3d() # TO DO
         # ROBOT_TO_COLOR_2 = Transform3d() # TO DO
 
         self.cams = [
             # WrapperedPhotonCameraTag("flywheel", ROBOT_TO_CAM1),
             WrapperedPhotonCameraTag("shooter", ROBOT_TO_CAM2),
-            WrapperedPhotonCameraTag("climber", ROBOT_TO_CAM3)
+            WrapperedPhotonCameraTag("climber", ROBOT_TO_CAM3),
         ]
 
         # camera4 - spare1

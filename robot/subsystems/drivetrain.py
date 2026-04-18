@@ -326,22 +326,13 @@ class Drivetrain(Subsystem):
     def drive_with_pid(self, translation: Translation2d, target_angle):
         # cur_speeds = ChassisSpeeds.fromRobotRelativeSpeeds(self.log_chassis, self.robot.poseEstimator.curEstPose.rotation())
         
-
-        # if self.robot.shoot_intent and Translation2d(cur_speeds.vx, cur_speeds.vy).norm() > 0.2 and self.cur_accel.norm() > 0.28 and (self.robot.poseEstimator.curEstPose.rotation() - Rotation2d.fromDegrees(target_angle)).degrees() >= 30 and self.robot.shooter.shoot_ready and self.robot.shooter.accel_good:
-        #     pid_output = self.angle_pid_far_sotm.calculate(self.robot.poseEstimator.curEstPose.rotation().degrees(), target_angle)
-        # elif self.robot.shoot_intent:
-            # pid_output = self.angle_pid.calculate(self.robot.poseEstimator.curEstPose.rotation().degrees(), target_angle)
-        omega = self.robot.poseEstimator.gyro.get_angular_velocity_z_world().value
-        # if self.last_target_angle is not None and abs(target_angle - self.last_target_angle) > 15:
-        #     self.rotation_controller.reset(self.robot.poseEstimator.curEstPose.rotation().degrees(), omega)
-        # self.last_target_angle = target_angle
-        rotation_output = self.rotation_controller.calculate(self.robot.poseEstimator.curEstPose.rotation().degrees(), target_angle)
-        damping = omega * self.custom_kd_rotation
-        pid_output = rotation_output - damping
-        # else:
-        #     pid_output = self.angle_pid_default.calculate(self.robot.poseEstimator.curEstPose.rotation().degrees(), target_angle)
-
-        
+        if self.robot.shoot_intent or (self.robot.in_teleop_mode and self.robot.oi.cardinal_directing):
+            omega = self.robot.poseEstimator.gyro.get_angular_velocity_z_world().value
+            rotation_output = self.rotation_controller.calculate(self.robot.poseEstimator.curEstPose.rotation().degrees(), target_angle)
+            damping = omega * self.custom_kd_rotation
+            pid_output = rotation_output - damping
+        else:
+            pid_output = self.angle_pid_default.calculate(self.robot.poseEstimator.curEstPose.rotation().degrees(), target_angle)
 
         SmartDashboard.putBoolean("Swerve/With PID", True)
         self.drive(
@@ -531,13 +522,13 @@ class Drivetrain(Subsystem):
         
     def create_lookup_table(self):
         # version for negative entry velocity to get more arc on the shots
-        self.dist_lookup_table.add_entry(0.7, 6.105, 81.171, 0.906)
-        self.dist_lookup_table.add_entry(1.084, 6.206, 76.557, 0.906)
-        self.dist_lookup_table.add_entry(1.468, 6.347, 72.127, 0.906)
-        self.dist_lookup_table.add_entry(1.853, 6.525, 67.925, 0.907)
-        self.dist_lookup_table.add_entry(2.237, 6.736, 63.981, 0.908)
-        self.dist_lookup_table.add_entry(2.621, 6.977, 61.0, 0.92)
-        self.dist_lookup_table.add_entry(3.005, 7.323, 61.0, 1.0)
+        self.dist_lookup_table.add_entry(0.7, 6.707, 83.203, 1.069)
+        self.dist_lookup_table.add_entry(1.084, 6.773, 79.639, 1.069)
+        self.dist_lookup_table.add_entry(1.468, 6.867, 76.158, 1.07)
+        self.dist_lookup_table.add_entry(1.853, 6.986, 72.785, 1.071)
+        self.dist_lookup_table.add_entry(2.237, 7.13, 69.54, 1.072)
+        self.dist_lookup_table.add_entry(2.621, 7.296, 66.437, 1.072)
+        self.dist_lookup_table.add_entry(3.005, 7.483, 63.485, 1.073)
         self.dist_lookup_table.add_entry(3.389, 7.672, 61.0, 1.076)
         self.dist_lookup_table.add_entry(3.774, 8.018, 61.0, 1.147)
         self.dist_lookup_table.add_entry(4.158, 8.36, 61.0, 1.215)
@@ -553,30 +544,30 @@ class Drivetrain(Subsystem):
         self.dist_lookup_table.add_entry(8.0, 9.2, 61.0, 1.374)
         
         #Modified version for -0.5 v_std only
-        self.dist_lookup_table.add_entry(0.7, 5.465, 75.048, 0.638)
-        self.dist_lookup_table.add_entry(1.084, 5.735, 69.912, 0.689)
-        self.dist_lookup_table.add_entry(1.468, 6.029, 65.963, 0.735)
-        self.dist_lookup_table.add_entry(1.853, 6.332, 62.87, 0.78)
-        self.dist_lookup_table.add_entry(2.237, 6.641, 61.0, 0.835) # calc tof: 1.169
-        self.dist_lookup_table.add_entry(2.621, 6.977, 61.0, 0.92)
-        self.dist_lookup_table.add_entry(3.005, 7.323, 61.0, 1.0)
-        self.dist_lookup_table.add_entry(3.389, 7.672, 61.0, 1.076)
-        self.dist_lookup_table.add_entry(3.774, 8.018, 61.0, 1.184) # calc tof: 1.27
-        self.dist_lookup_table.add_entry(4.158, 8.36, 61.0, 1.215)
-        self.dist_lookup_table.add_entry(4.542, 8.697, 61.0, 1.28)
-        self.dist_lookup_table.add_entry(4.926, 9.03, 61.0, 1.343)
-        self.dist_lookup_table.add_entry(5.311, 9.2, 61.0, 1.374)
-        self.dist_lookup_table.add_entry(5.695, 9.2, 61.0, 1.374)
-        self.dist_lookup_table.add_entry(6.079, 9.2, 61.0, 1.374)
-        self.dist_lookup_table.add_entry(6.463, 9.2, 61.0, 1.374)
-        self.dist_lookup_table.add_entry(6.847, 9.2, 61.0, 1.374)
-        self.dist_lookup_table.add_entry(7.232, 9.2, 61.0, 1.374)
-        self.dist_lookup_table.add_entry(7.616, 9.2, 61.0, 1.374)
-        self.dist_lookup_table.add_entry(8.0, 9.2, 61.0, 1.374)
+        # self.dist_lookup_table.add_entry(0.7, 5.465, 75.048, 0.638)
+        # self.dist_lookup_table.add_entry(1.084, 5.735, 69.912, 0.689)
+        # self.dist_lookup_table.add_entry(1.468, 6.029, 65.963, 0.735)
+        # self.dist_lookup_table.add_entry(1.853, 6.332, 62.87, 0.78)
+        # self.dist_lookup_table.add_entry(2.237, 6.641, 61.0, 0.835) # calc tof: 1.169
+        # self.dist_lookup_table.add_entry(2.621, 6.977, 61.0, 0.92)
+        # self.dist_lookup_table.add_entry(3.005, 7.323, 61.0, 1.0)
+        # self.dist_lookup_table.add_entry(3.389, 7.672, 61.0, 1.076)
+        # self.dist_lookup_table.add_entry(3.774, 8.018, 61.0, 1.184) # calc tof: 1.27
+        # self.dist_lookup_table.add_entry(4.158, 8.36, 61.0, 1.215)
+        # self.dist_lookup_table.add_entry(4.542, 8.697, 61.0, 1.28)
+        # self.dist_lookup_table.add_entry(4.926, 9.03, 61.0, 1.343)
+        # self.dist_lookup_table.add_entry(5.311, 9.2, 61.0, 1.374)
+        # self.dist_lookup_table.add_entry(5.695, 9.2, 61.0, 1.374)
+        # self.dist_lookup_table.add_entry(6.079, 9.2, 61.0, 1.374)
+        # self.dist_lookup_table.add_entry(6.463, 9.2, 61.0, 1.374)
+        # self.dist_lookup_table.add_entry(6.847, 9.2, 61.0, 1.374)
+        # self.dist_lookup_table.add_entry(7.232, 9.2, 61.0, 1.374)
+        # self.dist_lookup_table.add_entry(7.616, 9.2, 61.0, 1.374)
+        # self.dist_lookup_table.add_entry(8.0, 9.2, 61.0, 1.374)
         
     def create_launch_vel_table(self):
         self.vel_lookup_table.add_entry(6.05, 50)
-        self.vel_lookup_table.add_entry(7.3, 60)
+        self.vel_lookup_table.add_entry(7.35, 60)
         self.vel_lookup_table.add_entry(7.95, 67)
         self.vel_lookup_table.add_entry(8.3, 70)
         self.vel_lookup_table.add_entry(8.9, 80)

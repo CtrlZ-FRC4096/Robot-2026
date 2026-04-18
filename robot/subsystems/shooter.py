@@ -47,11 +47,11 @@ class Shooter(Subsystem):
         self.hood_cancoder.configurator.apply(hood_cancoder_config)
 
 
-        self.fly_motor_config = self.robot.get_motor_config(0, 15.0, 0, 0, 0.015, 0, 0, 3.5)
+        self.fly_motor_config = self.robot.get_motor_config(0, 14.6, 0, 0, 0.0565, 0, 0, 4)
         # self.right_fly_motor_config = self.robot.get_motor_config(0, 12.0, 0.1, 0, 0, 0, 0, 0)
-        self.fly_motor_config.current_limits.supply_current_limit = 60
-        self.fly_motor_config.torque_current.peak_forward_torque_current = 60
-        self.fly_motor_config.torque_current.peak_reverse_torque_current = -60
+        self.fly_motor_config.current_limits.supply_current_limit = 80
+        self.fly_motor_config.torque_current.peak_forward_torque_current = 80
+        self.fly_motor_config.torque_current.peak_reverse_torque_current = -80
         self.right_fly_motor.configurator.apply(self.fly_motor_config)
         self.left_up_fly_motor.configurator.apply(self.fly_motor_config)
         self.left_down_fly_motor.configurator.apply(self.fly_motor_config)

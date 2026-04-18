@@ -103,7 +103,7 @@ class OI:
 
         self.find_heading = True
         self.tick_count = 0
-        self.tick_count_max = 45
+        self.tick_count_max = 10
 
         self.rotation_boost = 1
 

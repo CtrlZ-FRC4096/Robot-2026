@@ -276,7 +276,7 @@
 #             if dv == 0 and dtheta == 0 and dphi == 0:
 #                 problem.subject_to(z_final == self.target_pos[2])
 #                 # Uncomment this if you want to fall into the hoop at -2m/s
-#                 problem.subject_to(vz_final < -1) 
+#                 problem.subject_to(vz_final < -4) 
                 
 #             # Cost calc (Minimize X-Y error at Target Z Height)
 #             # dt_corr: time diff to reach exact Z plane
