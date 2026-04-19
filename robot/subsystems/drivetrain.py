@@ -131,6 +131,8 @@ class Drivetrain(Subsystem):
         self.accel_shoot_limiter = SlewRateLimiter(0.2, -3)
 
         self.last_target_angle = None
+        self.checked_robot_relative_time = False
+        SmartDashboard.putNumber("Test/Time to DRR", 0)
 
         # SIM STUFF
 
@@ -364,7 +366,10 @@ class Drivetrain(Subsystem):
             for idx, module in enumerate(self.robot.poseEstimator.modules):
                 # amps = feedfoward.torqueCurrentsAmps[idx]
                 module.set_desired_state(module_states[idx], is_open_loop=False, feed_forward=0.0)
-    
+
+        if not self.checked_robot_relative_time:
+            self.checked_robot_relative_time = True
+            SmartDashboard.putNumber("Test/Time to DRR", (wpilib.RobotController.getFPGATime() / 1000.0) - self.robot.auto_start_time)
     def should_flip_path(self):
         return self.robot.fieldConstants.shouldFlip
     
@@ -462,7 +467,7 @@ class Drivetrain(Subsystem):
         self.drive(Translation2d(0, 0), 0, False, True)
 
     def get_timestamp(self):
-        return wpilib.RobotController.getFPGATime() / 1000000
+        return wpilib.RobotController.getFPGATime() / 1000000.0
 
     def get_pose(self):
         return self.robot.poseEstimator.curEstPose
@@ -694,7 +699,7 @@ class Drivetrain(Subsystem):
                 self.drive_with_pid(Translation2d(0, 0), rotation.degrees())
             # self.go_to_pose_profiled_pid(self.robot.final_lineup_pose)
 
-        elapsed_ms = (wpilib.RobotController.getFPGATime() - start_time) / 1000
+        elapsed_ms = (wpilib.RobotController.getFPGATime() - start_time) / 1000.0
         SmartDashboard.putNumber("Loop Times/Drivetrain", elapsed_ms)
 
     def log(self):

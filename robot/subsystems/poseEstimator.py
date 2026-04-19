@@ -175,9 +175,9 @@ class PoseEstimator(Subsystem):
         self.thetastd_single_tag = 1000.0
 
         ROBOT_TO_CAM1 = Transform3d(
-            Translation3d(-0.274, 0.277, 0.491),
-            Rotation3d.fromDegrees(0.0, 0.0, -165.0)
-        ) # CLIMBER SIDE CAMERA
+            Translation3d(-0.286, 0.066, 0.519),
+            Rotation3d.fromDegrees(0.0, 0.0, 180)
+        ) # CLIMBER SIDE CAMERA (180 deg yaw)
         
         ROBOT_TO_CAM2 = Transform3d(
             Translation3d(0.206, 0.335, 0.311),
@@ -185,19 +185,21 @@ class PoseEstimator(Subsystem):
         ) # SHOOTER BACK CAMERA (TO DO)
 
         ROBOT_TO_CAM3 = Transform3d(
-            Translation3d(0.0, 0.071, 0.514),
+            Translation3d(0.250, 0.02, 0.515),
             Rotation3d.fromDegrees(0, -20, -90)
-        ) # FLYWHEEL BAR CAMERA
+        ) # FLYWHEEL BAR CAMERA (looking towards hub)
 
+        ROBOT_TO_CAM_4 = Transform3d(
+            Translation3d(0.291, 0.066, 0.519),
+            Rotation3d(0.0, 0.0, 0.0)
+        ) # SHOOTER CAMERA (0 deg yaw)
 
-
-        # ROBOT_TO_COLOR_1 = Transform3d() # TO DO
-        # ROBOT_TO_COLOR_2 = Transform3d() # TO DO
 
         self.cams = [
-            # WrapperedPhotonCameraTag("flywheel", ROBOT_TO_CAM1),
+            WrapperedPhotonCameraTag("flywheel", ROBOT_TO_CAM1),
             WrapperedPhotonCameraTag("shooter", ROBOT_TO_CAM2),
             WrapperedPhotonCameraTag("climber", ROBOT_TO_CAM3),
+            WrapperedPhotonCameraTag("NAME", ROBOT_TO_CAM_4) # TODO: ADD NAME
         ]
 
         # camera4 - spare1
@@ -523,7 +525,7 @@ class PoseEstimator(Subsystem):
         # self.odometry.update(self.getYaw(), self.get_module_positions())
 
 
-        elapsed_ms = (RobotController.getFPGATime() - start_time) / 1000
+        elapsed_ms = (RobotController.getFPGATime() - start_time) / 1000.0
         SmartDashboard.putNumber("Loop Times/Pose Estimator", elapsed_ms)
 
     def log(self):

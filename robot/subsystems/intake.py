@@ -162,22 +162,23 @@ class Intake(Subsystem):
             self.set_intake_speed(0.85) # TUNE
             self.set_position(-0.35) # TUNE
         elif self.robot.pulse_pivot:
-            if self.tick_count <= (6 * 3):
+            if ((start_time - self.tick_count) / 1000.0) <= 500.0:
                 pass
-            elif self.tick_count % (8 * 3) < (4* 3):
+            elif ((start_time - self.tick_count) / 1000.0)  % 1000.0 < 500.0:
                 # print("switch to out")
                 self.set_position(-0.35)
             else:
                 # print("switch to in")
                 self.set_position(-0.07)
-            self.set_intake_speed(0.3)
+            # self.set_intake_speed(0.3)
+            self.stop_intake()
         else:
             self.stop_intake()
             self.set_position(-0.35)
 
         self.tick_count += 1
 
-        elapsed_ms = (wpilib.RobotController.getFPGATime() - start_time) / 1000
+        elapsed_ms = (wpilib.RobotController.getFPGATime() - start_time) / 1000.0
         SmartDashboard.putNumber("Loop Times/Intake", elapsed_ms)
 
     def log(self):

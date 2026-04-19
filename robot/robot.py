@@ -182,6 +182,8 @@ class Robot(CoroutineRobot):
         self.remote_shell = RemoteShell(self)
 
 		# PATHS
+        self.robot_config = RobotConfig.fromGUISettings()
+        
         self.P2_B_L = self.getPathCommand(PathPlannerPath.fromPathFile("P2_B_L"))
         self.P2_B_R = self.getPathCommand(PathPlannerPath.fromPathFile("P2_B_R"))
 
@@ -308,6 +310,7 @@ class Robot(CoroutineRobot):
         self.should_hub_track = False
         self.is_hub_active = True
         self.velocity_constrain_pid = False
+        self.auto_start_time = 0.0
 
         # SHOOTING VALUES
         self.time_of_flight = 1
@@ -446,7 +449,7 @@ class Robot(CoroutineRobot):
                     0.5, 0, 0.1
                 ),  # Rotation PID constants
             ),
-            RobotConfig.fromGUISettings(), # The robot configuration
+            self.robot_config, # The robot configuration
             self.drivetrain.should_flip_path, # Supplier to control path flipping based on alliance color
             self.drivetrain # Reference to this subsystem to set requirements
         )
@@ -468,7 +471,7 @@ class Robot(CoroutineRobot):
                     0.75, 0, 0.04 # 0.8, 0, 0.05
                 ),  # Rotation PID constants
             ),
-            RobotConfig.fromGUISettings(),
+            self.robot_config,
             self.drivetrain.should_flip_path,
             self.drivetrain
         ) 
@@ -520,6 +523,8 @@ class Robot(CoroutineRobot):
     ### AUTONOMOUS ###
 
     def autonomous_mode(self):
+        self.auto_start_time = wpilib.RobotController.getFPGATime() / 1000.0
+
         self.scheduler.cancelAll()
         
         self.in_teleop_mode = False
@@ -527,14 +532,6 @@ class Robot(CoroutineRobot):
         self.in_autonomous_mode = True
         self.intake_at_default = False
         
-
-        
-
-        # if self.isSimulation():
-        #     self.fuel_sim.running = True
-        if self.auto is None:
-            self.auto = SequentialCommandGroup()
-
         self.scheduler.schedule(self.auto)
 
     def autonomousExit(self):

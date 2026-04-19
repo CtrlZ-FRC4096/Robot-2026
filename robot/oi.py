@@ -55,6 +55,7 @@ from wpilibextra.customcontroller import XboxCommandController
 from wpilib.interfaces import GenericHID
 
 from field_const import FieldConstants
+from wpilib import RobotController
 from wpimath.units import inchesToMeters, degreesToRadians, radiansToDegrees
 # from phoenix5 import NeutralMode
 from phoenix6.controls import CoastOut
@@ -245,7 +246,7 @@ class OI:
                         self.cardinal_directing = False
                         self.find_heading = True
                         self.wait_one_tick = False
-                        self.tick_count = 0
+                        self.tick_count = RobotController.getFPGATime()
                         self.robot.drivetrain.drive(
                             Translation2d(forward_back, left_right)
                             * const.SWERVE_MAX_SPEED,
@@ -269,13 +270,13 @@ class OI:
                         #             self.wait_one_tick = True
                         if not self.cardinal_directing:
                             if self.find_heading:
-                                if self.tick_count >= self.tick_count_max:
+                                if (RobotController.getFPGATime() - self.tick_count) / 1000.0 < 500:
+                                    pass
+                                else:
                                     self.robot.robot_oriented_angle = (
                                         self.robot.poseEstimator.getYaw().degrees()
                                     )
                                     self.find_heading = False
-                                else:
-                                    self.tick_count += 1
 
                         self.robot.drivetrain.drive_with_pid(
                             Translation2d(forward_back, left_right)

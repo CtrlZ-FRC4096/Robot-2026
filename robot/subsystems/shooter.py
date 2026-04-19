@@ -57,9 +57,9 @@ class Shooter(Subsystem):
         self.left_down_fly_motor.configurator.apply(self.fly_motor_config)
 
         self.accelerator_motor_config = self.robot.get_motor_config(1, 9.0, 0, 0.025, 0, 0, 0, 9) # retune when we have metal plates
-        self.accelerator_motor_config.current_limits.supply_current_limit = 60
-        self.accelerator_motor_config.torque_current.peak_forward_torque_current = 60
-        self.accelerator_motor_config.torque_current.peak_reverse_torque_current = -60
+        self.accelerator_motor_config.current_limits.supply_current_limit = 45
+        self.accelerator_motor_config.torque_current.peak_forward_torque_current = 45
+        self.accelerator_motor_config.torque_current.peak_reverse_torque_current = -45
         self.accelerator_motor.configurator.apply(self.accelerator_motor_config)
 
         self.hood_motor_config = self.robot.get_motor_config(0, 1.5, 0, 0.15, 0, 0, 0, 0.5)
@@ -238,7 +238,7 @@ class Shooter(Subsystem):
                         self.set_accelerator_speed(self.test_accelerator_speed)
                         if self.robot.shoot_fuel or (abs(abs(self.get_accelerator_speed()) - self.commanded_accelerator_speed) <= 50 or self.accel_good) and (not self.robot.in_autonomous_mode or self.robot.poseEstimator.cur_pos_in_zone()):
                             if not self.accel_good:
-                                self.robot.intake.tick_count = 0
+                                self.robot.intake.tick_count = start_time
                                 self.flywheel_spun.append(False) # to initialize not all True
                             self.accel_good = True
                             self.robot.hopper.commanded_speed = 1
@@ -255,7 +255,7 @@ class Shooter(Subsystem):
             self.stop_fly()
             self.robot.hopper.indexer_motor.set_control(controls.DutyCycleOut(0.0))
 
-        elapsed_ms = (wpilib.RobotController.getFPGATime() - start_time) / 1000
+        elapsed_ms = (wpilib.RobotController.getFPGATime() - start_time) / 1000.0
         SmartDashboard.putNumber("Loop Times/Shooter", elapsed_ms)
 
     def log(self):

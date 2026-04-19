@@ -27,9 +27,9 @@ class Hopper(Subsystem):
         # Flywheel motors
         self.indexer_motor = hardware.TalonFX(const.INDEXER_MOTOR_ID, "rio")  
         self.indexer_motor_config = self.robot.get_motor_config(1, 15.0, 0.0, 0.0, 0.55, 0, 0, 26.5)
-        self.indexer_motor_config.current_limits.supply_current_limit = 60
-        self.indexer_motor_config.torque_current.peak_forward_torque_current = 60
-        self.indexer_motor_config.torque_current.peak_reverse_torque_current = -60
+        self.indexer_motor_config.current_limits.supply_current_limit = 45
+        self.indexer_motor_config.torque_current.peak_forward_torque_current = 45
+        self.indexer_motor_config.torque_current.peak_reverse_torque_current = -45
         self.indexer_motor.configurator.apply(self.indexer_motor_config)
         self.test_indexer_speed = 80
 
@@ -188,7 +188,7 @@ class Hopper(Subsystem):
         # ADD WEIGHT CODE HERE
         # weight_ratio = self.robot.poseEstimator.get_weight_by_accel()
         
-        elapsed_ms = (wpilib.RobotController.getFPGATime() - start_time) / 1000
+        elapsed_ms = (wpilib.RobotController.getFPGATime() - start_time) / 1000.0
         SmartDashboard.putNumber("Loop Times/Hopper", elapsed_ms)
 
     def log(self):
