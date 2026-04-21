@@ -312,6 +312,8 @@ class Robot(CoroutineRobot):
         self.velocity_constrain_pid = False
         self.auto_start_time = 0.0
 
+        SmartDashboard.putNumber("Test/Open Rotation Time", 0.0)
+
         # SHOOTING VALUES
         self.time_of_flight = 1
         self.distance = 1

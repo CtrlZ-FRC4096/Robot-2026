@@ -270,7 +270,7 @@ class OI:
                         #             self.wait_one_tick = True
                         if not self.cardinal_directing:
                             if self.find_heading:
-                                if (RobotController.getFPGATime() - self.tick_count) / 1000.0 < 500:
+                                if (RobotController.getFPGATime() - self.tick_count) / 1000.0 < SmartDashboard.getNumber("Test/Open Rotation Time", 500):
                                     pass
                                 else:
                                     self.robot.robot_oriented_angle = (
