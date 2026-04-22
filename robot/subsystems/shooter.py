@@ -232,7 +232,10 @@ class Shooter(Subsystem):
                     else:   
                         fly_speed = self.robot.fly_speed
                         hood_angle = self.robot.hood_angle
-                    self.set_fly_speed(fly_speed)
+                    if (abs(abs(self.get_accelerator_speed()) - self.commanded_accelerator_speed) >= 20 or not self.accel_good):
+                        self.set_fly_speed(fly_speed*1.2)
+                    else:
+                        self.set_fly_speed(fly_speed)
                     self.set_hood_position(hood_angle + self.robot.hood_fudge_value)
                     if self.robot.shoot_fuel  or self.ready_to_shoot() or self.shoot_ready:
                         self.set_accelerator_speed(self.test_accelerator_speed)
