@@ -79,7 +79,7 @@ class Drivetrain(Subsystem):
         self.angle_pid_default.enableContinuousInput(0, 360)
         self.angle_pid_default.setTolerance(0.5)
 
-        self.rotation_controller = ProfiledPIDController(0.032, 0.0, 0.000225, TrapezoidProfile.Constraints(28000.0, 34000.0))
+        self.rotation_controller = ProfiledPIDController(0.0335, 0.0, 0.000225, TrapezoidProfile.Constraints(28000.0, 34000.0))
         self.rotation_controller.enableContinuousInput(0, 360)
         self.rotation_controller.setTolerance(0.5)
         self.custom_kd_rotation = 0.0
@@ -327,14 +327,17 @@ class Drivetrain(Subsystem):
 
     def drive_with_pid(self, translation: Translation2d, target_angle):
         # cur_speeds = ChassisSpeeds.fromRobotRelativeSpeeds(self.log_chassis, self.robot.poseEstimator.curEstPose.rotation())
-        
-        if self.robot.shoot_intent or (self.robot.in_teleop_mode and self.robot.oi.cardinal_directing):
-            omega = self.robot.poseEstimator.gyro.get_angular_velocity_z_world().value
-            rotation_output = self.rotation_controller.calculate(self.robot.poseEstimator.curEstPose.rotation().degrees(), target_angle)
-            damping = omega * self.custom_kd_rotation
-            pid_output = rotation_output - damping
-        else:
-            pid_output = self.angle_pid_default.calculate(self.robot.poseEstimator.curEstPose.rotation().degrees(), target_angle)
+
+        omega = self.robot.poseEstimator.gyro.get_angular_velocity_z_world().value
+        rotation_output = self.rotation_controller.calculate(self.robot.poseEstimator.curEstPose.rotation().degrees(), target_angle)
+        damping = omega * self.custom_kd_rotation
+        pid_output = rotation_output - damping
+
+
+        cur_speeds = self.get_field_relative_speeds()
+        if Translation2d(cur_speeds.vx, cur_speeds.vy).norm() <= 0.05 and (abs(self.robot.poseEstimator.curEstPose.rotation().degrees() - target_angle) < 3.5 and not self.robot.shoot_intent):
+            pid_output = 0
+
 
         SmartDashboard.putBoolean("Swerve/With PID", True)
         self.drive(

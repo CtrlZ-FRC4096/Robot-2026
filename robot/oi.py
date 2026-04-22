@@ -195,7 +195,7 @@ class OI:
                     rotation_2d = self.robot.drivetrain.get_target_angle(self.robot.time_of_flight, self.robot.static_target)
                     rotation = rotation_2d.degrees()
                     mag_vel = Translation2d(forward_back, left_right).norm()
-                    wheels_to_x = mag_vel <= 0.1 and abs((self.robot.poseEstimator.curEstPose.rotation().degrees() - rotation_2d.degrees())) <= 2.2
+                    wheels_to_x = mag_vel <= 0.1 and abs((self.robot.poseEstimator.curEstPose.rotation().degrees() - rotation_2d.degrees())) <= 1 # 2.2
                     if wheels_to_x:
                         # SmartDashboard.putBoolean("Wheels to X", True)
                         self.robot.poseEstimator.set_wheels_to_x()
@@ -270,19 +270,26 @@ class OI:
                         #             self.wait_one_tick = True
                         if not self.cardinal_directing:
                             if self.find_heading:
-                                if (RobotController.getFPGATime() - self.tick_count) / 1000.0 < SmartDashboard.getNumber("Test/Open Rotation Time", 500):
+                                if (RobotController.getFPGATime() - self.tick_count) / 1000.0 < 300:
                                     pass
                                 else:
                                     self.robot.robot_oriented_angle = (
                                         self.robot.poseEstimator.getYaw().degrees()
                                     )
                                     self.find_heading = False
-
-                        self.robot.drivetrain.drive_with_pid(
-                            Translation2d(forward_back, left_right)
-                            * const.SWERVE_MAX_SPEED,
-                            self.robot.robot_oriented_angle,
-                        )
+                                    self.robot.drivetrain.rotation_controller.reset(self.robot.poseEstimator.getYaw().degrees())
+                                self.robot.drivetrain.drive(Translation2d(forward_back, left_right) * const.SWERVE_MAX_SPEED, 0.0, True, False)
+                            else:
+                                self.robot.drivetrain.drive_with_pid(
+                                Translation2d(forward_back, left_right)
+                                * const.SWERVE_MAX_SPEED,
+                                self.robot.robot_oriented_angle)
+                        else:
+                            self.robot.drivetrain.drive_with_pid(
+                                Translation2d(forward_back, left_right)
+                                * const.SWERVE_MAX_SPEED,
+                                self.robot.robot_oriented_angle,
+                            )
 
 
         @self.driver1.RIGHT_STICK.whenHeld

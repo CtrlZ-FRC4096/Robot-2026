@@ -180,7 +180,7 @@ class PoseEstimator(Subsystem):
         ) # CLIMBER SIDE CAMERA (180 deg yaw)
         
         ROBOT_TO_CAM2 = Transform3d(
-            Translation3d(0.206, 0.335, 0.311),
+            Translation3d(-0.175, 0.335, 0.311),
             Rotation3d.fromDegrees(0, -10, 90)
         ) # SHOOTER BACK CAMERA (TO DO)
 
@@ -189,7 +189,7 @@ class PoseEstimator(Subsystem):
             Rotation3d.fromDegrees(0, -20, -90)
         ) # FLYWHEEL BAR CAMERA (looking towards hub)
 
-        ROBOT_TO_CAM_4 = Transform3d(
+        ROBOT_TO_CAM4 = Transform3d(
             Translation3d(0.291, 0.066, 0.519),
             Rotation3d(0.0, 0.0, 0.0)
         ) # SHOOTER CAMERA (0 deg yaw)
@@ -199,7 +199,7 @@ class PoseEstimator(Subsystem):
             WrapperedPhotonCameraTag("flywheel", ROBOT_TO_CAM1),
             WrapperedPhotonCameraTag("shooter", ROBOT_TO_CAM2),
             WrapperedPhotonCameraTag("climber", ROBOT_TO_CAM3),
-            WrapperedPhotonCameraTag("NAME", ROBOT_TO_CAM_4) # TODO: ADD NAME
+            WrapperedPhotonCameraTag("spare1", ROBOT_TO_CAM4)
         ]
 
         # camera4 - spare1

@@ -312,8 +312,6 @@ class Robot(CoroutineRobot):
         self.velocity_constrain_pid = False
         self.auto_start_time = 0.0
 
-        SmartDashboard.putNumber("Test/Open Rotation Time", 0.0)
-
         # SHOOTING VALUES
         self.time_of_flight = 1
         self.distance = 1
@@ -691,7 +689,7 @@ class Robot(CoroutineRobot):
             wpilib.SmartDashboard.putString("Alliance Shift", "AUTO")
         else:
             wpilib.SmartDashboard.putString("Alliance Shift", "DISABLED")
-        wpilib.SmartDashboard.putNumber("Time Remaining", int(self.alliance_shift_time_remaining))
+        wpilib.SmartDashboard.putNumber("Time Remaining", int(self.alliance_shift_time_remaining) - 1)
         wpilib.SmartDashboard.putBoolean("Hub active?", self.is_hub_active)
         # SmartDashboard.putString("Auto Win", str(self.auto_win))
         if self.isTeleop():

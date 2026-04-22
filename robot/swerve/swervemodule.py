@@ -125,14 +125,14 @@ class SwerveModule:
         # swerve_drive_motor_config.slot0.k_v = const.SWERVE_DRIVE_KV
         # swerve_drive_motor_config.slot0.k_a = const.SWERVE_DRIVE_KA
         swerve_drive_motor_config.current_limits.supply_current_limit = (
-            80  # I am not sure if this is correct
+            95  # I am not sure if this is correct
         )
         swerve_drive_motor_config.current_limits.supply_current_limit = (
-            80  # change back to 40
+            95  # change back to 40
         )
 
         swerve_drive_motor_config.torque_current.peak_forward_torque_current = (
-            80  # Up this to 80 for more zip
+            95  # Up this to 80 for more zip
         )
         swerve_drive_motor_config.torque_current.peak_reverse_torque_current = -80
         ##Ramps
