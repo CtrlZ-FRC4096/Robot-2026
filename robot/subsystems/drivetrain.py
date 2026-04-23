@@ -58,6 +58,7 @@ from wpimath.units import degreesToRadians, inchesToMeters, radiansToDegrees
 from collections import deque
 from lookup_table import LookupTableAll, LookupTableAngle, LookupTableVel
 import wpilib
+from wpilib import RobotController
 
 # from shapely import Polygon, Point
 # from shapely.affinity import translate, rotate
@@ -698,13 +699,6 @@ class Drivetrain(Subsystem):
         self.previous_chassisspeeds = self.get_robot_relative_speeds()
 
         if self.robot.in_autonomous_mode:
-            # if self.robot.poseEstimator.curEstPose.X() >= 5.172:
-            #     # self.robot.is_intaking = True
-            #     # self.robot.intake_at_default = False
-            #     pass
-            # if self.robot.fuel_in_hopper >= 9 and self:
-            #     pass
-
             if self.robot.running_pid_lineup:
                 if self.robot.shoot_intent and self.robot.poseEstimator.cur_pos_in_zone(4.5):
                         rotation = self.robot.drivetrain.get_hub_angle(self.robot.time_of_flight)
@@ -714,7 +708,10 @@ class Drivetrain(Subsystem):
                     lineup = self.robot.final_lineup_pose
                 self.go_to_pose_profiled_pid(lineup)
             elif not self.robot.running_pid_lineup and self.robot.shoot_intent:
-                rotation = self.get_hub_angle(self.robot.time_of_flight)
+                if ((RobotController.getFPGATime() / 1000) - self.robot.auto_time_since_ended_p) < 3000:
+                    rotation = Rotation2d.fromDegrees(self.robot.temp_rotation_shoot_auto)
+                else:
+                    rotation = self.get_hub_angle(self.robot.time_of_flight)
                 self.drive_with_pid(Translation2d(0, 0), rotation.degrees())
             # self.go_to_pose_profiled_pid(self.robot.final_lineup_pose)
 
