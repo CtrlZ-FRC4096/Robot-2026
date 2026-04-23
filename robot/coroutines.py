@@ -12,7 +12,7 @@ from wpimath.geometry import (
 )
 
 import math
-from wpilib import Timer
+from wpilib import Timer, RobotController
 
 from wpilibextra.coroutine import commandify
 import oi
@@ -118,16 +118,17 @@ class Coroutines:
             robot.intake_at_default = False
             robot.pulse_pivot = False
 
-            robot.final_lineup_pose = robot.fieldConstants.flip_Pose2d(Pose2d(2.807, 2.513, Rotation2d.fromDegrees(-90)))
+            robot.final_lineup_pose = robot.fieldConstants.flip_Pose2d(Pose2d(2.807, 2.513, Rotation2d.fromDegrees(135)))
             robot.running_pid_lineup = True
-            robot.shoot_intent = True
             robot.run_p1 = True
             while not (robot.done_p1 or robot.poseEstimator.cur_pos_in_zone(2.95)):
                 yield
             robot.running_pid_lineup = False
+            robot.auto_time_since_ended_p = RobotController.getFPGATime() / 1000
             robot.run_p1 = False
             robot.done_p1 = False
-        
+            robot.shoot_intent = True
+
         self.p1_over_right_bump = (p1_over_right_bump)
         
         @commandify
@@ -138,13 +139,16 @@ class Coroutines:
 
             robot.final_lineup_pose = robot.fieldConstants.flip_Pose2d(Pose2d(2.807, 2.48, Rotation2d.fromDegrees(135)))
             robot.running_pid_lineup = True
-            robot.shoot_intent = True
+            
             robot.run_p2 = True
             while not (robot.done_p2 or robot.poseEstimator.cur_pos_in_zone(3.25)):
                 yield
             robot.running_pid_lineup = False
             robot.run_p2 = False
+            robot.auto_time_since_ended_p = RobotController.getFPGATime() / 1000
             robot.done_p2 = False
+            robot.shoot_intent = True
+            
         
         self.p2_over_right_bump = (p2_over_right_bump)
 

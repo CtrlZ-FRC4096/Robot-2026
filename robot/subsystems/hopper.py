@@ -77,6 +77,7 @@ class Hopper(Subsystem):
                         
                         self.robot.auto = self.robot.autoroutines.left_trench_bump_robust_new()
                     case 2: # Right Default Trench Bump PP Auto Robust
+                        self.robot.temp_rotation_shoot_auto = self.robot.fieldConstants.flip_Rotation2d(Rotation2d.fromDegrees(135)).degrees()
                         self.robot.poseEstimator.poseEst.resetPosition(
                             Rotation2d.fromDegrees(gyro_offset),
                             self.robot.poseEstimator.get_module_positions(),

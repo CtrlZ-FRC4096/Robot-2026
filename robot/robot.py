@@ -304,6 +304,8 @@ class Robot(CoroutineRobot):
         self.done_rotation_auto = False
 
         self.did_autonomous = False
+        self.temp_rotation_shoot_auto = 0
+        self.auto_time_since_ended_p = 0
         self.auto_submitted = False
 
         #TESTING
@@ -665,6 +667,7 @@ class Robot(CoroutineRobot):
         SmartDashboard.putBoolean("States/Down Bad", self.down_bad)
         SmartDashboard.putBoolean("States/Clear Jam", self.clear_jam)
         SmartDashboard.putBoolean("States/Spin Down", self.spin_down)
+        SmartDashboard.putNumber("Test/Temp Rotaion auto", self.temp_rotation_shoot_auto)
 
         SmartDashboard.putNumber("Shooting Values/Distance to Hub", self.distance)
         SmartDashboard.putNumber("Shooting Values/Time of Flight", self.time_of_flight)
