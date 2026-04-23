@@ -57,9 +57,9 @@ class Shooter(Subsystem):
         self.left_down_fly_motor.configurator.apply(self.fly_motor_config)
 
         self.accelerator_motor_config = self.robot.get_motor_config(1, 9.0, 0, 0.025, 0, 0, 0, 9) # retune when we have metal plates
-        self.accelerator_motor_config.current_limits.supply_current_limit = 45
-        self.accelerator_motor_config.torque_current.peak_forward_torque_current = 45
-        self.accelerator_motor_config.torque_current.peak_reverse_torque_current = -45
+        self.accelerator_motor_config.current_limits.supply_current_limit = 60
+        self.accelerator_motor_config.torque_current.peak_forward_torque_current = 60
+        self.accelerator_motor_config.torque_current.peak_reverse_torque_current = -60
         self.accelerator_motor.configurator.apply(self.accelerator_motor_config)
 
         self.hood_motor_config = self.robot.get_motor_config(0, 1.5, 0, 0.15, 0, 0, 0, 0.5)
@@ -73,7 +73,7 @@ class Shooter(Subsystem):
         self.left_down_fly_motor.set_control(controls.Follower(const.LEFT_UP_FLY_ID, signals.MotorAlignmentValue(0)))
 
         self.test_fly_speed = 60
-        self.test_accelerator_speed = 70
+        self.test_accelerator_speed = 85
         self.test_hood_position = 36
 
         self.shoot_ready = False
@@ -194,10 +194,10 @@ class Shooter(Subsystem):
     def periodic(self):
         start_time = wpilib.RobotController.getFPGATime()
         
-        if self.accel_good and (abs(abs(self.commanded_fly_speed) - abs(self.get_fly_speed())) >= 2.4 or abs(self.robot.hopper.get_speed()) <= 30):
-            self.flywheel_spun.append(False)
-        else:
-            self.flywheel_spun.append(True)
+        # if self.accel_good and (abs(abs(self.commanded_fly_speed) - abs(self.get_fly_speed())) >= 3 or abs(self.robot.hopper.get_speed()) <= 30):
+        #     self.flywheel_spun.append(False)
+        # else:
+        #     self.flywheel_spun.append(True)
 
 
 
@@ -232,8 +232,8 @@ class Shooter(Subsystem):
                     else:   
                         fly_speed = self.robot.fly_speed
                         hood_angle = self.robot.hood_angle
-                    if (abs(abs(self.get_accelerator_speed()) - self.commanded_accelerator_speed) >= 20 or not self.accel_good):
-                        self.set_fly_speed(fly_speed*1.2)
+                    if (not self.accel_good and abs(abs(self.get_accelerator_speed()) - self.commanded_accelerator_speed) >= 20):
+                        self.set_fly_speed(fly_speed*1.065)
                     else:
                         self.set_fly_speed(fly_speed)
                     self.set_hood_position(hood_angle + self.robot.hood_fudge_value)
@@ -244,8 +244,8 @@ class Shooter(Subsystem):
                                 self.robot.intake.tick_count = start_time
                                 self.flywheel_spun.append(False) # to initialize not all True
                             self.accel_good = True
-                            self.robot.hopper.commanded_speed = 1
-                            self.robot.hopper.indexer_motor.set_control(controls.DutyCycleOut(1.0))
+                            self.robot.hopper.commanded_speed = 0.75
+                            self.robot.hopper.indexer_motor.set_control(controls.DutyCycleOut(0.75))
                             self.robot.pulse_pivot = True 
 
                             # self.robot.hopper.set_speed(self.robot.hopper.test_indexer_speed) 

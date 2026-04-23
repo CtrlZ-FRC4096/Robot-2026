@@ -79,7 +79,7 @@ class Drivetrain(Subsystem):
         self.angle_pid_default.enableContinuousInput(0, 360)
         self.angle_pid_default.setTolerance(0.5)
 
-        self.rotation_controller = ProfiledPIDController(0.0335, 0.0, 0.000225, TrapezoidProfile.Constraints(28000.0, 34000.0))
+        self.rotation_controller = ProfiledPIDController(0.03, 0.001, 0.000225, TrapezoidProfile.Constraints(28000.0, 36500.0))
         self.rotation_controller.enableContinuousInput(0, 360)
         self.rotation_controller.setTolerance(0.5)
         self.custom_kd_rotation = 0.0
@@ -542,14 +542,14 @@ class Drivetrain(Subsystem):
         self.dist_lookup_table.add_entry(4.158, 8.36, 61.0, 1.215)
         self.dist_lookup_table.add_entry(4.542, 8.697, 61.0, 1.28)
         self.dist_lookup_table.add_entry(4.926, 9.03, 61.0, 1.343)
-        self.dist_lookup_table.add_entry(5.311, 9.2, 61.0, 1.374)
-        self.dist_lookup_table.add_entry(5.695, 9.2, 61.0, 1.374)
-        self.dist_lookup_table.add_entry(6.079, 9.2, 61.0, 1.374)
-        self.dist_lookup_table.add_entry(6.463, 9.2, 61.0, 1.374)
-        self.dist_lookup_table.add_entry(6.847, 9.2, 61.0, 1.374)
-        self.dist_lookup_table.add_entry(7.232, 9.2, 61.0, 1.374)
-        self.dist_lookup_table.add_entry(7.616, 9.2, 61.0, 1.374)
-        self.dist_lookup_table.add_entry(8.0, 9.2, 61.0, 1.374)
+        self.dist_lookup_table.add_entry(5.311, 9.359, 61.0, 1.403)
+        self.dist_lookup_table.add_entry(5.695, 9.55, 61.0, 1.437)
+        self.dist_lookup_table.add_entry(6.079, 9.55, 61.0, 1.437)
+        self.dist_lookup_table.add_entry(6.463, 9.55, 61.0, 1.437)
+        self.dist_lookup_table.add_entry(6.847, 9.55, 61.0, 1.437)
+        self.dist_lookup_table.add_entry(7.232, 9.55, 61.0, 1.437)
+        self.dist_lookup_table.add_entry(7.616, 9.55, 61.0, 1.437)
+        self.dist_lookup_table.add_entry(8.0, 9.55, 61.0, 1.437)
         
         #Modified version for -0.5 v_std only
         # self.dist_lookup_table.add_entry(0.7, 5.465, 75.048, 0.638)
@@ -574,12 +574,13 @@ class Drivetrain(Subsystem):
         # self.dist_lookup_table.add_entry(8.0, 9.2, 61.0, 1.374)
         
     def create_launch_vel_table(self):
-        self.vel_lookup_table.add_entry(6.05, 50)
-        self.vel_lookup_table.add_entry(7.35, 60)
-        self.vel_lookup_table.add_entry(7.95, 67)
-        self.vel_lookup_table.add_entry(8.3, 70)
-        self.vel_lookup_table.add_entry(8.9, 80)
-        self.vel_lookup_table.add_entry(9.2, 83)
+        self.vel_lookup_table.add_entry(6.2, 50)
+        self.vel_lookup_table.add_entry(7.5, 60)
+        self.vel_lookup_table.add_entry(8.05, 67)
+        self.vel_lookup_table.add_entry(8.4, 70)
+        self.vel_lookup_table.add_entry(9.0, 80)
+        self.vel_lookup_table.add_entry(9.3, 83)
+        self.vel_lookup_table.add_entry(9.55, 90)
         
     def create_launch_angle_table(self):
         self.angle_lookup_table.add_entry(61, 45)

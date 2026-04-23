@@ -134,7 +134,7 @@ class SwerveModule:
         swerve_drive_motor_config.torque_current.peak_forward_torque_current = (
             95  # Up this to 80 for more zip
         )
-        swerve_drive_motor_config.torque_current.peak_reverse_torque_current = -80
+        swerve_drive_motor_config.torque_current.peak_reverse_torque_current = -95
         ##Ramps
         swerve_drive_motor_config.closed_loop_ramps.torque_closed_loop_ramp_period = (
             0.02
