@@ -193,6 +193,8 @@ class Robot(CoroutineRobot):
         self.P2_B_R_NEW = self.getPathCommand(PathPlannerPath.fromPathFile("P2_B_R_New")) 
         self.P2_B_L_NEW = self.getPathCommand(PathPlannerPath.fromPathFile("P2_B_L_New"))
 
+        self.P3_B_R_BNZ= self.getPathCommand(PathPlannerPath.fromPathFile("P3_B_R_BNZ"))
+
         self.SLOW_LEFT_STEAL_OUT_PP = self.getPathCommand(PathPlannerPath.fromPathFile("SLOW_LEFT_STEAL_OUT"))
         self.SLOW_LEFT_SAFE_PP = self.getPathCommand(PathPlannerPath.fromPathFile("SLOW_LEFT_SAFE"))
         self.SLOW_LEFT_STEAL_DEPOT_PP = self.getPathCommand(PathPlannerPath.fromPathFile("SLOW_LEFT_STEAL_DEPOT"))
@@ -578,7 +580,7 @@ class Robot(CoroutineRobot):
             )  # signals.InvertedValue(1)  # This is no longer a boolean; 0 for CCW 1 for CW
             swerve_drive_motor_config.motor_output.neutral_mode = signals.NeutralModeValue(
                 1
-            )  # set to brake
+            )  # set to brake # 1 BRAKE 0 COAST
             swerve_drive_motor_config.current_limits.stator_current_limit = 100
 
             self.poseEstimator.modules[idx].drive_motor.configurator.apply(swerve_drive_motor_config)

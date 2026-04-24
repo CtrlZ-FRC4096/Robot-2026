@@ -55,6 +55,18 @@ class Coroutines:
             robot.intake_at_default = False
             robot.is_intaking = True
             yield
+
+        @commandify
+        def intake_3():
+            robot.pulse_pivot = False
+            robot.shoot_intent = True
+            robot.spin_down = True
+            robot.shooter.shoot_ready = False
+            robot.shooter.accel_good = False
+            robot.running_pid_lineup = False
+            robot.intake_at_default = False
+            robot.is_intaking = True
+            yield
         
         @commandify
         def stop_drive():
@@ -106,6 +118,7 @@ class Coroutines:
         self.drive_to_zone_trench_2 = (drive_to_zone_trench_2)
         self.intake = (intake)
         self.intake_2 = (intake_2)
+        self.intake_3 = (intake_3)
 
         self.shoot_in_place = (shoot_in_place)
         self.shoot_in_place_2 = (shoot_in_place_2)
@@ -118,10 +131,10 @@ class Coroutines:
             robot.intake_at_default = False
             robot.pulse_pivot = False
 
-            robot.final_lineup_pose = robot.fieldConstants.flip_Pose2d(Pose2d(2.807, 2.513, Rotation2d.fromDegrees(135)))
+            robot.final_lineup_pose = robot.fieldConstants.flip_Pose2d(Pose2d(3.0, 2.513, Rotation2d.fromDegrees(135)))
             robot.running_pid_lineup = True
             robot.run_p1 = True
-            while not (robot.done_p1 or robot.poseEstimator.cur_pos_in_zone(2.95)):
+            while not (robot.done_p1 or robot.poseEstimator.cur_pos_in_zone(3.2)):
                 yield
             robot.running_pid_lineup = False
             robot.auto_time_since_ended_p = RobotController.getFPGATime() / 1000
@@ -137,7 +150,7 @@ class Coroutines:
             robot.intake_at_default = False
             robot.pulse_pivot = False
 
-            robot.final_lineup_pose = robot.fieldConstants.flip_Pose2d(Pose2d(2.807, 2.48, Rotation2d.fromDegrees(135)))
+            robot.final_lineup_pose = robot.fieldConstants.flip_Pose2d(Pose2d(3.0, 2.352, Rotation2d.fromDegrees(135)))
             robot.running_pid_lineup = True
             
             robot.run_p2 = True

@@ -91,8 +91,8 @@ class Drivetrain(Subsystem):
         self.angle_pid_far_sotm.enableContinuousInput(0, 360)
         self.angle_pid_far_sotm.setTolerance(2)
 
-        self.x_controller = PIDController(3, 0, 0) #0.01
-        self.y_controller = PIDController(3, 0, 0) #0.01
+        self.x_controller = PIDController(3.8, 0, 0) #0.01
+        self.y_controller = PIDController(3.8, 0, 0) #0.01
         self.xy_controller = ProfiledPIDController(2.3, 0.0, 0.025, TrapezoidProfile.Constraints(4.0, 4.0))
         self.theta_controller = PIDController(0.07, 0.01, 0.0015)
         
@@ -683,8 +683,8 @@ class Drivetrain(Subsystem):
 
             self.robot.fly_speed = self.vel_lookup_table.interpolate(vals[0])
             self.robot.hood_angle = self.angle_lookup_table.interpolate(vals[1])
-            if self.robot.fly_speed >= 85:
-                self.robot.fly_speed = 85
+            if self.robot.fly_speed >= 90:
+                self.robot.fly_speed = 90
 
             if self.robot.hood_angle >= 45:
                 self.robot.hood_angle = 45
@@ -708,7 +708,7 @@ class Drivetrain(Subsystem):
                     lineup = self.robot.final_lineup_pose
                 self.go_to_pose_profiled_pid(lineup)
             elif not self.robot.running_pid_lineup and self.robot.shoot_intent:
-                if ((RobotController.getFPGATime() / 1000) - self.robot.auto_time_since_ended_p) < 3000:
+                if ((RobotController.getFPGATime() / 1000) - self.robot.auto_time_since_ended_p) < 350:
                     rotation = Rotation2d.fromDegrees(self.robot.temp_rotation_shoot_auto)
                 else:
                     rotation = self.get_hub_angle(self.robot.time_of_flight)

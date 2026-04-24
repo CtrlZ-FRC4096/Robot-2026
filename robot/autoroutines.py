@@ -14,6 +14,7 @@ from wpimath.geometry import Rotation2d, Pose2d, Translation2d
 from wpimath.units import degreesToRadians
 import const
 from pathplannerlib.path import PathConstraints, PathPlannerPath
+from pathplannerlib.events import EventTrigger
 
 # from commands import autonomous
 # from commands.autonomous import DriveTrajectory
@@ -192,13 +193,17 @@ class AutoRoutines:
                 self.robot.P1_T_B_R_ROBUST,
                 self.robot.coroutines.intake),
             self.robot.coroutines.p1_over_right_bump,
-            self.robot.coroutines.drive_to_zone_trench.withTimeout(4),
+            self.robot.coroutines.drive_to_zone_trench.withTimeout(3.75),
             ParallelCommandGroup(
                 self.robot.P2_B_R_NEW,
                 self.robot.coroutines.intake_2
             ),
             self.robot.coroutines.p2_over_right_bump,
-            self.robot.coroutines.drive_to_zone_trench_2.withTimeout(5)
+            self.robot.coroutines.drive_to_zone_trench_2.withTimeout(3.75),
+            ParallelCommandGroup(
+                self.robot.P3_B_R_BNZ,
+                self.robot.coroutines.intake_3
+            )
         )
     
     def left_trench_bump_robust(self): # citrus type path # IN AUTO CHOOSER
