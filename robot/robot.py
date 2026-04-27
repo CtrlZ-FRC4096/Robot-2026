@@ -190,6 +190,9 @@ class Robot(CoroutineRobot):
         self.P1_T_B_R_ROBUST = self.getPathCommand(PathPlannerPath.fromPathFile("P1_T_B_R_Robust"))
         self.P1_T_B_L_ROBUST = self.getPathCommand(PathPlannerPath.fromPathFile("P1_T_B_L_Robust"))
 
+        self.P1_T_B_R_ROBUST_MVR = self.getPathCommand(PathPlannerPath.fromPathFile("P1_T_B_R_Robust_MVR"))
+        self.P2_B_R_NEW_MVR = self.getPathCommand(PathPlannerPath.fromPathFile("P2_B_R_New_MVR"))
+
         self.P2_B_R_NEW = self.getPathCommand(PathPlannerPath.fromPathFile("P2_B_R_New")) 
         self.P2_B_L_NEW = self.getPathCommand(PathPlannerPath.fromPathFile("P2_B_L_New"))
 
@@ -199,46 +202,6 @@ class Robot(CoroutineRobot):
         self.SLOW_LEFT_SAFE_PP = self.getPathCommand(PathPlannerPath.fromPathFile("SLOW_LEFT_SAFE"))
         self.SLOW_LEFT_STEAL_DEPOT_PP = self.getPathCommand(PathPlannerPath.fromPathFile("SLOW_LEFT_STEAL_DEPOT"))
 
-
-        self.bline_translation_controller = PIDController(4, 0, 0)
-        self.bline_rotation_controller = PIDController(3, 0, 0)
-        self.bline_cross_track_controller = PIDController(2, 0, 0)
-        self.bline_builder = Builder(self.drivetrain, 
-                                     self.drivetrain.get_pose,
-                                     self.drivetrain.get_robot_relative_speeds,
-                                     self.drivetrain.drive_robot_relative,
-                                     self.drivetrain.get_timestamp,
-                                     self.bline_translation_controller,
-                                     self.bline_rotation_controller,
-                                     self.bline_cross_track_controller,
-                                     True,
-                                     self.drivetrain.should_flip_path,
-                                     self.drivetrain.should_mirror_path)
-
-        # self.bline_path_1 = self.get_bline_path_command(Path([TranslationTarget(Translation2d(6.0, 0.6), 0.5), TranslationTarget(Translation2d(7.0, 4.0), 0.5)]))
-        BLineCommand.event_trigger_registry = {
-            "stop_intake" : self.drivetrain.stop_intaking
-        }
-        
-        self.P1_T_B_R_ROBUST_BL = self.get_bline_path_command(JsonUtils.load_path("P1_T_B_R_Robust_BL"))
-        self.P2_B_R_NEW_BL = self.get_bline_path_command(JsonUtils.load_path("P2_B_R_New_BL"))
-        self.SLOW_RIGHT_STEAL_OUT_BL = self.get_bline_path_command(JsonUtils.load_path("SLOW_RIGHT_STEAL_OUT"))
-        self.SLOW_RIGHT_STEAL_BL = self.get_bline_path_command(JsonUtils.load_path("SLOW_RIGHT_STEAL"))
-        self.SLOW_RIGHT_STEAL_BACK_BL = self.get_bline_path_command(JsonUtils.load_path("SLOW_RIGHT_STEAL_BACK"))
-        self.SLOW_RIGHT_STEAL_TRENCH_BL = self.get_bline_path_command(JsonUtils.load_path("SLOW_RIGHT_STEAL_TRENCH"))
-        self.SLOW_RIGHT_SAFE_BL = self.get_bline_path_command(JsonUtils.load_path("SLOW_RIGHT_SAFE"))
-
-        self.SLOW_LEFT_STEAL_OUT_BL = self.get_bline_path_command(JsonUtils.load_path("SLOW_LEFT_STEAL_OUT"))
-        self.SLOW_LEFT_STEAL_BL = self.get_bline_path_command(JsonUtils.load_path("SLOW_LEFT_STEAL"))
-        self.SLOW_LEFT_STEAL_DEPOT_BL = self.get_bline_path_command(JsonUtils.load_path("SLOW_LEFT_STEAL_DEPOT"))
-        self.SLOW_LEFT_STEAL_TRENCH_BL = self.get_bline_path_command(JsonUtils.load_path("SLOW_LEFT_STEAL_TRENCH"))
-
-        self.DEFAULT_SLOW_DEPOT_BL = self.get_bline_path_command(JsonUtils.load_path("DEFAULT_SLOW_DEPOT"))
-
-        self.new_path = self.get_bline_path_command(JsonUtils.load_path("new_path"))
-
-        self.mirror_bline_auto = False
-
         self.autoroutines = autoroutines.AutoRoutines(self)
         self.auto = None
 
@@ -247,13 +210,7 @@ class Robot(CoroutineRobot):
         self.auto_chooser.addOption("Right Trench & Bump PP", 2)
         self.auto_chooser.addOption("Left Trench & Bump Citrus PP", 3)
         self.auto_chooser.addOption("Right Trench & Bump Citrus PP", 4)
-        self.auto_chooser.addOption("Right Trench & Bump BL", 5)
-        self.auto_chooser.addOption("Right Trench & Bump 3-Bot Safe BL", 7)
-        self.auto_chooser.addOption("Right Trench & Bump Wait Default Steal 3-Bot BL", 9)
-        self.auto_chooser.addOption("Left Trench & Bump Wait Default Steal + Depot After 3-Bot BL", 10)
-        self.auto_chooser.addOption("Right Trench Back Wait Default Steal 3-Bot BL", 11)
-        self.auto_chooser.addOption("Left Trench Back Wait Default Steal + Depot After 3-Bot BL", 12)
-        self.auto_chooser.addOption("Default Slow Depot", 13)
+        self.auto_chooser.addOption("Right Trench & Bump MVR PP", 5)
         self.auto_chooser.addOption("Left Trench Safe 3-Bot + Depot After PP", 14)
         self.auto_chooser.setDefaultOption("Default (no auto)", 0)
 
