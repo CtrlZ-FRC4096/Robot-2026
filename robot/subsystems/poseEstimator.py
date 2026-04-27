@@ -171,7 +171,7 @@ class PoseEstimator(Subsystem):
             const.SWERVE_KINEMATICS, self.getYaw(), self.get_module_positions(), self.curEstPose # type: ignore
         )
 
-        self.xystd_single_tag = 0.05
+        self.xystd_single_tag = 0.03
         self.thetastd_single_tag = 1000.0
 
         ROBOT_TO_CAM1 = Transform3d(
@@ -485,18 +485,13 @@ class PoseEstimator(Subsystem):
                     self.camera_Y[cam.camName] = avg_y
                     self.camera_theta[cam.camName] = avg_pose.rotation()
 
-                    if self.robot.shoot_intent:
-                        cur_speeds = self.robot.drivetrain.get_field_relative_speeds()
-                        omega = abs(cur_speeds.omega)
-                    else:
-                        omega = 0.2
                     self.poseEst.addVisionMeasurement(
                         avg_pose,
                         cam.getObsTime(),
                         (
-                            self.xystd_single_tag * (omega * 5),  # * (min_ambiguity / 0.4),
-                            self.xystd_single_tag * (omega * 5),  # * (min_ambiguity / 0.4),
-                            self.thetastd_single_tag * (omega * 5),  # * (min_ambiguity / 0.4),
+                            self.xystd_single_tag,  # * (min_ambiguity / 0.4),
+                            self.xystd_single_tag,  # * (min_ambiguity / 0.4),
+                            self.thetastd_single_tag,  # * (min_ambiguity / 0.4),
                         ),
                     )
                         
