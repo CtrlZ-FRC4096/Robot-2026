@@ -47,7 +47,7 @@ class Shooter(Subsystem):
         self.hood_cancoder.configurator.apply(hood_cancoder_config)
 
 
-        self.fly_motor_config = self.robot.get_motor_config(0, 28, 0, 0, 0.07, 0, 0, 4)
+        self.fly_motor_config = self.robot.get_motor_config(0, 24.5, 0, 0, 0.07, 0, 0, 4)
         # self.right_fly_motor_config = self.robot.get_motor_config(0, 12.0, 0.1, 0, 0, 0, 0, 0)
         self.fly_motor_config.current_limits.supply_current_limit = 80
         self.fly_motor_config.torque_current.peak_forward_torque_current = 80
@@ -57,9 +57,9 @@ class Shooter(Subsystem):
         self.left_down_fly_motor.configurator.apply(self.fly_motor_config)
 
         self.accelerator_motor_config = self.robot.get_motor_config(1, 9.0, 0, 0.025, 0, 0, 0, 9) # retune when we have metal plates
-        self.accelerator_motor_config.current_limits.supply_current_limit = 60
-        self.accelerator_motor_config.torque_current.peak_forward_torque_current = 60
-        self.accelerator_motor_config.torque_current.peak_reverse_torque_current = -60
+        self.accelerator_motor_config.current_limits.supply_current_limit = 70
+        self.accelerator_motor_config.torque_current.peak_forward_torque_current = 70
+        self.accelerator_motor_config.torque_current.peak_reverse_torque_current = -70
         self.accelerator_motor.configurator.apply(self.accelerator_motor_config)
 
         self.hood_motor_config = self.robot.get_motor_config(0, 1.5, 0, 0.15, 0, 0, 0, 0.5)

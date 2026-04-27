@@ -41,10 +41,10 @@ class Intake(Subsystem):
         )  # Apply settings to angle encoder
 
         self.intake_motor_config = self.robot.get_motor_config(0, 5, 0, 0, 0.21, 0, 0, 11)
-        self.deploy_motor_config = self.robot.get_motor_config(1, 140, 0, 15, 0, 0, 0, 8)
-        self.deploy_motor_config.current_limits.supply_current_limit = 60
-        self.deploy_motor_config.torque_current.peak_forward_torque_current = 60
-        self.deploy_motor_config.torque_current.peak_reverse_torque_current = -60
+        self.deploy_motor_config = self.robot.get_motor_config(1, 167, 0, 15, 0, 0, 0, 8)
+        self.deploy_motor_config.current_limits.supply_current_limit = 70
+        self.deploy_motor_config.torque_current.peak_forward_torque_current = 70
+        self.deploy_motor_config.torque_current.peak_reverse_torque_current = -70
         self.deploy_motor_config.motion_magic.motion_magic_cruise_velocity = 20
         self.deploy_motor_config.motion_magic.motion_magic_acceleration = 40
         self.deploy_motor_config.feedback.feedback_remote_sensor_id = const.INTAKE_DEPLOY_CANCODER_ID
@@ -162,7 +162,7 @@ class Intake(Subsystem):
             self.set_intake_speed(0.85) # TUNE
             self.set_position(-0.35) # TUNE
         elif self.robot.pulse_pivot:
-            if ((start_time - self.tick_count) / 1000.0) <= 500.0:
+            if ((start_time - self.tick_count) / 1000.0) <= 800.0:
                 pass
             # elif ((start_time - self.tick_count) / 1000.0)  % 1000.0 < 500.0:
             #     # print("switch to out")

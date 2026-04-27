@@ -86,24 +86,28 @@ class AutoRoutines:
             )
         )
     
-    def left_trench_bump_3bot_safe(self, time_to_wait=0.1):
+    def left_trench_bump_3bot_safe(self, time_to_wait=5):
         return SequentialCommandGroup(
-            WaitCommand(0.5),
             ParallelCommandGroup(
-                self.robot.SLOW_LEFT_STEAL_OUT_PP,
-                WaitCommand(time_to_wait)
-            ),
-            ParallelCommandGroup(
-                self.robot.SLOW_LEFT_SAFE_PP,
-                self.robot.coroutines.intake
+                SequentialCommandGroup(
+                    WaitCommand(1),
+                    ParallelCommandGroup(
+                    self.robot.SLOW_LEFT_STEAL_OUT_PP,
+                    WaitCommand(6)
+                    ),
+                    ParallelCommandGroup(
+                    self.robot.SLOW_LEFT_SAFE_PP,
+                    self.robot.coroutines.intake
+                    )),
+                WaitCommand(12)
             ),
             self.robot.coroutines.p1_over_left_bump_3bot,
-            self.robot.coroutines.drive_to_zone_trench.withTimeout(4.5),
+            self.robot.coroutines.drive_to_zone_trench.withTimeout(4),
             ParallelCommandGroup(
                 self.robot.SLOW_LEFT_STEAL_DEPOT_PP,
                 self.robot.coroutines.intake_2
             ),
-            self.robot.coroutines.drive_to_zone_trench_2.withTimeout(4.5)
+            self.robot.coroutines.drive_to_zone_trench_2.withTimeout(4)
         )
 
     def right_trench_wait_steal(self, time_to_wait=0.1): # IN AUTO CHOOSER
