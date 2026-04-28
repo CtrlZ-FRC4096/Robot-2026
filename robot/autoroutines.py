@@ -100,13 +100,13 @@ class AutoRoutines:
                 self.robot.P1_T_B_R_ROBUST_MVR,
                 self.robot.coroutines.intake),
             self.robot.coroutines.p1_over_right_bump,
-            self.robot.coroutines.drive_to_zone_trench.withTimeout(3.75),
+            self.robot.coroutines.drive_to_zone_trench.withTimeout(3.9),
             ParallelCommandGroup(
                 self.robot.P2_B_R_NEW_MVR,
                 self.robot.coroutines.intake_2
             ),
             self.robot.coroutines.p2_over_right_bump,
-            self.robot.coroutines.drive_to_zone_trench_2.withTimeout(3.75),
+            self.robot.coroutines.drive_to_zone_trench_2.withTimeout(3.9),
             ParallelCommandGroup(
                 self.robot.P3_B_R_BNZ,
                 self.robot.coroutines.intake_3

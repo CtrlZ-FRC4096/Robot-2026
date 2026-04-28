@@ -159,10 +159,10 @@ class Intake(Subsystem):
             self.set_position(-0.35)
         elif self.robot.is_intaking:
             # if self.robot.fieldConstants.LinesVertical.starting < self.robot.poseEstimator.curEstPose.X() < self.robot.fieldConstants.fieldLength - self.robot.fieldConstants.LinesVertical.starting: # neutral zone
-            self.set_intake_speed(0.85) # TUNE
+            self.set_intake_speed(0.95) # TUNE
             self.set_position(-0.35) # TUNE
         elif self.robot.pulse_pivot:
-            if ((start_time - self.tick_count) / 1000.0) <= 800.0:
+            if ((start_time - self.tick_count) / 1000.0) <= 1200.0:
                 pass
             # elif ((start_time - self.tick_count) / 1000.0)  % 1000.0 < 500.0:
             #     # print("switch to out")
