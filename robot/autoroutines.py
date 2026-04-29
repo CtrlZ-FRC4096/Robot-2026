@@ -36,26 +36,25 @@ class AutoRoutines:
     def __init__(self, robot: "Robot"):
         self.robot = robot
 
-    def right_trench_bump_robust(self): # citrus type path # IN AUTO CHOOSER
-        return SequentialCommandGroup(
-            ParallelCommandGroup(
-                self.robot.P1_T_B_R_ROBUST,
-                self.robot.coroutines.intake),
-            self.robot.coroutines.p1_over_right_bump,
-            self.robot.coroutines.drive_to_zone_trench.withTimeout(4.5),
-            ParallelCommandGroup(
-                self.robot.P2_B_R,
-                self.robot.coroutines.intake_2
-            ),
-            self.robot.coroutines.p2_over_right_bump,
-            self.robot.coroutines.drive_to_zone_trench_2.withTimeout(4.25)
-        )
+    # def right_trench_bump_robust(self): # citrus type path # IN AUTO CHOOSER
+    #     return SequentialCommandGroup(
+    #         ParallelCommandGroup(
+    #             self.robot.P1_T_B_R_ROBUST,
+    #             self.robot.coroutines.intake),
+    #         self.robot.coroutines.p1_over_right_bump,
+    #         self.robot.coroutines.drive_to_zone_trench.withTimeout(4.5),
+    #         ParallelCommandGroup(
+    #             self.robot.P2_B_R,
+    #             self.robot.coroutines.intake_2
+    #         ),
+    #         self.robot.coroutines.p2_over_right_bump,
+    #         self.robot.coroutines.drive_to_zone_trench_2.withTimeout(4.25)
+    #     )
     
     def left_trench_bump_3bot_safe(self, time_to_wait=0.1):
         return SequentialCommandGroup(
             ParallelCommandGroup(
                 SequentialCommandGroup(
-                    WaitCommand(1),
                     ParallelCommandGroup(
                     self.robot.SLOW_LEFT_STEAL_OUT_PP,
                     WaitCommand(6)
@@ -113,21 +112,39 @@ class AutoRoutines:
             )
         )
     
-    def left_trench_bump_robust(self): # citrus type path # IN AUTO CHOOSER
+    def left_trench_bump_robust_new_mvr(self):
         return SequentialCommandGroup(
             ParallelCommandGroup(
-                self.robot.P1_T_B_L_ROBUST,
-                self.robot.coroutines.intake
-            ),
+                self.robot.P1_T_B_L_ROBUST_MVR,
+                self.robot.coroutines.intake),
             self.robot.coroutines.p1_over_left_bump,
-            self.robot.coroutines.drive_to_zone_trench.withTimeout(4.5),
+            self.robot.coroutines.drive_to_zone_trench.withTimeout(3.9),
             ParallelCommandGroup(
-                self.robot.P2_B_L,
-                self.robot.coroutines.intake_2
-            ),
+                self.robot.P2_B_L_NEW_MVR,
+                self.robot.coroutines.intake_2),
             self.robot.coroutines.p2_over_left_bump,
-            self.robot.coroutines.drive_to_zone_trench_2.withTimeout(4.25)
+            self.robot.coroutines.drive_to_zone_trench_2.withTimeout(3.9),
+            ParallelCommandGroup(
+                self.robot.P3_B_L_BNZ,
+                self.robot.coroutines.intake_3
+            )
         )
+    
+    # def left_trench_bump_robust(self): # citrus type path # IN AUTO CHOOSER
+    #     return SequentialCommandGroup(
+    #         ParallelCommandGroup(
+    #             self.robot.P1_T_B_L_ROBUST,
+    #             self.robot.coroutines.intake
+    #         ),
+    #         self.robot.coroutines.p1_over_left_bump,
+    #         self.robot.coroutines.drive_to_zone_trench.withTimeout(4.5),
+    #         ParallelCommandGroup(
+    #             self.robot.P2_B_L,
+    #             self.robot.coroutines.intake_2
+    #         ),
+    #         self.robot.coroutines.p2_over_left_bump,
+    #         self.robot.coroutines.drive_to_zone_trench_2.withTimeout(4.25)
+    #     )
 
     def left_trench_bump_robust_new(self): # not citrus type path # IN AUTO CHOOSER
         return SequentialCommandGroup(

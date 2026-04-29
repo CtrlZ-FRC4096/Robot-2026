@@ -184,8 +184,8 @@ class Robot(CoroutineRobot):
 		# PATHS
         self.robot_config = RobotConfig.fromGUISettings()
         
-        self.P2_B_L = self.getPathCommand(PathPlannerPath.fromPathFile("P2_B_L"))
-        self.P2_B_R = self.getPathCommand(PathPlannerPath.fromPathFile("P2_B_R"))
+        # self.P2_B_L = self.getPathCommand(PathPlannerPath.fromPathFile("P2_B_L"))
+        # self.P2_B_R = self.getPathCommand(PathPlannerPath.fromPathFile("P2_B_R"))
 
         self.P1_T_B_R_ROBUST = self.getPathCommand(PathPlannerPath.fromPathFile("P1_T_B_R_Robust"))
         self.P1_T_B_L_ROBUST = self.getPathCommand(PathPlannerPath.fromPathFile("P1_T_B_L_Robust"))
@@ -193,10 +193,14 @@ class Robot(CoroutineRobot):
         self.P1_T_B_R_ROBUST_MVR = self.getPathCommand(PathPlannerPath.fromPathFile("P1_T_B_R_Robust_MVR"))
         self.P2_B_R_NEW_MVR = self.getPathCommand(PathPlannerPath.fromPathFile("P2_B_R_New_MVR"))
 
+        self.P1_T_B_L_ROBUST_MVR = self.getPathCommand(PathPlannerPath.fromPathFile("P1_T_B_L_Robust_MVR"))
+        self.P2_B_L_NEW_MVR = self.getPathCommand(PathPlannerPath.fromPathFile("P2_B_L_New_MVR"))
+
         self.P2_B_R_NEW = self.getPathCommand(PathPlannerPath.fromPathFile("P2_B_R_New")) 
         self.P2_B_L_NEW = self.getPathCommand(PathPlannerPath.fromPathFile("P2_B_L_New"))
 
         self.P3_B_R_BNZ= self.getPathCommand(PathPlannerPath.fromPathFile("P3_B_R_BNZ"))
+        self.P3_B_L_BNZ = self.getPathCommand(PathPlannerPath.fromPathFile("P3_B_L_BNZ"))
 
         self.SLOW_LEFT_STEAL_OUT_PP = self.getPathCommand(PathPlannerPath.fromPathFile("SLOW_LEFT_STEAL_OUT"))
         self.SLOW_LEFT_SAFE_PP = self.getPathCommand(PathPlannerPath.fromPathFile("SLOW_LEFT_SAFE"))
@@ -208,9 +212,10 @@ class Robot(CoroutineRobot):
         self.auto_chooser = wpilib.SendableChooser()
         self.auto_chooser.addOption("Left Trench & Bump PP", 1)
         self.auto_chooser.addOption("Right Trench & Bump PP", 2)
-        self.auto_chooser.addOption("Left Trench & Bump Citrus PP", 3)
-        self.auto_chooser.addOption("Right Trench & Bump Citrus PP", 4)
+        # self.auto_chooser.addOption("Left Trench & Bump Citrus PP", 3)
+        # self.auto_chooser.addOption("Right Trench & Bump Citrus PP", 4)
         self.auto_chooser.addOption("Right Trench & Bump MVR PP", 5)
+        self.auto_chooser.addOption("Left Trench & Bump MVR PP", 6)
         self.auto_chooser.addOption("Left Trench Safe 3-Bot + Depot After PP", 14)
         self.auto_chooser.setDefaultOption("Default (no auto)", 0)
 
@@ -335,7 +340,7 @@ class Robot(CoroutineRobot):
             self.fuel_sim.start()
 
        
-        # test_path = self.flip_path_cmd_across_x(self.getPathCommand(PathPlannerPath.fromPathFile("P2_B_R")))._originalPath
+        # test_path = self.flip_path_cmd_across_x(self.getPathCommand(PathPlannerPath.fromPathFile("P3_B_R_BNZ")))._originalPath
         # test_path_waypoints = test_path.getWaypoints()
         # for idx, waypoint in enumerate(test_path_waypoints):
         #     if idx == 0:

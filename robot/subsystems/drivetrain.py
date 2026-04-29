@@ -328,7 +328,7 @@ class Drivetrain(Subsystem):
 
     def drive_with_pid(self, translation: Translation2d, target_angle):
         # cur_speeds = ChassisSpeeds.fromRobotRelativeSpeeds(self.log_chassis, self.robot.poseEstimator.curEstPose.rotation())
-
+        SmartDashboard.putNumber("Test/Target PID Angle", target_angle)
         omega = self.robot.poseEstimator.gyro.get_angular_velocity_z_world().value
         rotation_output = self.rotation_controller.calculate(self.robot.poseEstimator.curEstPose.rotation().degrees(), target_angle)
         damping = omega * self.custom_kd_rotation
@@ -463,6 +463,7 @@ class Drivetrain(Subsystem):
         # Update SmartDashboard values for debugging
         SmartDashboard.putNumber("t_pose x", target_pose.X())
         SmartDashboard.putNumber("t_pose y", target_pose.Y())
+        SmartDashboard.putNumber("t_pose_rot", target_pose.rotation().degrees())
         SmartDashboard.putNumber("vx", vx)
         SmartDashboard.putNumber("vy", vy)
         SmartDashboard.putNumber("omega", omega)
