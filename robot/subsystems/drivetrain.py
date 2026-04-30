@@ -709,7 +709,7 @@ class Drivetrain(Subsystem):
                     lineup = self.robot.final_lineup_pose
                 self.go_to_pose_profiled_pid(lineup)
             elif not self.robot.running_pid_lineup and self.robot.shoot_intent:
-                if ((RobotController.getFPGATime() / 1000) - self.robot.auto_time_since_ended_p) < 350:
+                if ((RobotController.getFPGATime() / 1000) - self.robot.auto_time_since_ended_p) < 450:
                     rotation = Rotation2d.fromDegrees(self.robot.temp_rotation_shoot_auto)
                 else:
                     rotation = self.get_hub_angle(self.robot.time_of_flight)

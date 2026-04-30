@@ -129,7 +129,7 @@ class Coroutines:
         def p1_over_right_bump():
             robot.intake_at_default = False
             robot.pulse_pivot = False
-            robot.final_lineup_pose = robot.fieldConstants.flip_Pose2d(Pose2d(3.0, 2.513, Rotation2d.fromDegrees(135)))
+            robot.final_lineup_pose = robot.fieldConstants.flip_Pose2d(Pose2d(3.0, 2.513, Rotation2d.fromDegrees(-90)))
             robot.running_pid_lineup = True
             robot.run_p1 = True
             while not (robot.done_p1 or robot.poseEstimator.cur_pos_in_zone(3.2)):
@@ -147,7 +147,7 @@ class Coroutines:
         def p2_over_right_bump():
             robot.intake_at_default = False
             robot.pulse_pivot = False
-            robot.final_lineup_pose = robot.fieldConstants.flip_Pose2d(Pose2d(3.0, 2.352, Rotation2d.fromDegrees(135)))
+            robot.final_lineup_pose = robot.fieldConstants.flip_Pose2d(Pose2d(3.0, 2.352, Rotation2d.fromDegrees(-90)))
             robot.running_pid_lineup = True
             robot.run_p2 = True
             while not (robot.done_p2 or robot.poseEstimator.cur_pos_in_zone(3.25)):
@@ -168,7 +168,7 @@ class Coroutines:
             robot.intake_at_default = False
             robot.pulse_pivot = False
 
-            robot.final_lineup_pose = robot.fieldConstants.flip_Pose2d(Pose2d(3.0, 5.556, Rotation2d.fromDegrees(45)))
+            robot.final_lineup_pose = robot.fieldConstants.flip_Pose2d(Pose2d(3.0, 5.556, Rotation2d.fromDegrees(-90)))
             robot.running_pid_lineup = True
             
             robot.run_p1 = True
@@ -188,11 +188,11 @@ class Coroutines:
             robot.is_intaking = False
             robot.intake_at_default = False
             robot.pulse_pivot = False
-
-            robot.final_lineup_pose = robot.fieldConstants.flip_Pose2d(Pose2d(1.396, 5.149, Rotation2d.fromDegrees(60)))
+            robot.time_3_bot = RobotController.getFPGATime() / 1000
+            robot.final_lineup_pose = robot.fieldConstants.flip_Pose2d(Pose2d(1.396, 5.149, Rotation2d.fromDegrees(60))) # 1.396, 5.149 60
             robot.running_pid_lineup = True
             robot.run_p1 = True
-            while not (robot.done_p1 or robot.poseEstimator.cur_pos_in_zone(1.5)):
+            while ((RobotController.getFPGATime() / 1000) - robot.time_3_bot) < 3000:  #not (robot.done_p1 or robot.poseEstimator.cur_pos_in_zone(3.2)):
                 yield
             robot.running_pid_lineup = False
             robot.auto_time_since_ended_p = RobotController.getFPGATime() / 1000
@@ -206,7 +206,7 @@ class Coroutines:
         def p2_over_left_bump():
             robot.intake_at_default = False
             robot.pulse_pivot = False
-            robot.final_lineup_pose = robot.fieldConstants.flip_Pose2d(Pose2d(3.0, 5.626, Rotation2d.fromDegrees(45)))
+            robot.final_lineup_pose = robot.fieldConstants.flip_Pose2d(Pose2d(3.0, 5.626, Rotation2d.fromDegrees(-90)))
             robot.running_pid_lineup = True
             robot.run_p2 = True
             while not (robot.done_p2 or robot.poseEstimator.cur_pos_in_zone(3.25)):

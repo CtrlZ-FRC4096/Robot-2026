@@ -40,7 +40,7 @@ class Intake(Subsystem):
             deploy_cancoder_config  # type: ignore
         )  # Apply settings to angle encoder
 
-        self.intake_motor_config = self.robot.get_motor_config(0, 5, 0, 0, 0.21, 0, 0, 11)
+        self.intake_motor_config = self.robot.get_motor_config(0, 8, 0, 0, 0.0161, 0, 0, 2.5)
         self.deploy_motor_config = self.robot.get_motor_config(1, 167, 0, 15, 0, 0, 0, 8)
         self.deploy_motor_config.current_limits.supply_current_limit = 70
         self.deploy_motor_config.torque_current.peak_forward_torque_current = 70
@@ -130,8 +130,8 @@ class Intake(Subsystem):
         self.robot.fuel_in_hopper += 1
 
     def set_intake_speed(self, speed):
-        self.commanded_intake_speed = speed
-        self.left_intake_motor.set_control(controls.DutyCycleOut(speed))
+        self.commanded_intake_speed = speed / 100
+        self.left_intake_motor.set_control(controls.DutyCycleOut(speed / 100))
 
     def get_intake_speed(self):
         if self.robot.isSimulation():
@@ -155,11 +155,11 @@ class Intake(Subsystem):
             self.stop_intake()
             self.set_position(-0.04)
         elif self.robot.clear_jam:
-            self.set_intake_speed(-0.3)
+            self.set_intake_speed(-0.3 * 100)
             self.set_position(-0.35)
         elif self.robot.is_intaking:
             # if self.robot.fieldConstants.LinesVertical.starting < self.robot.poseEstimator.curEstPose.X() < self.robot.fieldConstants.fieldLength - self.robot.fieldConstants.LinesVertical.starting: # neutral zone
-            self.set_intake_speed(0.85) # TUNE
+            self.set_intake_speed(0.85 * 100) # TUNE
             self.set_position(-0.35) # TUNE
         elif self.robot.pulse_pivot:
             if ((start_time - self.tick_count) / 1000.0) <= 1200.0:
@@ -172,7 +172,7 @@ class Intake(Subsystem):
             #     self.set_position(-0.07)
             else:
                 self.set_position(-0.04)
-            self.set_intake_speed(0.45)
+            self.set_intake_speed(0.45 * 100)
             # self.stop_intake()
         else:
             self.stop_intake()
