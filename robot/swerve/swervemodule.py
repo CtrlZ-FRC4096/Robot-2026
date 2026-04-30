@@ -127,9 +127,9 @@ class SwerveModule:
         swerve_drive_motor_config.current_limits.supply_current_limit = (
             80  # I am not sure if this is correct
         )
-        swerve_drive_motor_config.current_limits.supply_current_limit = (
-            80  # change back to 40
-        )
+        # swerve_drive_motor_config.current_limits.supply_current_limit = (
+        #     95  # change back to 40
+        # )
 
         swerve_drive_motor_config.torque_current.peak_forward_torque_current = (
             80  # Up this to 80 for more zip

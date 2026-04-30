@@ -209,6 +209,8 @@ class Robot(CoroutineRobot):
         self.SLOW_LEFT_STEAL_DEPOT_FIRST = self.getPathCommand(PathPlannerPath.fromPathFile("SLOW_LEFT_STEAL_DEPOT_FIRST"))
         self.SLOW_LEFT_STEAL_DEPOT_FIRST_SAFE = self.getPathCommand(PathPlannerPath.fromPathFile("SLOW_LEFT_STEAL_DEPOT_FIRST_SAFE"))
 
+        self.JUST_DEPOT_AUTO = self.getPathCommand(PathPlannerPath.fromPathFile("JUST_DEPOT"))
+
         self.autoroutines = autoroutines.AutoRoutines(self)
         self.auto = None
 
@@ -221,6 +223,7 @@ class Robot(CoroutineRobot):
         self.auto_chooser.addOption("Left Trench & Bump MVR PP", 6)
         self.auto_chooser.addOption("Left Trench Safe 3-Bot + Depot After PP", 14)
         self.auto_chooser.addOption("Steph Curry 3-Bot Depot First", 15)
+        self.auto_chooser.addOption("Just Depot Auto 3-Bot", 16)
         self.auto_chooser.setDefaultOption("Default (no auto)", 0)
 
         SmartDashboard.putNumber("Submit Auto? (and FMS Connected)", int(0))

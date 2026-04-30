@@ -123,6 +123,16 @@ class Hopper(Subsystem):
                         self.robot.poseEstimator.curEstPose = Pose2d(self.robot.fieldConstants.flip_Translation2d(Translation2d(3.550, 5.950)), Rotation2d.fromDegrees(gyro_offset))
 
                         self.robot.auto = self.robot.autoroutines.steph_curry_auto()
+                    case 16: # JUST DEPOT 3-bot START IN FRONT OF BUMP
+                        self.robot.temp_rotation_shoot_auto = self.robot.fieldConstants.flip_Rotation2d(Rotation2d.fromDegrees(60)).degrees()
+                        self.robot.poseEstimator.poseEst.resetPosition(
+                            Rotation2d.fromDegrees(gyro_offset),
+                            self.robot.poseEstimator.get_module_positions(),
+                            Pose2d(self.robot.fieldConstants.flip_Translation2d(Translation2d(3.550, 5.950)), Rotation2d.fromDegrees(gyro_offset))
+                        )
+                        self.robot.poseEstimator.curEstPose = Pose2d(self.robot.fieldConstants.flip_Translation2d(Translation2d(3.550, 5.950)), Rotation2d.fromDegrees(gyro_offset))
+
+                        self.robot.auto = self.robot.autoroutines.just_depot_auto()
                     case 0: # NO AUTO SELECTED
                         self.robot.poseEstimator.poseEst.resetPosition(
                             Rotation2d.fromDegrees(gyro_offset),

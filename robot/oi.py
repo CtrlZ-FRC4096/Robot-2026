@@ -342,9 +342,9 @@ class OI:
             self.robot.snake_intake = not self.robot.snake_intake
             self.robot.robot_oriented_angle = self.robot.poseEstimator.curEstPose.rotation().degrees()
         
-        @self.driver1.POV.UP.whenHeld
-        def _():
-            self.robot.coast_intake = True
+        # @self.driver1.POV.UP.whenHeld
+        # def _():
+        #     self.robot.coast_intake = True
 
         # @self.driver1.POV.UP.whenReleased
         # def _():
@@ -371,6 +371,7 @@ class OI:
             self.robot.shooter_at_default = False
             self.robot.shoot_intent = True
             self.robot.shoot_fuel = False
+            self.robot.spin_down = False
 
         @self.driver1.RIGHT_TRIGGER_AS_BUTTON.whenReleased
         def _():
@@ -402,12 +403,14 @@ class OI:
             self.robot.is_intaking = False
             self.robot.shoot_fuel = False
             self.robot.shoot_intent = False
+            self.robot.spin_down = False
 
 
         @self.driver2.POV.RIGHT.whenHeld
         def _():
             self.robot.down_bad = True
             self.robot.shooter_at_default = False
+            self.robot.spin_down = False
         
         @self.driver2.POV.RIGHT.whenReleased
         def _():

@@ -162,18 +162,16 @@ class Intake(Subsystem):
             self.set_intake_speed(0.85 * 100) # TUNE
             self.set_position(-0.35) # TUNE
         elif self.robot.pulse_pivot:
-            if ((start_time - self.tick_count) / 1000.0) <= 1200.0:
+            if ((start_time - self.tick_count) / 1000) < 800.0:
                 pass
-            # elif ((start_time - self.tick_count) / 1000.0)  % 1000.0 < 500.0:
-            #     # print("switch to out")
-            #     self.set_position(-0.35)
-            # else:
-            #     # print("switch to in")
-            #     self.set_position(-0.07)
             else:
-                self.set_position(-0.04)
+                if ((start_time - self.tick_count) / 1000.0)  % 1100.0 < 550.0:
+                # print("switch to out")
+                    self.set_position(-0.07)
+                else:
+                    # print("switch to in")
+                    self.set_position(-0.35)
             self.set_intake_speed(0.45 * 100)
-            # self.stop_intake()
         else:
             self.stop_intake()
             self.set_position(-0.35)
