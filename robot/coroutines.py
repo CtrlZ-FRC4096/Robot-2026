@@ -192,7 +192,7 @@ class Coroutines:
             robot.final_lineup_pose = robot.fieldConstants.flip_Pose2d(Pose2d(1.396, 5.149, Rotation2d.fromDegrees(60))) # 1.396, 5.149 60
             robot.running_pid_lineup = True
             robot.run_p1 = True
-            while ((RobotController.getFPGATime() / 1000) - robot.time_3_bot) < 2600:  #not (robot.done_p1 or robot.poseEstimator.cur_pos_in_zone(3.2)):
+            while ((RobotController.getFPGATime() / 1000) - robot.time_3_bot) < 3200:  #not (robot.done_p1 or robot.poseEstimator.cur_pos_in_zone(3.2)):
                 yield
             robot.running_pid_lineup = False
             robot.auto_time_since_ended_p = RobotController.getFPGATime() / 1000

@@ -348,8 +348,9 @@ class Robot(CoroutineRobot):
             # self.fuel_sim.clearFuel()
             self.fuel_sim.start()
 
-       
-        # test_path = self.flip_path_cmd_across_x(self.getPathCommand(PathPlannerPath.fromPathFile("P3_B_R_BNZ")))._originalPath
+        # path flip code - KEEP COMMENTED IF DEPLOYING
+        # RUN IN SIM if you want to mirror a path; check terminal output for anchors
+        # test_path = self.flip_path_cmd_across_x(self.getPathCommand(PathPlannerPath.fromPathFile("SLOW_RIGHT_LONG")))._originalPath
         # test_path_waypoints = test_path.getWaypoints()
         # for idx, waypoint in enumerate(test_path_waypoints):
         #     if idx == 0:
@@ -367,6 +368,15 @@ class Robot(CoroutineRobot):
         #         prev_control_heading = Rotation2d((waypoint.anchor - waypoint.prevControl).X(), (waypoint.anchor - waypoint.prevControl).Y()).degrees()
         #         print(f"{idx}: anchor: {waypoint.anchor}, heading: {prev_control_heading}, prevdist: {prev_control_dist}, next_controldist: {next_control_dist}")
         # print(test_path.getRotationTargets())
+
+        # mirror of SLOW_LEFT_SAFE (not part of mirroring code)
+        # DataLog: Logging to 'C:\Users\ctrlz\Documents\Github\Robot-2026\robot/logs\FRC_TBD_97eae4cf9a60349a.wpilog' (320.3 GiB free space)
+        # Start: anchor: Translation2d(x=6.688000, y=0.950000), next_controldist: 0.39446888705003413, next_control_head: 64.1685265125475
+        # 1: anchor: Translation2d(x=7.344709, y=2.471944), heading: 52.45112095147627, prevdist: 0.2938658542671224, next_controldist: 0.7245319175454933
+        # 2: anchor: Translation2d(x=7.524244, y=4.547967), heading: 170.65532809790028, prevdist: 0.6536349561857017, next_controldist: 0.8068518374858663
+        # 3: anchor: Translation2d(x=6.879267, y=3.227778), heading: -72.20521214048846, prevdist: 0.4655194515090735, next_controldist: 0.4655194515090735
+        # End: anchor: Translation2d(x=5.780789, y=2.471944), prev_controldist: 0.7460000000000003, prev_control_head: -177.67000000000002
+
 
         # chassis = const.SWERVE_KINEMATICS.toChassisSpeeds(SwerveModuleState(-2.847, Rotation2d.fromDegrees(272.373)), SwerveModuleState(-2.668, Rotation2d.fromDegrees(268.330), SwerveModuleState(-2.282, Rotation2d.fromDegrees(268.737)), SwerveModuleState(1.220, Rotation2d.fromDegrees(66.530))))
         # print(chassis)
