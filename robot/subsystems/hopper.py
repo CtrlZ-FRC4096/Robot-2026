@@ -96,6 +96,8 @@ class Hopper(Subsystem):
                         self.robot.poseEstimator.curEstPose = Pose2d(self.robot.fieldConstants.flip_Translation2d(Translation2d(4.439, 0.628)), Rotation2d.fromDegrees(gyro_offset))
 
                         self.robot.auto = self.robot.autoroutines.right_trench_bump_robust_new_mvr()
+
+                        self.robot.P1_T_B_R_ROBUST_MVR.initialize()
                     case 6: # Left Trench & Bump PP Auto Robust MVR
                         self.robot.temp_rotation_shoot_auto = self.robot.fieldConstants.flip_Rotation2d(Rotation2d.fromDegrees(45)).degrees()
                         self.robot.poseEstimator.poseEst.resetPosition(
@@ -105,6 +107,27 @@ class Hopper(Subsystem):
                         self.robot.poseEstimator.curEstPose = Pose2d(self.robot.fieldConstants.flip_Translation2d(Translation2d(4.439, 7.441)), Rotation2d.fromDegrees(gyro_offset))
 
                         self.robot.auto = self.robot.autoroutines.left_trench_bump_robust_new_mvr()
+                        
+                        self.robot.P1_T_B_L_ROBUST_MVR.initialize()
+                    case 7: # Right Trench & Bump Safe MVR PP
+                        self.robot.temp_rotation_shoot_auto = self.robot.fieldConstants.flip_Rotation2d(Rotation2d.fromDegrees(135)).degrees()
+                        self.robot.poseEstimator.poseEst.resetPosition(
+                            Rotation2d.fromDegrees(gyro_offset),
+                            self.robot.poseEstimator.get_module_positions(),
+                            Pose2d(self.robot.fieldConstants.flip_Translation2d(Translation2d(4.439, 0.628)), Rotation2d.fromDegrees(gyro_offset))
+                        )
+                        self.robot.poseEstimator.curEstPose = Pose2d(self.robot.fieldConstants.flip_Translation2d(Translation2d(4.439, 0.628)), Rotation2d.fromDegrees(gyro_offset))
+
+                        self.robot.auto = self.robot.autoroutines.right_trench_bump_robust_new_mvr_safe()
+                    case 8: # Left Trench & Bump Safe MVR PP
+                        self.robot.temp_rotation_shoot_auto = self.robot.fieldConstants.flip_Rotation2d(Rotation2d.fromDegrees(45)).degrees()
+                        self.robot.poseEstimator.poseEst.resetPosition(
+                            Rotation2d.fromDegrees(gyro_offset),
+                            self.robot.poseEstimator.get_module_positions(),
+                            Pose2d(self.robot.fieldConstants.flip_Translation2d(Translation2d(4.439, 7.441)), Rotation2d.fromDegrees(gyro_offset)))
+                        self.robot.poseEstimator.curEstPose = Pose2d(self.robot.fieldConstants.flip_Translation2d(Translation2d(4.439, 7.441)), Rotation2d.fromDegrees(gyro_offset))
+
+                        self.robot.auto = self.robot.autoroutines.left_trench_bump_robust_new_mvr_safe()
                     case 14: # Slow Left Safe 3-Bot + Depot After PP
                         self.robot.temp_rotation_shoot_auto = self.robot.fieldConstants.flip_Rotation2d(Rotation2d.fromDegrees(60)).degrees()
                         self.robot.poseEstimator.poseEst.resetPosition(

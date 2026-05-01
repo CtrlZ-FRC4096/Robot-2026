@@ -126,6 +126,46 @@ class AutoRoutines:
             )
         )
     
+    def left_trench_bump_robust_new_mvr_safe(self):
+        return SequentialCommandGroup(
+            WaitCommand(0.3),
+            ParallelCommandGroup(
+                self.robot.P1_T_B_L_ROBUST_MVR_SAFE,
+                self.robot.coroutines.intake
+            ),
+            self.robot.coroutines.p1_over_left_bump,
+            self.robot.coroutines.drive_to_zone_trench.withTimeout(4.0),
+            ParallelCommandGroup(
+                self.robot.P2_B_L_NEW_MVR,
+                self.robot.coroutines.intake_2),
+            self.robot.coroutines.p2_over_left_bump,
+            self.robot.coroutines.drive_to_zone_trench_2.withTimeout(4.0),
+            ParallelCommandGroup(
+                self.robot.P3_B_L_BNZ,
+                self.robot.coroutines.intake_3
+            )
+        )
+    
+    def right_trench_bump_robust_new_mvr_safe(self):
+        return SequentialCommandGroup(
+            WaitCommand(0.3),
+            ParallelCommandGroup(
+                self.robot.P1_T_B_R_ROBUST_MVR_SAFE,
+                self.robot.coroutines.intake
+            ),
+            self.robot.coroutines.p1_over_right_bump,
+            self.robot.coroutines.drive_to_zone_trench.withTimeout(4.0),
+            ParallelCommandGroup(
+                self.robot.P2_B_R_NEW_MVR,
+                self.robot.coroutines.intake_2),
+            self.robot.coroutines.p2_over_right_bump,
+            self.robot.coroutines.drive_to_zone_trench_2.withTimeout(4.0),
+            ParallelCommandGroup(
+                self.robot.P3_B_R_BNZ,
+                self.robot.coroutines.intake_3
+            )
+        )
+
     def left_trench_bump_robust_new_mvr(self):
         return SequentialCommandGroup(
             ParallelCommandGroup(

@@ -65,6 +65,7 @@ import autoroutines
 
 from pathplannerlib.path import PathPlannerPath, Waypoint, IdealStartingState, GoalEndState, PathPoint
 from pathplannerlib.auto import AutoBuilder, PathPlannerAuto, NamedCommands, FollowPathCommand#, PathConstraints
+from pp_follow_path import CustomFollowPathCommand
 from pathplannerlib.config import PIDConstants, RobotConfig, ModuleConfig
 from pathplannerlib.controller import PPHolonomicDriveController
 
@@ -187,13 +188,16 @@ class Robot(CoroutineRobot):
         # self.P2_B_L = self.getPathCommand(PathPlannerPath.fromPathFile("P2_B_L"))
         # self.P2_B_R = self.getPathCommand(PathPlannerPath.fromPathFile("P2_B_R"))
 
-        self.P1_T_B_R_ROBUST = self.getPathCommand(PathPlannerPath.fromPathFile("P1_T_B_R_Robust"))
-        self.P1_T_B_L_ROBUST = self.getPathCommand(PathPlannerPath.fromPathFile("P1_T_B_L_Robust"))
+        self.P1_T_B_R_ROBUST = self.getPathCommand(PathPlannerPath.fromPathFile("P1_T_B_R_Robust"), use_special_init=True)
+        self.P1_T_B_L_ROBUST = self.getPathCommand(PathPlannerPath.fromPathFile("P1_T_B_L_Robust"), use_special_init=True)
 
-        self.P1_T_B_R_ROBUST_MVR = self.getPathCommand(PathPlannerPath.fromPathFile("P1_T_B_R_Robust_MVR"))
+        self.P1_T_B_R_ROBUST_MVR = self.getPathCommand(PathPlannerPath.fromPathFile("P1_T_B_R_Robust_MVR"), use_special_init=True)
         self.P2_B_R_NEW_MVR = self.getPathCommand(PathPlannerPath.fromPathFile("P2_B_R_New_MVR"))
 
-        self.P1_T_B_L_ROBUST_MVR = self.getPathCommand(PathPlannerPath.fromPathFile("P1_T_B_L_Robust_MVR"))
+        self.P1_T_B_R_ROBUST_MVR_SAFE = self.getPathCommand(PathPlannerPath.fromPathFile("P1_T_B_R_Robust_MVR_SAFE"))
+        self.P1_T_B_L_ROBUST_MVR_SAFE = self.getPathCommand(PathPlannerPath.fromPathFile("P1_T_B_L_Robust_MVR_SAFE"))
+
+        self.P1_T_B_L_ROBUST_MVR = self.getPathCommand(PathPlannerPath.fromPathFile("P1_T_B_L_Robust_MVR"), use_special_init=True)
         self.P2_B_L_NEW_MVR = self.getPathCommand(PathPlannerPath.fromPathFile("P2_B_L_New_MVR"))
 
         # self.P2_B_R_NEW = self.getPathCommand(PathPlannerPath.fromPathFile("P2_B_R_New")) 
@@ -221,6 +225,8 @@ class Robot(CoroutineRobot):
         # self.auto_chooser.addOption("Right Trench & Bump Citrus PP", 4)
         self.auto_chooser.addOption("Right Trench & Bump MVR PP", 5)
         self.auto_chooser.addOption("Left Trench & Bump MVR PP", 6)
+        self.auto_chooser.addOption("Right Trench & Bump Safe MVR PP", 7)
+        self.auto_chooser.addOption("Left Trench & Bump Safe MVR PP", 8)
         self.auto_chooser.addOption("Left Trench Safe 3-Bot + Depot After PP", 14)
         self.auto_chooser.addOption("Steph Curry 3-Bot Depot First", 15)
         self.auto_chooser.addOption("Just Depot Auto 3-Bot", 16)
@@ -235,7 +241,7 @@ class Robot(CoroutineRobot):
         ### STATE MACHINE VARIABLES ###
         self.running_pid_lineup = False
         self.final_lineup_pose = Pose2d()
-        self.intake_at_default = True
+        self.intake_at_default = False
         self.shooter_at_default = True
         self.trench = True
         self.down_bad = False
@@ -381,7 +387,7 @@ class Robot(CoroutineRobot):
     def flip_Y_coord(self, y):
         return self.fieldConstants.fieldWidth - y
 
-    def flip_path_cmd_across_x(self, cmd_path : FollowPathCommand):
+    def flip_path_cmd_across_x(self, cmd_path : CustomFollowPathCommand):
         # FLIPPING Y COORDS
         path = cmd_path._originalPath
         waypoints = path.getWaypoints()
@@ -411,7 +417,7 @@ class Robot(CoroutineRobot):
                         nextControl=Translation2d(waypoint.nextControl.X(), self.flip_Y_coord(waypoint.nextControl.Y()))
                     ))
         new_path = PathPlannerPath(new_waypoints, path.getGlobalConstraints(), ideal_starting_state=ideal_start, goal_end_state=goal_end)
-        return FollowPathCommand(
+        return CustomFollowPathCommand(
             new_path,
             self.drivetrain.get_pose, # Robot pose supplier
             self.drivetrain.get_robot_relative_speeds, # ChassisSpeeds supplier. MUST BE ROBOT RELATIVE
@@ -432,8 +438,8 @@ class Robot(CoroutineRobot):
     def get_bline_path_command(self, path : Path):
         return self.bline_builder.build(path)
 
-    def getPathCommand(self, path : PathPlannerPath):
-        return FollowPathCommand(
+    def getPathCommand(self, path : PathPlannerPath, use_special_init=False):
+        return CustomFollowPathCommand(
             path,
             self.drivetrain.get_pose,
             self.drivetrain.get_robot_relative_speeds,
@@ -448,7 +454,8 @@ class Robot(CoroutineRobot):
             ),
             self.robot_config,
             self.drivetrain.should_flip_path,
-            self.drivetrain
+            self.drivetrain,
+            use_special_init=use_special_init
         ) 
 
 
@@ -500,12 +507,11 @@ class Robot(CoroutineRobot):
     def autonomous_mode(self):
         self.auto_start_time = wpilib.RobotController.getFPGATime() / 1000.0
 
-        self.scheduler.cancelAll()
+        # self.scheduler.cancelAll()
         
         self.in_teleop_mode = False
         self.did_autonomous = True
         self.in_autonomous_mode = True
-        self.intake_at_default = False
         
         self.scheduler.schedule(self.auto)
 

@@ -354,11 +354,11 @@ class Drivetrain(Subsystem):
         module_states = const.SWERVE_KINEMATICS.toSwerveModuleStates(chassis_speeds)
         module_states = const.SWERVE_KINEMATICS.desaturateWheelSpeeds(module_states, 4)
 
-        SmartDashboard.putNumber("pathplanner omega", chassis_speeds.omega_dps)
-        SmartDashboard.putNumber("Pathplanner curPose yaw", self.robot.poseEstimator.curEstPose.rotation().degrees())
+        # SmartDashboard.putNumber("pathplanner omega", chassis_speeds.omega_dps)
+        # SmartDashboard.putNumber("Pathplanner curPose yaw", self.robot.poseEstimator.curEstPose.rotation().degrees())
 
-        mag_vel_dummy = Translation2d(chassis_speeds.vx, chassis_speeds.vy).norm()
-        dummy_val = self.accel_shoot_limiter.calculate(mag_vel_dummy)
+        # mag_vel_dummy = Translation2d(chassis_speeds.vx, chassis_speeds.vy).norm()
+        # dummy_val = self.accel_shoot_limiter.calculate(mag_vel_dummy)
 
         if self.robot.isSimulation():
             new_chassis_speeds = ChassisSpeeds.fromRobotRelativeSpeeds(chassis_speeds.vx, chassis_speeds.vy, chassis_speeds.omega, self.robot.poseEstimator.curEstPose.rotation())
