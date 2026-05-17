@@ -165,7 +165,7 @@ class Intake(Subsystem):
             if ((start_time - self.tick_count) / 1000) < 800.0:
                 pass
             else:
-                if ((start_time - self.tick_count) / 1000.0)  % 1100.0 < 550.0:
+                if (((start_time - self.tick_count) / 1000.0) - 800)  % 1300.0 < 900.0:
                 # print("switch to out")
                     self.set_position(-0.07)
                 else:
