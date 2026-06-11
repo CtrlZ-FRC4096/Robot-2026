@@ -37,6 +37,8 @@ import ntcore
 import subsystems.drivetrain
 from wpimath.units import inchesToMeters
 
+import wpinet
+
 from wpimath.estimator import SwerveDrive4PoseEstimator
 from wpilib.interfaces import GenericHID
 
@@ -129,6 +131,9 @@ class Robot(CoroutineRobot):
 
         # DRIVERSTATION #
         self.driverstation = wpilib.DriverStation
+
+        # elastic layout saving
+        wpinet.WebServer.getInstance().start(5800, wpilib.getDeployDirectory())
 
         self.fieldConstants = FieldConstants()
         # self.fieldConstants.shouldFlip = DriverStation.getAlliance() == DriverStation.Alliance.kRed # false = BLUE, true = RED
