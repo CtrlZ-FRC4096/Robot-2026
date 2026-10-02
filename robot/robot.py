@@ -528,12 +528,14 @@ class Robot(CoroutineRobot):
         for idx in range(len(self.poseEstimator.modules)):
             swerve_drive_motor_config = configs.TalonFXConfiguration()
             # self.drive_motor.configurator.apply(swerve_drive_motor_config)  # type: ignore
-            swerve_drive_motor_config.slot0.k_p = 5  # 2.2
-            swerve_drive_motor_config.slot0.k_s = 7
-            swerve_drive_motor_config.slot0.k_v = 0.5  # 0.24
-            ## Feed Forward
-            # swerve_drive_motor_config.slot0.k_v = const.SWERVE_DRIVE_KV
-            # swerve_drive_motor_config.slot0.k_a = const.SWERVE_DRIVE_KA
+            module = self.poseEstimator.modules[idx]
+            drive_k_s, drive_k_v = const.SWERVE_DRIVE_SYSID[module.module_name]
+            swerve_drive_motor_config.slot0.k_p = const.SWERVE_DRIVE_KP
+            swerve_drive_motor_config.slot0.k_i = const.SWERVE_DRIVE_KI
+            swerve_drive_motor_config.slot0.k_d = const.SWERVE_DRIVE_KD
+            swerve_drive_motor_config.slot0.k_s = drive_k_s
+            swerve_drive_motor_config.slot0.k_v = drive_k_v
+            swerve_drive_motor_config.slot0.k_a = const.SWERVE_DRIVE_KA
             swerve_drive_motor_config.current_limits.supply_current_limit = (
                 60  # 80; I am not sure if this is correct
             )
