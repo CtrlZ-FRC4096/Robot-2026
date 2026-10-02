@@ -77,43 +77,19 @@ SWERVE_MAX_SPEED = 4.75  # 4.75  # meters per second
 # SWERVE_ANGLE_KD = 0
 # SWERVE_ANGLE_KF = 0
 
-# Feedback values retained from the working position-voltage controller. The
-# 2026-10-01 SysId log was too slow to identify kA or derive new LQR kP/kD.
-SWERVE_ANGLE_KP = 5.0
+SWERVE_ANGLE_KP = 2.4
 SWERVE_ANGLE_KI = 0
-SWERVE_ANGLE_KD = 0.0
+SWERVE_ANGLE_KD = 0.1
 SWERVE_ANGLE_KF = 0
 
-# Conservative voltage-loop feedback starting value; validate response on the
-# robot before increasing it. kS/kV below are measured in motor rotations.
-SWERVE_DRIVE_KP = 0.05
+SWERVE_DRIVE_KP = 0.3  # 0.4
 SWERVE_DRIVE_KI = 0
 SWERVE_DRIVE_KD = 0
 SWERVE_DRIVE_KF = 0
-SWERVE_DRIVE_KA = 0.0  # Not observable at the ~214 ms SysId sample period
+SWERVE_DRIVE_KS = 0.1
 
-# 2026-10-01 quasistatic runs, V = kS sign(rot/s) + kV (rot/s).
-# kS is volts; kV is volts per motor rotation/second.
-SWERVE_ANGLE_SYSID = {
-    FRONT_LEFT: (0.5351, 0.11353),
-    FRONT_RIGHT: (0.8623, 0.12862),
-    BACK_LEFT: (0.9735, 0.12520),
-    BACK_RIGHT: (0.5693, 0.11220),
-}
-SWERVE_DRIVE_SYSID = {
-    FRONT_LEFT: (0.3347, 0.12482),
-    FRONT_RIGHT: (0.3538, 0.11910),
-    BACK_LEFT: (0.3667, 0.12346),
-    BACK_RIGHT: (0.3408, 0.11546),
-}
-
-# SysId voltages. Drive tests move the robot; leave a clear straight path.
-SYSID_ANGLE_RAMP_RATE = 1.0
-SYSID_ANGLE_STEP_VOLTAGE = 4.0
-SYSID_ANGLE_TIMEOUT = 6.0
-SYSID_DRIVE_RAMP_RATE = 0.5
-SYSID_DRIVE_STEP_VOLTAGE = 3.0
-SYSID_DRIVE_TIMEOUT = 4.0
+SWERVE_DRIVE_KV = 1.79 / SWERVE_WHEEL_CIRCUMFERENCE / SWERVE_DRIVE_GEAR_RATIO  # 1 / 5
+SWERVE_DRIVE_KA = 0.25 / SWERVE_WHEEL_CIRCUMFERENCE / SWERVE_DRIVE_GEAR_RATIO
 
 # Module Front Left
 

@@ -4,6 +4,7 @@ import typing
 from phoenix6 import controls, configs, hardware, signals
 
 from phoenix6.hardware import TalonFX, Pigeon2, CANcoder
+from wpimath.controller import SimpleMotorFeedforwardMeters
 from wpimath.geometry import Rotation2d
 from wpimath.kinematics import SwerveModulePosition, SwerveModuleState
 
@@ -57,9 +58,9 @@ class SwerveModule:
         swerve_angle_motor_config = configs.TalonFXConfiguration()
         #        self.talonfx.configurator.apply(configs.TalonFXConfiguration())
         #        swerve_angle_motor_config = hardware.TalonFXConfiguration()
-        swerve_angle_motor_config.slot0.k_p = const.SWERVE_ANGLE_KP
-        swerve_angle_motor_config.slot0.k_d = const.SWERVE_ANGLE_KD
-        swerve_angle_motor_config.slot0.k_i = const.SWERVE_ANGLE_KI
+        swerve_angle_motor_config.slot0.k_p = 5.0
+        swerve_angle_motor_config.slot0.k_d = 0.0
+        swerve_angle_motor_config.slot0.k_i = 0.0
         swerve_angle_motor_config.current_limits.supply_current_limit = (
             25  # I am not sure if this is correct
         )
@@ -117,13 +118,12 @@ class SwerveModule:
 
         swerve_drive_motor_config = configs.TalonFXConfiguration()
         # self.drive_motor.configurator.apply(swerve_drive_motor_config)  # type: ignore
-        drive_k_s, drive_k_v = const.SWERVE_DRIVE_SYSID[module_name]
-        swerve_drive_motor_config.slot0.k_p = const.SWERVE_DRIVE_KP
-        swerve_drive_motor_config.slot0.k_i = const.SWERVE_DRIVE_KI
-        swerve_drive_motor_config.slot0.k_d = const.SWERVE_DRIVE_KD
-        swerve_drive_motor_config.slot0.k_s = drive_k_s
-        swerve_drive_motor_config.slot0.k_v = drive_k_v
-        swerve_drive_motor_config.slot0.k_a = const.SWERVE_DRIVE_KA
+        swerve_drive_motor_config.slot0.k_p = 5  # 2.2
+        swerve_drive_motor_config.slot0.k_s = 7
+        swerve_drive_motor_config.slot0.k_v = 0.5  # 0.24
+        ## Feed Forward
+        # swerve_drive_motor_config.slot0.k_v = const.SWERVE_DRIVE_KV
+        # swerve_drive_motor_config.slot0.k_a = const.SWERVE_DRIVE_KA
         swerve_drive_motor_config.current_limits.supply_current_limit = (
             80  # I am not sure if this is correct
         )
@@ -161,6 +161,10 @@ class SwerveModule:
         swerve_drive_motor_config.current_limits.stator_current_limit = 100
 
         self.drive_motor.configurator.apply(swerve_drive_motor_config)  # type: ignore
+        self.feedforward = SimpleMotorFeedforwardMeters(
+            const.SWERVE_DRIVE_KS, const.SWERVE_DRIVE_KV, const.SWERVE_DRIVE_KA
+        )
+
     def set_desired_state(self, desired_state: SwerveModuleState, is_open_loop, feed_forward=0.0, ignore_speed_for_angle=False):
         desired_state = ctre_module_state.optimize(
             desired_state, self.get_state().angle
@@ -187,9 +191,10 @@ class SwerveModule:
                 motor_RPS = 0.0
 
             self.drive_motor.set_control(
-                controls.VelocityVoltage(
+                controls.VelocityTorqueCurrentFOC(
                     motor_RPS,
-                    feed_forward=feed_forward,
+                    acceleration=300,
+                    feed_forward=feed_forward# feed_forward=self.feedforward.calculate(desired_state.speed), #Remove Feedfoward for now
                 )
             )
 
