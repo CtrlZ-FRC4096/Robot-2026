@@ -32,6 +32,8 @@ from wpimath.kinematics import ChassisSpeeds
 from wpimath.filter import SlewRateLimiter
 
 import const
+from commands2.sysid import SysIdRoutine
+from sysid_tuning import SwerveSysId
 
 
 from pathplannerlib.auto import (
@@ -74,6 +76,26 @@ class OI:
         # Controllers
         self.driver1 = XboxCommandController(0)
         self.driver2 = XboxCommandController(1)
+        self.swerve_sysid = SwerveSysId(robot.drivetrain, robot.poseEstimator.modules)
+        SmartDashboard.putBoolean("SysId/Enabled", False)
+        sysid_mode = lambda: (
+            SmartDashboard.getBoolean("SysId/Enabled", False)
+            and DriverStation.isTeleop() and DriverStation.isEnabled()
+            and not DriverStation.isFMSAttached()
+        )
+        tune = lambda button: Button(lambda: sysid_mode() and button())
+        normal = lambda button: Button(lambda: not sysid_mode() and button())
+        forward = SysIdRoutine.Direction.kForward
+        reverse = SysIdRoutine.Direction.kReverse
+        tune(self.driver2.A).whileTrue(self.swerve_sysid.command("angle", "quasistatic", forward))
+        tune(self.driver2.B).whileTrue(self.swerve_sysid.command("angle", "quasistatic", reverse))
+        tune(self.driver2.X).whileTrue(self.swerve_sysid.command("angle", "dynamic", forward))
+        tune(self.driver2.Y).whileTrue(self.swerve_sysid.command("angle", "dynamic", reverse))
+        tune(self.driver2.POV.UP).whileTrue(self.swerve_sysid.command("drive", "quasistatic", forward))
+        tune(self.driver2.POV.DOWN).whileTrue(self.swerve_sysid.command("drive", "quasistatic", reverse))
+        tune(self.driver2.POV.LEFT).whileTrue(self.swerve_sysid.command("drive", "dynamic", forward))
+        tune(self.driver2.POV.RIGHT).whileTrue(self.swerve_sysid.command("drive", "dynamic", reverse))
+        tune(self.driver2.LEFT_BUMPER).whileTrue(self.swerve_sysid.hold_straight())
 
         # self.driver1.LEFT_JOY_Y.setInverted(True)
 
@@ -406,13 +428,13 @@ class OI:
             self.robot.spin_down = False
 
 
-        @self.driver2.POV.RIGHT.whenHeld
+        @normal(self.driver2.POV.RIGHT).whenHeld
         def _():
             self.robot.down_bad = True
             self.robot.shooter_at_default = False
             self.robot.spin_down = False
         
-        @self.driver2.POV.RIGHT.whenReleased
+        @normal(self.driver2.POV.RIGHT).whenReleased
         def _():
             self.robot.down_bad = False
             # self.robot.shooter_at_default = True
@@ -424,11 +446,11 @@ class OI:
             self.robot.shoot_fuel = False
 
 
-        @self.driver2.POV.UP.whenPressed
+        @normal(self.driver2.POV.UP).whenPressed
         def _():
             self.robot.hood_fudge_value += 1
         
-        @self.driver2.POV.DOWN.whenPressed
+        @normal(self.driver2.POV.DOWN).whenPressed
         def _():
             self.robot.hood_fudge_value -= 1
 
@@ -460,7 +482,7 @@ class OI:
             if self.robot.auto_win is None and self.can_change_auto_win:
                 self.robot.auto_win = True
         
-        @self.driver2.LEFT_BUMPER.whenPressed
+        @normal(self.driver2.LEFT_BUMPER).whenPressed
         def _():
             if self.robot.auto_win is None and self.can_change_auto_win:
                 self.robot.auto_win = False
@@ -469,7 +491,7 @@ class OI:
         # def _():
         #     self.robot.should_hub_track = not self.robot.should_hub_track
 
-        @self.driver2.POV.LEFT.whenHeld
+        @normal(self.driver2.POV.LEFT).whenHeld
         def _():
             self.robot.clear_jam = True
             self.robot.ignore_shooter_in_jam = False
@@ -480,7 +502,7 @@ class OI:
             self.robot.shoot_intent = False
             self.robot.shoot_fuel = False
         
-        @self.driver2.POV.LEFT.whenReleased
+        @normal(self.driver2.POV.LEFT).whenReleased
         def _():
             self.robot.clear_jam = False
             self.robot.ignore_shooter_in_jam = False

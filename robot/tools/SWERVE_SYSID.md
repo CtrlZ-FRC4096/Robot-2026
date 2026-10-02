@@ -1,9 +1,10 @@
 # 2026 swerve SysId
 
-The temporary operator-controller test bindings used for the 2026-10-01 run
-have been removed. The match bindings are restored in `oi.py`. To repeat SysId,
-bind the commands in `sysid_tuning.py` to held buttons on the operator
-controller. The test layout was:
+The normal operator bindings are active by default. To repeat SysId, enable
+teleop without FMS and set `SysId/Enabled` to `true` in SmartDashboard. The
+operator controller (USB port 1) then uses this temporary test layout. Hold
+each button for the full test and release it to stop; set `SysId/Enabled` back
+to `false` to restore the match layout.
 
 | Hold button | Motion |
 |---|---|
@@ -16,7 +17,10 @@ controller. The test layout was:
 Run all four motions for **each** axis, with wheels on the ground. Clear a
 straight path for drive tests. The drive ramp reaches 2 V in 4 seconds; the
 dynamic step is 3 V. The angle ramp reaches 6 V in 6 seconds; its step is
-4 V. Change these in `const.py` if the robot needs gentler tests.
+4 V. Change these in `const.py` if the robot needs gentler tests. Motor
+voltage, position, and velocity are now sampled on a 5 ms notifier with
+Phoenix signals updated at 200 Hz during a test. Confirm the actual sample
+period with the analyzer before trusting kA.
 
 Pull a log from `/home/lvuser/logs` after the runs. Then, using a Python
 environment with RobotPy 2026 and NumPy installed:
