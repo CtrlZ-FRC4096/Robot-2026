@@ -41,11 +41,8 @@ class Hopper(Subsystem):
 
 
     def get_speed(self):
-        if self.robot.isSimulation():
-            return self.commanded_speed
-        else:
-            return self.indexer_motor.get_velocity().value
-                    
+        return self.indexer_motor.get_velocity().value
+
     def set_speed(self, speed):
         self.commanded_speed = speed
         self.indexer_motor.set_control(controls.VelocityVoltage(speed))
@@ -165,6 +162,9 @@ class Hopper(Subsystem):
                         
                         self.robot.auto = SequentialCommandGroup()
                         
+                # The auto chooser explicitly places the simulated robot too.
+                self.robot.poseEstimator.reset_pose(self.robot.poseEstimator.curEstPose)
+
         if not self.robot.shoot_intent and self.robot.is_intaking:
             # self.commanded_speed = -0.95
             # self.indexer_motor.set_control(controls.DutyCycleOut(-0.95, enable_foc=False))

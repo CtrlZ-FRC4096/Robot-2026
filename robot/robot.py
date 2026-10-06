@@ -91,6 +91,9 @@ from bline_command import BLineCommand, Builder
 
 from fuel_sim import FuelSim
 
+if wpilib.RobotBase.isSimulation():
+    from robot_sim import RobotSimulation, hopper_fuel_positions
+
 log = logging.getLogger("robot")
 
 
@@ -158,10 +161,7 @@ class Robot(CoroutineRobot):
             # self.climber
         ]
 
-        # If everything in self.subsystems is a Subsystem object, then
-        # everything is automatically registered and this isn't needed.
-        for subsystem in self.subsystems:
-            self.scheduler.registerSubsystem(subsystem)
+        # Subsystem constructors register themselves with the scheduler.
 
         # Coroutines
         self.coroutines = Coroutines(self)
@@ -336,7 +336,7 @@ class Robot(CoroutineRobot):
         
         if not self.using_auto:
             self.auto = self.autoroutines.right_trench_bump_robust_new()
-            self.poseEstimator.poseEst.resetPose(Pose2d(self.fieldConstants.flip_Translation2d(Translation2d(4.47, 0.6)), self.poseEstimator.getYaw())) # for right auto
+            self.poseEstimator.reset_pose(Pose2d(self.fieldConstants.flip_Translation2d(Translation2d(4.47, 0.6)), self.poseEstimator.getYaw())) # for right auto
             # self.poseEstimator.poseEst.resetPose(Pose2d(self.fieldConstants.flip_Translation2d(Translation2d(4.471, 7.587)), self.poseEstimator.getYaw())) # for left auto
 
 
@@ -346,13 +346,16 @@ class Robot(CoroutineRobot):
             self.x_hopper_max = inchesToMeters(25)
             self.y_hopper_max = inchesToMeters(18)
             self.z_hopper_max = inchesToMeters(15)
+            self.hopper_fuel_positions = hopper_fuel_positions(
+                self.x_hopper_max, self.y_hopper_max, self.z_hopper_max,
+                self.fieldConstants.fuelDiameter)[:self.max_fuel_in_hopper]
             
-            self.tick_count = 0
 
             self.fuel_sim = FuelSim(self, self.intake.can_intake_sim, self.intake.intake_sim_callback)
             # self.fuel_sim.stop()
             # self.fuel_sim.clearFuel()
             self.fuel_sim.start()
+            self.sim = RobotSimulation(self)
 
         # path flip code - KEEP COMMENTED IF DEPLOYING
         # RUN IN SIM if you want to mirror a path; check terminal output for anchors
@@ -701,7 +704,8 @@ class Robot(CoroutineRobot):
 
 
         if self.isSimulation():
-            wpilib.SmartDashboard.putNumberArray("RobotPose", [self.poseEstimator.curEstPose.X(), self.poseEstimator.curEstPose.Y(), self.poseEstimator.curEstPose.rotation().degrees()])
+            physical_pose = self.sim.pose
+            wpilib.SmartDashboard.putNumberArray("RobotPose", [physical_pose.X(), physical_pose.Y(), physical_pose.rotation().degrees()])
             # SmartDashboard.putNumberArray("ZeroedComponentPoses/Pose0", [0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0])
             # SmartDashboard.putNumberArray("ZeroedComponentPoses/Pose1", [0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0])
             # SmartDashboard.putNumberArray("ZeroedComponentPoses/Pose2", [0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0])5
@@ -715,10 +719,7 @@ class Robot(CoroutineRobot):
             
 
             default_inner = Translation3d(0.3, 0.355, 0.2)
-            if self.intake.get_position() ==  -0.06:
-                cur_inner_pos = 30
-            else:
-                cur_inner_pos = 0
+            cur_inner_pos = max(0, min(30, (self.intake.get_position() + 0.35) / 0.29 * 30))
             # cur_inner_pos = self.intake.get_position()
             final_inner_quat = Rotation3d(0, degreesToRadians(cur_inner_pos), 0).getQuaternion()
             final_inner_trans = default_inner
@@ -737,42 +738,19 @@ class Robot(CoroutineRobot):
             # SmartDashboard.putNumberArray("FinalComponentPoses/Pose3", [0, 0, cur_climber_pos / 5, 0, 0, 0, 0])
 
 
-            default_fuel_pose = Translation3d(-0.26, -0.28, 0.28)
-            for fuel_num in range(1,self.max_fuel_in_hopper + 1):
-                if fuel_num <= self.fuel_in_hopper:
-                    #put the fuel in
-                    fuel_diam = self.fieldConstants.fuelDiameter
-                    per_x = int(self.x_hopper_max / fuel_diam)
-                    per_y = int(self.y_hopper_max / fuel_diam)
-                    if per_x < 1: per_x = 1
-                    if per_y < 1: per_y = 1
+            # Publish only on count changes; the poses are robot-relative, so
+            # held fuel moves with the viewer's robot without being rewritten.
+            if self.fuel_in_hopper != getattr(self, "_displayed_hopper_count", None):
+                for fuel_num in range(1, self.max_fuel_in_hopper + 1):
+                    if fuel_num <= self.fuel_in_hopper:
+                        pos = self.hopper_fuel_positions[fuel_num - 1]
+                        pose = [pos.X(), pos.Y(), pos.Z(), 1.0, 0.0, 0.0, 0.0]
+                    else:
+                        pose = [0, 0, -0.5, 1.0, 0.0, 0.0, 0.0]
+                    SmartDashboard.putNumberArray(f"Hopper/Sim Fuels/Fuel {fuel_num}", pose)
+                self._displayed_hopper_count = self.fuel_in_hopper
 
-                    idx = fuel_num - 1
-                    x_coord = (idx % per_x) * fuel_diam
-                    y_coord = ((idx // per_x) % per_y) * fuel_diam
-                    z_coord = (idx // (per_x * per_y)) * fuel_diam + 0.5
-                    SmartDashboard.putNumberArray(f"Hopper/Sim Fuels/Fuel {fuel_num}", [default_fuel_pose.X() + x_coord, default_fuel_pose.Y() + y_coord, default_fuel_pose.Z() + z_coord, 1.0, 0.0, 0.0, 0.0])
-                else:
-                    SmartDashboard.putNumberArray(f"Hopper/Sim Fuels/Fuel {fuel_num}", [0, 0, -0.5, 1.0, 0.0, 0.0, 0.0])
-
-            fly_speed = self.shooter.get_fly_speed()
-            accel_speed = self.shooter.get_accelerator_speed()
-            if fly_speed >= 5 and accel_speed >= 5 and self.fuel_in_hopper > 0:
-                #we are shooting every 0.06 seconds
-                if self.tick_count % 2 == 0:
-                    vals = self.drivetrain.dist_lookup_table.interpolate((self.virtual_goal - self.poseEstimator.curEstPose.translation()).norm())
-                    launch_vel = vals[0]
-                    launch_angle = vals[1]
-
-                    trans = Translation3d(0, 0.27, 0.52) + Translation3d(0, -0.11, 0) + Translation3d(0, 0.11* math.cos(degreesToRadians(cur_hood_pos)), 0.11*math.sin(degreesToRadians(cur_hood_pos)))
-                    launch_pos = Translation3d(self.poseEstimator.curEstPose.translation()) + trans.rotateBy(Rotation3d(0, 0, self.poseEstimator.curEstPose.rotation().radians()))
-                    self.fuel_sim.launchFuel(launch_vel, launch_angle, 0, launch_pos)
-                    self.fuel_in_hopper -= 1
-
-            if self.fuel_sim.running:
-                self.fuel_sim.updateSim()
             SmartDashboard.putNumber("Sim/Fuel in Hopper", self.fuel_in_hopper)
-            self.tick_count += 1
         for s in self.subsystems:
             s.log()
         

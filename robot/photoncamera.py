@@ -96,6 +96,14 @@ class WrapperedPhotonCameraTag:
         # obsTime = wpilib.Timer.getFPGATimestamp() - latency
 
         self.obsTime = res.getTimestampSeconds()
+        if wpilib.RobotBase.isSimulation():
+            # Diagnostics cover all detections, including observations rejected
+            # by the existing 5 m / 0.3 ambiguity filters below.
+            prefix = "Sim/Vision/" + self.camName + "/"
+            SmartDashboard.putNumberArray(prefix + "Detected Tag IDs", [t.getFiducialId() for t in res.getTargets()])
+            SmartDashboard.putNumberArray(prefix + "Ambiguities", [t.getPoseAmbiguity() for t in res.getTargets()])
+            SmartDashboard.putNumberArray(prefix + "Distances M", [t.getBestCameraToTarget().translation().norm() for t in res.getTargets()])
+            SmartDashboard.putNumber(prefix + "Capture Timestamp Seconds", self.obsTime)
 
                 ## Single Tag Code
         # Process each target.

@@ -30,7 +30,11 @@ class FuelSim:
     TRENCH_BAR_HEIGHT = 0.102
     TRENCH_BAR_WIDTH = 0.152
 
-    FRICTION = 0.005 # Kinetic friction coefficient (reduced from 0.01)
+    # Effective rolling resistance on carpet, in units of mu * gravity.
+    FRICTION = 0.18
+    REST_SPEED = 0.035 # m/s
+    REST_BOUNCE_SPEED = 0.25 # m/s; stop tiny ground-contact bounces
+    DISPLAY_PERIOD = 1 / 30
     FUEL_MASS = 0.448 * 0.45392 # kgs
     
     FUEL_CROSS_AREA = math.pi * FUEL_RADIUS * FUEL_RADIUS
@@ -129,9 +133,12 @@ class FuelSim:
         self.robot = robot
         self.positions = np.zeros((self.MAX_FUELS, 3))
         self.velocities = np.zeros((self.MAX_FUELS, 3))
+        self._world_checked_positions = np.full_like(self.positions, np.nan)
         self.count = 0
         self.running = False
-        self.simulateAirResistance = False
+        self.simulateAirResistance = True
+        self._display_elapsed = 0.0
+        self._display_positions = None
         self.robotPoseSupplier = None
         self.robotFieldSpeedsSupplier = None
         self.robotWidth = 0.0
@@ -158,20 +165,8 @@ class FuelSim:
             width = (const.DRIVE_BASE_WIDTH + 6) * 0.0254
             length = (const.DRIVE_BASE_LENGTH + 6) * 0.0254
             bumperHeight = 0.2 # meters
-            poseSupplier = lambda: robot.poseEstimator.curEstPose
-            def fieldSpeedsSupplier():
-                states = robot.poseEstimator.get_module_states()
-                chassis_speeds = const.SWERVE_KINEMATICS.toChassisSpeeds(states)
-                # Rotate robot-relative speeds to field-relative
-                yaw = self.robot.poseEstimator.curEstPose.rotation()
-                c = yaw.cos()
-                s = yaw.sin()
-                
-                vx = chassis_speeds.vx * c - chassis_speeds.vy * s
-                vy = chassis_speeds.vx * s + chassis_speeds.vy * c
-                return ChassisSpeeds(vx, vy, chassis_speeds.omega)
-
-            self.registerRobot(width, length, bumperHeight, poseSupplier, robot.drivetrain.get_field_relative_speeds)
+            poseSupplier = lambda: robot.sim.pose
+            self.registerRobot(width, length, bumperHeight, poseSupplier, lambda: robot.sim.get_field_speeds())
 
     def clearFuel(self):
         self.count = 0
@@ -212,12 +207,14 @@ class FuelSim:
         self.positions[self.count:self.count+num_new] = positions_arr[:num_new]
         # Set velocities to zero
         self.velocities[self.count:self.count+num_new] = 0
+        self._world_checked_positions[self.count:self.count+num_new] = np.nan
         self.count += num_new
 
     def spawnFuel(self, pos: Translation3d, vel: Translation3d):
         if self.count >= self.MAX_FUELS: return
         self.positions[self.count] = [pos.X(), pos.Y(), pos.Z()]
         self.velocities[self.count] = [vel.X(), vel.Y(), vel.Z()]
+        self._world_checked_positions[self.count] = np.nan
         self.count += 1
 
     def logFuels(self):
@@ -225,17 +222,21 @@ class FuelSim:
         count = self.count
         
         self.count_pub.set(count)
+        self.blue_score_pub.set(self.blueHub.getScore())
+        self.red_score_pub.set(self.redHub.getScore())
         
         if count == 0:
-            self.fuel_pub.set([])
+            if self._display_positions is None or len(self._display_positions):
+                self.fuel_pub.set([])
+                self._display_positions = np.empty((0, 3))
             return
 
         active_pos = self.positions[:count]
+        if np.array_equal(active_pos, self._display_positions):
+            return
         objs = [Translation3d(p[0], p[1], p[2]) for p in active_pos]
         self.fuel_pub.set(objs)
-        
-        self.blue_score_pub.set(self.blueHub.getScore())
-        self.red_score_pub.set(self.redHub.getScore())
+        self._display_positions = active_pos.copy()
 
     def start(self):
         self.running = True
@@ -261,8 +262,10 @@ class FuelSim:
         self.robotPoseSupplier = poseSupplier
         self.robotFieldSpeedsSupplier = fieldSpeedsSupplier
 
-    def updateSim(self):
-        if not self.running or self.count == 0: return
+    def updateSim(self, period=None):
+        if period is not None:
+            self.PERIOD = period
+        if not self.running or self.PERIOD <= 0: return
         
         # Check specific NaN issues
         # if np.any(np.isnan(self.positions[:self.count])):
@@ -280,15 +283,13 @@ class FuelSim:
             active_vel = self.velocities[:self.count]
             active_pos = self.positions[:self.count]
             
-            # Position Step
-            active_pos += active_vel * dt
-
-            # Physics Checks (Gravity, Drag) - ONLY if above ground
-            in_air_mask = active_pos[:, 2] > self.FUEL_RADIUS
+            # Resting fuel receives no gravity until a contact wakes it. Use
+            # ballistic integration so a shot's arc is independent of subticks.
+            in_air_mask = (active_pos[:, 2] > self.FUEL_RADIUS + 1e-6) | (active_vel[:, 2] > 0)
+            accel = np.zeros_like(active_vel)
             
             if np.any(in_air_mask):
                 # Gravity
-                accel = np.zeros_like(active_vel)
                 accel[in_air_mask] += self.GRAVITY
                 
                 # Drag
@@ -301,45 +302,56 @@ class FuelSim:
                          drag_vec = active_vel[in_air_mask] * factor[:, np.newaxis]
                          accel[in_air_mask] += drag_vec
                 
-                active_vel[in_air_mask] += accel[in_air_mask] * dt
+            active_pos += active_vel * dt + 0.5 * accel * dt**2
+            active_vel += accel * dt
 
-            # Ground / Friction
-            # Check for ground contact: z <= radius
-            # And small z velocity (not bouncing)
-            ground_mask = (active_pos[:, 2] <= self.FUEL_RADIUS + 0.03) & (np.abs(active_vel[:, 2]) < 0.05)
-            
-            if np.any(ground_mask):
-                active_vel[ground_mask, 2] = 0
-                
-                # Proportional Friction Decay (Matches Java logic: vel *= 1 - F * dt)
-                # If FRICTION is small (0.005), decay is close to 1.0 (very slippery)
-                decay = 1.0 - self.FRICTION * dt
-                active_vel[ground_mask, :2] *= decay
-
-                # Angular velocity transfer to linear (rolling) - simple hack to keep them moving?
-                # For now just pure slip friction reduction.
-                
-                # Clamp Z to radius
-                active_pos[ground_mask, 2] = np.maximum(active_pos[ground_mask, 2], self.FUEL_RADIUS)
-
-            # 2. Field Collisions
-            self._handle_static_collisions(active_pos, active_vel)
-
-            # 3. Hub Collisions
-            self._handle_hub_collisions(active_pos, active_vel)
+            # Resting fuel's contacts with the unchanged field are already
+            # resolved. Only recheck fuel that moved, was spawned, or was pushed.
+            world_active = np.any(active_pos != self._world_checked_positions[:self.count], axis=1)
+            world_active |= np.any(active_vel != 0, axis=1)
+            if np.any(world_active):
+                world_pos = active_pos[world_active]
+                world_vel = active_vel[world_active]
+                self._handle_static_collisions(world_pos, world_vel)
+                self._handle_hub_collisions(world_pos, world_vel)
+                active_pos[world_active] = world_pos
+                active_vel[world_active] = world_vel
+                self._world_checked_positions[:self.count] = active_pos
 
             # 4. Robot Collision
             if self.robotPoseSupplier:
                 self._handle_robot_collision(active_pos, active_vel)
                 self._handle_intakes(active_pos)
+                # Intaking compacts the buffers; discard the old array views.
+                active_pos = self.positions[:self.count]
+                active_vel = self.velocities[:self.count]
 
             # 5. Fuel-Fuel Collision
             self._handle_fuel_collisions(active_pos, active_vel)
-        
-        self.logFuels()
+            self._handle_ground(active_pos, active_vel, dt)
+
+        self._display_elapsed += self.PERIOD
+        if self._display_elapsed >= self.DISPLAY_PERIOD:
+            self._display_elapsed %= self.DISPLAY_PERIOD
+            self.logFuels()
+
+    def _handle_ground(self, pos, vel, dt):
+        grounded = pos[:, 2] <= self.FUEL_RADIUS + 1e-6
+        pos[grounded, 2] = self.FUEL_RADIUS
+        falling = grounded & (vel[:, 2] < 0)
+        vel[falling, 2] *= -self.FIELD_COR
+        resting = grounded & (np.abs(vel[:, 2]) < self.REST_BOUNCE_SPEED)
+        vel[resting, 2] = 0
+        horizontal = vel[resting, :2]
+        speed = np.linalg.norm(horizontal, axis=1)
+        remaining = np.maximum(0, speed - self.FRICTION * 9.81 * dt)
+        remaining[remaining < self.REST_SPEED] = 0
+        vel[resting, :2] = horizontal * (remaining / np.maximum(speed, 1e-12))[:, None]
 
     def _handle_static_collisions(self, pos, vel):
-        for i in range(len(self.STATIC_LINES_START)):
+        # Index zero was a diagonal across the floor, not a floor plane. Ground
+        # contact is handled explicitly; that line could kick resting fuel.
+        for i in range(1, len(self.STATIC_LINES_START)):
             start = self.STATIC_LINES_START[i]
             vec = self.STATIC_LINES_VEC[i]
             length_sq = self.STATIC_LINES_LEN_SQ[i]
@@ -412,31 +424,15 @@ class FuelSim:
                 j = -(1 + self.FIELD_COR) * vn
                 vel[ref_idx] += n_ref * j[:, np.newaxis]
 
-        mask_x_low = (pos[:, 0] < self.FUEL_RADIUS) & (vel[:, 0] < 0)
-        if np.any(mask_x_low):
-            pos[mask_x_low, 0] = self.FUEL_RADIUS
-            vel[mask_x_low, 0] *= -self.FIELD_COR
+        for axis, limit in enumerate((self.FIELD_LENGTH, self.FIELD_WIDTH)):
+            low = pos[:, axis] < self.FUEL_RADIUS
+            high = pos[:, axis] > limit - self.FUEL_RADIUS
+            pos[low, axis] = self.FUEL_RADIUS
+            pos[high, axis] = limit - self.FUEL_RADIUS
+            approaching = (low & (vel[:, axis] < 0)) | (high & (vel[:, axis] > 0))
+            vel[approaching, axis] *= -self.FIELD_COR
 
-        mask_x_high = (pos[:, 0] > self.FIELD_LENGTH - self.FUEL_RADIUS) & (vel[:, 0] > 0)
-        if np.any(mask_x_high):
-            pos[mask_x_high, 0] = self.FIELD_LENGTH - self.FUEL_RADIUS
-            vel[mask_x_high, 0] *= -self.FIELD_COR
-            
-        mask_y_low = (pos[:, 1] < self.FUEL_RADIUS) & (vel[:, 1] < 0)
-        if np.any(mask_y_low):
-            pos[mask_y_low, 1] = self.FUEL_RADIUS
-            vel[mask_y_low, 1] *= -self.FIELD_COR
-
-        mask_y_high = (pos[:, 1] > self.FIELD_WIDTH - self.FUEL_RADIUS) & (vel[:, 1] > 0)
-        if np.any(mask_y_high):
-            pos[mask_y_high, 1] = self.FIELD_WIDTH - self.FUEL_RADIUS
-            vel[mask_y_high, 1] *= -self.FIELD_COR
-
-        mask_z = pos[:, 2] < self.FUEL_RADIUS
-        if np.any(mask_z):
-             pos[mask_z, 2] = self.FUEL_RADIUS
-             mask_vz = vel[:, 2] < 0
-             vel[mask_z & mask_vz, 2] *= -self.FIELD_COR
+        self._handle_ground(pos, vel, 0)
 
     def _handle_hub_collisions(self, pos, vel):
         # Track which balls have already been scored by a hub this tick
@@ -482,7 +478,7 @@ class FuelSim:
         dt = self.PERIOD / self.subticks
         z_prev = pos_sub[:, 2] - vel_sub[:, 2] * dt
 
-        score_mask = (dist_sq_xy <= hub.ENTRY_RADIUS**2) & \
+        score_mask = (dist_sq_xy <= (hub.ENTRY_RADIUS - self.FUEL_RADIUS)**2) & \
                      (pos_sub[:, 2] <= hub.ENTRY_HEIGHT) & \
                      (pos_sub[:, 2] > 1.0)
 
@@ -529,7 +525,10 @@ class FuelSim:
 
             if hub.exitVelXMult > 0: # Blue
                 penetrations = p_sub[:, 0] + self.FUEL_RADIUS - limit_x
-                hits = penetrations > 0
+                # Only touch this net's plane, never teleport a shot that is
+                # metres beyond it (including shots near the opposite hub).
+                near_plane = np.abs(p_sub[:, 0] - limit_x) <= self.FUEL_RADIUS + np.abs(vel_sub[colliders, 0]) * dt
+                hits = (penetrations > 0) & near_plane
                 if np.any(hits):
                     hit_idx = colliders[hits]
                     pen = penetrations[hits]
@@ -540,7 +539,8 @@ class FuelSim:
                         vel_sub[idx_m, 0] *= -hub.sim.NET_COR
             else: # Red
                 penetrations = limit_x - (p_sub[:, 0] - self.FUEL_RADIUS)
-                hits = penetrations > 0
+                near_plane = np.abs(p_sub[:, 0] - limit_x) <= self.FUEL_RADIUS + np.abs(vel_sub[colliders, 0]) * dt
+                hits = (penetrations > 0) & near_plane
                 if np.any(hits):
                     hit_idx = colliders[hits]
                     pen = penetrations[hits]
@@ -550,6 +550,10 @@ class FuelSim:
                         idx_m = hit_idx[moving_in]
                         vel_sub[idx_m, 0] *= -hub.sim.NET_COR
 
+        if mask is not None:
+            # Advanced NumPy indexing creates copies, not writable views.
+            pos[idxs] = pos_sub
+            vel[idxs] = vel_sub
         if return_scored_mask:
             return scored_mask
 
@@ -567,41 +571,15 @@ class FuelSim:
         p = pos[hit_idx]
         v = vel[hit_idx]
         
-        d_left = p[:, 0] - min_b[0] # positive
-        d_right = max_b[0] - p[:, 0]
-        d_front = p[:, 1] - min_b[1]
-        d_back = max_b[1] - p[:, 1]
-        
-        pens = np.stack([d_left, d_right, d_front, d_back], axis=1)
-        min_pen_idx = np.argmin(pens, axis=1)
-        
-        mask_l = min_pen_idx == 0
-        if np.any(mask_l):
-            idx = hit_idx[mask_l]
-            pos[idx, 0] = min_b[0]
-            vm = vel[idx, 0] > 0
-            vel[idx[vm], 0] *= -1.2 
-
-        mask_r = min_pen_idx == 1
-        if np.any(mask_r):
-            idx = hit_idx[mask_r]
-            pos[idx, 0] = max_b[0]
-            vm = vel[idx, 0] < 0
-            vel[idx[vm], 0] *= -1.2
-
-        mask_f = min_pen_idx == 2
-        if np.any(mask_f):
-            idx = hit_idx[mask_f]
-            pos[idx, 1] = min_b[1]
-            vm = vel[idx, 1] > 0
-            vel[idx[vm], 1] *= -1.2
-
-        mask_bk = min_pen_idx == 3
-        if np.any(mask_bk):
-            idx = hit_idx[mask_bk]
-            pos[idx, 1] = max_b[1]
-            vm = vel[idx, 1] < 0
-            vel[idx[vm], 1] *= -1.2
+        # Resolve the nearest of all six faces, including the hub's top.
+        pens = np.stack((p - min_b, max_b - p), axis=2).reshape(-1, 6)
+        face = np.argmin(pens, axis=1)
+        axis = face // 2
+        upper = (face % 2) == 1
+        pos[hit_idx, axis] = np.where(upper, max_b[axis], min_b[axis])
+        component = v[np.arange(len(v)), axis]
+        approaching = np.where(upper, component < 0, component > 0)
+        vel[hit_idx[approaching], axis[approaching]] *= -self.FIELD_COR
 
     def _handle_intakes(self, pos):
         if not self.intakes: return
@@ -724,86 +702,41 @@ class FuelSim:
         
         field_speeds = self.robotFieldSpeedsSupplier()
         
-        # Robot Velocity components (Java Sim ignores Omega for impact velocity)
-        vr_x = field_speeds.vx
-        vr_y = field_speeds.vy
-        
-        v_fuel = vel[coll_idx]
-        
-        # 1. Reflect Fuel Velocity against Normal
-        # if (fuel.vel.dot(normal) < 0)
-        v_dot_n = v_fuel[:, 0] * nx + v_fuel[:, 1] * ny
-        reflect_mask = v_dot_n < 0
-        
-        if np.any(reflect_mask):
-            idx_r = np.where(reflect_mask)[0]
-            g_idx = coll_idx[idx_r]
-            
-            # fuel.addImpulse(normal.times(-fuel.vel.dot(normal) * (1 + ROBOT_COR)))
-            impulse_mag = -v_dot_n[idx_r] * (1 + self.ROBOT_COR)
-            vel[g_idx, 0] += nx[idx_r] * impulse_mag
-            vel[g_idx, 1] += ny[idx_r] * impulse_mag
-
-        # 2. Add Robot Velocity Push
-        # if (robotVel.dot(normal) > 0)
-        robot_v_dot_n = vr_x * nx + vr_y * ny
-        push_mask = robot_v_dot_n > 0
-        
-        if np.any(push_mask):
-            idx_p = np.where(push_mask)[0]
-            g_idx = coll_idx[idx_p]
-            # fuel.addImpulse(normal.times(robotVel.dot(normal)))
-            # Boost the push slightly to ensure it "flows" away?
-            impulse_mag = robot_v_dot_n[idx_p] * 1.5 
-            vel[g_idx, 0] += nx[idx_p] * impulse_mag
-            vel[g_idx, 1] += ny[idx_p] * impulse_mag
+        # A moving bumper reflects relative contact velocity. Repeated overlap
+        # corrections must not add another full robot velocity every subtick.
+        contact_x = pos[coll_idx, 0] - robot_pose.X()
+        contact_y = pos[coll_idx, 1] - robot_pose.Y()
+        vr_x = field_speeds.vx - field_speeds.omega * contact_y
+        vr_y = field_speeds.vy + field_speeds.omega * contact_x
+        relative_normal = (vel[coll_idx, 0] - vr_x) * nx + (vel[coll_idx, 1] - vr_y) * ny
+        impulse = -(1 + self.ROBOT_COR) * np.minimum(relative_normal, 0)
+        vel[coll_idx, 0] += nx * impulse
+        vel[coll_idx, 1] += ny * impulse
 
     def _handle_fuel_collisions(self, pos, vel):
-        if self.count < 2: return
-        
-        # Spatial Grid to match Java's performance/logic
-        # Cell size 0.25 (Java)
-        CELL_SIZE = 0.25
-        
-        # Build Grid: Dict (col, row) -> list of indices
-        grid = {}
-        
-        # Optimization: Compute cell coords for all at once
-        # Floor division to get indices
-        cx = (pos[:self.count, 0] / CELL_SIZE).astype(int)
-        cy = (pos[:self.count, 1] / CELL_SIZE).astype(int)
-        
-        # Populate grid
-        # This python loop is the bottleneck, but flexible
-        for idx in range(self.count):
-            key = (cx[idx], cy[idx])
-            if key not in grid:
-                grid[key] = []
-            grid[key].append(idx)
-            
-        # Iterate over fuels to check collisions
-        # Check specific neighbors to avoid duplicates (similar to Java's check)
-        # Java checks 3x3 neighbors for every fuel and uses hashcode to dedup.
-        
-        # To emulate the sequential nature effectively:
-        for idx in range(self.count):
-            c_col = cx[idx]
-            c_row = cy[idx]
-            
-            # Check 3x3 neighbors
-            for i in range(c_col - 1, c_col + 2):
-                for j in range(c_row - 1, c_row + 2):
-                    key = (i, j)
-                    if key in grid:
-                        others = grid[key]
-                        for other_idx in others:
-                            if other_idx == idx: continue
-                            
-                            # Deduplicate (Java uses hashcode, here index)
-                            # Only resolve if idx < other_idx to do it once per pair per step?
-                            # Java: if (fuel.hashCode() < other.hashCode())
-                            if idx < other_idx:
-                                self._resolve_one_collision(idx, other_idx)
+        if self.count < 2:
+            return
+        # Cache potential contacts from neighboring grid cells. Most field
+        # fuel is stationary; only rebuild when a ball crosses a cell boundary.
+        # Test the cached pairs in NumPy and send actual overlaps to the existing
+        # sequential impulse solver.
+        active = pos[:self.count]
+        cells = np.floor(active / (2 * self.FUEL_RADIUS)).astype(np.int32)
+        if not hasattr(self, "_collision_cells") or not np.array_equal(cells, self._collision_cells):
+            # With at most 600 objects, NumPy's bounded broad-phase matrix is
+            # much faster than thousands of Python dictionary/neighbor loops.
+            # Include height so airborne shots skip nearby floor balls.
+            nearby = np.abs(cells[:, None, 0] - cells[None, :, 0]) <= 1
+            for axis in (1, 2):
+                nearby &= np.abs(cells[:, None, axis] - cells[None, :, axis]) <= 1
+            self._collision_pairs = np.argwhere(np.triu(nearby, k=1))
+            self._collision_cells = cells
+        candidates = self._collision_pairs
+        delta = active[candidates[:, 0]] - active[candidates[:, 1]]
+        distance_sq = np.einsum("ij,ij->i", delta, delta)
+        pairs = candidates[distance_sq < (2 * self.FUEL_RADIUS)**2]
+        for i, j in pairs:
+            self._resolve_one_collision(i, j)
 
     def _resolve_one_collision(self, i, j):
         # Access arrays directly
@@ -815,9 +748,7 @@ class FuelSim:
         dist = np.linalg.norm(normal)
         
         if dist == 0:
-            # Java: normal = (1, 0, 0); distance = 1;
             normal = np.array([1.0, 0.0, 0.0])
-            dist = 1.0
         else:
             normal = normal / dist
             
@@ -833,7 +764,9 @@ class FuelSim:
         rel_vel = v_b - v_a
         dot = np.dot(rel_vel, normal)
         
-        impulse_mag = 0.5 * (1 + self.FUEL_COR) * dot
+        # Overlapping balls that are already separating need only a position
+        # correction; a negative impulse would pull them back together.
+        impulse_mag = 0.5 * (1 + self.FUEL_COR) * max(0, dot)
         
         # Position correction
         # intersection = 2R - distance
@@ -860,17 +793,20 @@ class FuelSim:
         field_speeds = self.robotFieldSpeedsSupplier()
 
         heading = robot_pose.rotation().radians()
-        total_yaw = heading + turretYaw + degreesToRadians(90)
+        # get_target_angle() aims the shooter's local -Y axis at its target.
+        total_yaw = heading + turretYaw - degreesToRadians(90)
         # print(radiansToDegrees(total_yaw))
         
         v_horiz = math.cos(hoodAngle) * launchVelocity
         v_vert  = math.sin(hoodAngle) * launchVelocity
         
-        vx = v_horiz * math.cos(total_yaw) + field_speeds.vx
-        vy = v_horiz * math.sin(total_yaw) + field_speeds.vy
+        offset_x = launch_pos.X() - robot_pose.X()
+        offset_y = launch_pos.Y() - robot_pose.Y()
+        vx = v_horiz * math.cos(total_yaw) + field_speeds.vx - field_speeds.omega * offset_y
+        vy = v_horiz * math.sin(total_yaw) + field_speeds.vy + field_speeds.omega * offset_x
         # print("vx: ", vx)
         # print("vy: ", vy)
-        vz = -1 * v_vert
+        vz = v_vert
         
         self.spawnFuel(launch_pos, Translation3d(vx, vy, vz))
     
@@ -881,5 +817,6 @@ class FuelSim:
         
         self.positions[:valid_c] = current_active_pos[keep_mask]
         self.velocities[:valid_c] = current_active_vel[keep_mask]
+        self._world_checked_positions[:valid_c] = self._world_checked_positions[:self.count][keep_mask]
         
         self.count = valid_c

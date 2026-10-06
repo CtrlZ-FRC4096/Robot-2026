@@ -11,6 +11,7 @@ from wpimath.kinematics import SwerveModulePosition, SwerveModuleState
 import const
 from swerve import conversions, ctre_module_state
 import math
+import wpilib
 
 
 class SwerveModule:
@@ -246,6 +247,12 @@ class SwerveModule:
         )
 
     def reset_to_absolute(self):
+        if wpilib.RobotBase.isSimulation():
+            # The physical simulation starts with each wheel pointing forward.
+            self.angle_encoder.sim_state.set_raw_position(self.angle_offset.degrees() / 360)
+            self.angle_motor.set_position(0)
+            self.last_angle = Rotation2d()
+            return
         cancoder_angle: float = typing.cast(float, self.get_angle_CANcoder().degrees())
         angle_offset: float = typing.cast(float, self.angle_offset.degrees())
         absolute_position = (

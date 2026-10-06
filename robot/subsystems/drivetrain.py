@@ -103,10 +103,7 @@ class Drivetrain(Subsystem):
         self.xy_inter_controller = ProfiledPIDController(1.9, 0.0, 0.0, constraints)
 
 
-        self.previous_sim_speeds = ChassisSpeeds()
         self.previous_chassisspeeds = ChassisSpeeds()
-        self.two_previous_sim_speeds = ChassisSpeeds()
-        self.damping_accel = False
 
         self.dist_lookup_table = LookupTableAll()
         self.create_lookup_table()
@@ -260,7 +257,7 @@ class Drivetrain(Subsystem):
         self.cur_accel = Translation2d(self.robot.poseEstimator.gyro.get_acceleration_x().value, self.robot.poseEstimator.gyro.get_acceleration_y().value)
         SmartDashboard.putNumber("Swerve/ Commanded* Acceleration", self.cur_accel.norm())
         
-        if field_relative and not self.robot.isSimulation():
+        if field_relative:
             module_states = const.SWERVE_KINEMATICS.toSwerveModuleStates(
                 ChassisSpeeds.fromFieldRelativeSpeeds(
                     translation.x,
@@ -289,41 +286,9 @@ class Drivetrain(Subsystem):
         # SmartDashboard.putNumber("chassis log vx", self.log_chassis.vx / 45)
         # SmartDashboard.putNumber("chassis log vy", self.log_chassis.vy / 45)
         # SmartDashboard.putNumber("chassis log omega dps", self.log_chassis.omega_dps / 20)
-        if self.robot.isSimulation():
-            curPose = self.robot.poseEstimator.curEstPose
-            
-            ## Acceleration limits
-            final_vel = Pose2d(self.log_chassis.vx, self.log_chassis.vy, degreesToRadians(self.log_chassis.omega_dps))
-            max_accel = 3.0
-
-
-            current_vel = Translation2d(self.two_previous_sim_speeds.vx, self.two_previous_sim_speeds.vy)
-            commanded_vel = Translation2d(self.log_chassis.vx, self.log_chassis.vy)
-
-            if abs(commanded_vel.x) < 0.05 and abs(commanded_vel.y) < 0.05:
-                final_vel = Pose2d(0, 0, final_vel.rotation())
-            elif ((current_vel.distance(commanded_vel) / 0.1) > max_accel):
-                self.damping_accel = True
-                delta_vel = commanded_vel - current_vel
-                vel_rad = Rotation2d(delta_vel.X(), delta_vel.Y()).radians()
-                new_vel = Translation2d(current_vel.X() + max_accel * 0.77 * math.cos(vel_rad), current_vel.Y() + max_accel * 0.77 * math.sin(vel_rad))
-                final_vel = Pose2d(new_vel, final_vel.rotation())
-            else:
-                self.damping_accel = False
-            self.final_velo = final_vel.translation()
-
-            self.robot.poseEstimator.curEstPose = Pose2d(curPose.X() + final_vel.X() / 30, curPose.Y() + final_vel.Y() / 30, Rotation2d.fromDegrees(curPose.rotation().degrees() + final_vel.rotation().degrees() / 20))
-            if self.robot.poseEstimator.poseIsOffField(self.robot.poseEstimator.curEstPose):# or self.in_obstacle(self.robot.poseEstimator.curEstPose.translation()):
-                self.robot.poseEstimator.curEstPose = curPose
-            self.robot.poseEstimator.set_yaw(self.robot.poseEstimator.curEstPose.rotation().degrees())
-            
-            self.two_previous_sim_speeds = self.previous_sim_speeds
-            self.previous_sim_speeds = ChassisSpeeds(final_vel.X(), final_vel.Y())
-
-        else:
-            for idx, module in enumerate(self.robot.poseEstimator.modules):
-                SmartDashboard.putNumber("module state " + str(idx + 1), module_states[idx].speed)
-                module.set_desired_state(module_states[idx], is_open_loop)
+        for idx, module in enumerate(self.robot.poseEstimator.modules):
+            SmartDashboard.putNumber("module state " + str(idx + 1), module_states[idx].speed)
+            module.set_desired_state(module_states[idx], is_open_loop)
 
 
     def drive_with_pid(self, translation: Translation2d, target_angle):
@@ -360,16 +325,9 @@ class Drivetrain(Subsystem):
         # mag_vel_dummy = Translation2d(chassis_speeds.vx, chassis_speeds.vy).norm()
         # dummy_val = self.accel_shoot_limiter.calculate(mag_vel_dummy)
 
-        if self.robot.isSimulation():
-            new_chassis_speeds = ChassisSpeeds.fromRobotRelativeSpeeds(chassis_speeds.vx, chassis_speeds.vy, chassis_speeds.omega, self.robot.poseEstimator.curEstPose.rotation())
-            curPose = self.robot.poseEstimator.curEstPose
-            self.robot.poseEstimator.curEstPose = Pose2d(
-                curPose.X() + new_chassis_speeds.vx / 14, curPose.Y() + new_chassis_speeds.vy / 14, Rotation2d(curPose.rotation().radians() + new_chassis_speeds.omega / 10)
-            )
-        else:
-            for idx, module in enumerate(self.robot.poseEstimator.modules):
-                # amps = feedfoward.torqueCurrentsAmps[idx]
-                module.set_desired_state(module_states[idx], is_open_loop=False, feed_forward=0.0)
+        self.log_chassis = const.SWERVE_KINEMATICS.toChassisSpeeds(module_states)
+        for idx, module in enumerate(self.robot.poseEstimator.modules):
+            module.set_desired_state(module_states[idx], is_open_loop=False, feed_forward=0.0)
 
         if not self.checked_robot_relative_time:
             self.checked_robot_relative_time = True
@@ -484,12 +442,7 @@ class Drivetrain(Subsystem):
         )
 
     def reset_odometry(self, pose):
-        self.robot.poseEstimator.odometry.resetPosition(self.robot.poseEstimator.getYaw(), [*self.robot.poseEstimator.get_module_positions()], pose)  # type: ignore
-        self.robot.poseEstimator.poseEst.resetPosition(
-            self.robot.poseEstimator.getYaw(),
-            [*self.robot.poseEstimator.get_module_positions()],
-            pose,
-        )
+        self.robot.poseEstimator.reset_pose(pose)
 
     def reset_pid_error(self):
         self.x_controller.reset()
@@ -502,7 +455,7 @@ class Drivetrain(Subsystem):
             self.robot.poseEstimator.get_module_states()
         )  # Check this in swervemodule.py, we need to convert kraken speed to m/s
         chassis_speeds = const.SWERVE_KINEMATICS.toChassisSpeeds(module_states)  # type: ignore
-        return self.previous_sim_speeds if self.robot.isSimulation() else chassis_speeds
+        return chassis_speeds
     
     def get_target_angle(self, tof, target : Translation2d):
         field_relative_speeds = ChassisSpeeds.fromRobotRelativeSpeeds(self.log_chassis, self.robot.poseEstimator.curEstPose.rotation()) #self.get_field_relative_speeds()

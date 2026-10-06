@@ -1,6 +1,7 @@
 import time
 import math
 import numpy as np
+import ntcore
 
 from collections import deque
 
@@ -151,7 +152,8 @@ class PoseEstimator(Subsystem):
 
         # This is to give CANCoders time to settle. Normally sleep calls are very bad but they're okay
         # here in the constructor/init.
-        time.sleep(1.0)
+        if not self.robot.isSimulation():
+            time.sleep(1.0)
         self.reset_modules_to_absolute()
 
         # self.odometry = SwerveDrive4Odometry(
@@ -170,6 +172,14 @@ class PoseEstimator(Subsystem):
         self.poseEst = SwerveDrive4PoseEstimator(
             const.SWERVE_KINEMATICS, self.getYaw(), self.get_module_positions(), self.curEstPose # type: ignore
         )
+        if self.robot.isSimulation():
+            self.sim_odometry = SwerveDrive4Odometry(
+                const.SWERVE_KINEMATICS, self.getYaw(), self.get_module_positions(), self.curEstPose
+            )
+            self.sim_estimated_pose_pub = ntcore.NetworkTableInstance.getDefault().getTable(
+                "SmartDashboard").getStructTopic("Sim/Estimated Pose2d", Pose2d).publish()
+            self.sim_vision_measurements = 0
+            self.sim_last_vision_time = None
 
         self.xystd_single_tag = 0.03
         self.thetastd_single_tag = 1000.0
@@ -307,10 +317,20 @@ class PoseEstimator(Subsystem):
         self.set_yaw(0)
 
     def set_yaw(self, yaw):
-        if self.robot.isSimulation():
-            self.poseEst.resetPose(Pose2d(self.curEstPose.X(), self.curEstPose.Y(), Rotation2d.fromDegrees(yaw)))
         self.gyro.set_yaw(yaw)
         SmartDashboard.putNumber("Gyro/Set Yaw", yaw)
+
+    def reset_pose(self, pose):
+        if self.robot.isSimulation() and hasattr(self.robot, "sim"):
+            self.robot.sim.reset_pose(pose)
+            yaw = pose.rotation()
+        else:
+            yaw = self.getYaw()
+        self.poseEst.resetPosition(yaw, self.get_module_positions(), pose)
+        self.curEstPose = pose
+        if self.robot.isSimulation():
+            self.sim_odometry.resetPosition(yaw, self.get_module_positions(), pose)
+            self.sim_last_vision_time = None
 
     def getYaw(self):
         if const.SWERVE_INVERT_GYRO:
@@ -438,13 +458,15 @@ class PoseEstimator(Subsystem):
 
         z_sum = 0
         z_count = 0
-        if (self.vision_update_counter % 2 == 0 or self.robot.in_autonomous_mode) and (not self.robot.using_auto or self.robot.auto_submitted):
+        if (self.vision_update_counter % 2 == 0 or self.robot.in_autonomous_mode) and (self.robot.isSimulation() or not self.robot.using_auto or self.robot.auto_submitted):
             for cam in self.cams:
                 cam.update(
                     self.curEstPose,
                     self.gyro.getRotation3d()
                 )
                 single_tag_poses : list[(Pose2d, int)] = cam.getPoseSingleTag()
+                if self.robot.isSimulation():
+                    SmartDashboard.putNumberArray("Sim/Vision/" + cam.camName + "/Accepted Tag IDs", cam.getSingleTagIDs())
                 self.single_tag_IDs.update(cam.getSingleTagIDs())
                 zEstimates = cam.getZEstimates()
                 z_sum += sum(zEstimates)
@@ -494,6 +516,9 @@ class PoseEstimator(Subsystem):
                             self.thetastd_single_tag,  # * (min_ambiguity / 0.4),
                         ),
                     )
+                    if self.robot.isSimulation():
+                        self.sim_vision_measurements += 1
+                        self.sim_last_vision_time = cam.getObsTime()
                         
             # if z_count > 0:
             #     self.estZ = z_sum / z_count
@@ -512,8 +537,27 @@ class PoseEstimator(Subsystem):
 
         possible_pose = self.poseEst.getEstimatedPosition()
 
-        if not self.robot.isSimulation() and self.candidate_pose_OK(possible_pose):
+        if self.robot.isSimulation() or self.candidate_pose_OK(possible_pose):
             self.curEstPose = possible_pose
+
+        if self.robot.isSimulation():
+            # The same estimator above is used for controls and the ghost. Raw
+            # odometry is a separate diagnostic, without vision corrections.
+            odometry_pose = self.sim_odometry.update(self.getYaw(), self.get_module_positions())
+            self.sim_estimated_pose_pub.set(possible_pose)
+            SmartDashboard.putNumberArray("Sim/Estimated Pose", [
+                possible_pose.X(), possible_pose.Y(), possible_pose.rotation().degrees()])
+            SmartDashboard.putNumberArray("Sim/Odometry Pose", [
+                odometry_pose.X(), odometry_pose.Y(), odometry_pose.rotation().degrees()])
+            self.robot.field.getObject("Estimated Pose").setPose(possible_pose)
+            SmartDashboard.putNumber("Sim/Vision/Measurements Fused", self.sim_vision_measurements)
+            age = Timer.getFPGATimestamp() - self.sim_last_vision_time if self.sim_last_vision_time is not None else -1
+            SmartDashboard.putNumber("Sim/Vision/Last Measurement Age Seconds", age)
+            SmartDashboard.putBoolean("Sim/Vision/Has Recent Measurement", 0 <= age < 0.25)
+            if hasattr(self.robot, "sim"):
+                SmartDashboard.putNumber("Sim/Estimate Position Error M", possible_pose.translation().distance(self.robot.sim.pose.translation()))
+                SmartDashboard.putNumber("Sim/Odometry Position Error M", odometry_pose.translation().distance(self.robot.sim.pose.translation()))
+                SmartDashboard.putNumber("Sim/Estimate Heading Error Deg", (possible_pose.rotation() - self.robot.sim.pose.rotation()).degrees())
 
         self.poseConverge = True
 

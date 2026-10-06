@@ -88,11 +88,8 @@ class Shooter(Subsystem):
             self.flywheel_spun.append(False)
 
     def get_fly_speed(self):
-        if self.robot.isSimulation():
-            return self.commanded_fly_speed
-        else:
-            return self.left_up_fly_motor.get_velocity().value
-                    
+        return self.left_up_fly_motor.get_velocity().value
+
     def set_fly_speed(self, speed):
         self.commanded_fly_speed = speed
         # if self.get_fly_speed() <= self.commanded_fly_speed * 0.85:
@@ -101,10 +98,7 @@ class Shooter(Subsystem):
         self.left_up_fly_motor.set_control(controls.VelocityTorqueCurrentFOC(-1 * speed))
 
     def get_accelerator_speed(self):
-        if self.robot.isSimulation():
-            return self.commanded_accelerator_speed
-        else:
-            return self.accelerator_motor.get_velocity().value
+        return self.accelerator_motor.get_velocity().value
 
     def set_accelerator_speed(self, speed):
         self.commanded_accelerator_speed = speed
@@ -131,12 +125,7 @@ class Shooter(Subsystem):
             self.hood_motor.set_control(controls.MotionMagicVoltage(rotations)) # USING MOTION MAGIC
     
     def get_hood_position(self):
-        if self.robot.isSimulation():
-            return self.commanded_hood_position
-        else:
-            rotations = self.hood_motor.get_position().value 
-            position = rotations# ADD GEAR RATIOS STUFF
-            return position
+        return self.hood_motor.get_position().value
 
     def stop_hood(self):
         self.hood_motor.set_control(controls.DutyCycleOut(0.0))
@@ -177,7 +166,18 @@ class Shooter(Subsystem):
     def ready_to_shoot(self):
         rotation = self.robot.drivetrain.get_target_angle(self.robot.time_of_flight, self.robot.static_target)
         cur_speeds = self.robot.drivetrain.get_field_relative_speeds()
-        if (abs(abs(self.get_fly_speed()) - self.commanded_fly_speed <= 3)) and (abs(abs(self.get_hood_position()) - self.commanded_hood_position) < 2) and (self.robot.down_bad or abs((self.robot.poseEstimator.curEstPose.rotation() - rotation).degrees()) <= 12 or (abs((self.robot.poseEstimator.curEstPose.rotation() - rotation).degrees()) <= 30 and Translation2d(cur_speeds.vx, cur_speeds.vy).norm() > 0.3)):# and self.robot.drivetrain.cur_accel.norm() > 0.28)): #and pointed at hub   
+        if (
+            abs(abs(self.get_fly_speed()) - self.commanded_fly_speed) <= 3
+            and abs(abs(self.get_hood_position()) - self.commanded_hood_position) < 2
+            and (
+                self.robot.down_bad
+                or abs((self.robot.poseEstimator.curEstPose.rotation() - rotation).degrees()) <= 12
+                or (
+                    abs((self.robot.poseEstimator.curEstPose.rotation() - rotation).degrees()) <= 30
+                    and Translation2d(cur_speeds.vx, cur_speeds.vy).norm() > 0.3
+                )
+            )
+        ):
             self.shoot_ready = True
             return True
         # elif:
