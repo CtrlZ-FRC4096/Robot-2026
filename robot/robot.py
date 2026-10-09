@@ -91,6 +91,7 @@ from wpimath.kinematics import ChassisSpeeds, SwerveModuleState
 from bline_command import BLineCommand, Builder
 
 from fuel_sim import FuelSim
+from state_machine import RobotStateMachine, Event
 
 log = logging.getLogger("robot")
 
@@ -142,6 +143,12 @@ class Robot(CoroutineRobot):
 
         # Command scheduler
         self.scheduler = CommandScheduler.getInstance()
+        
+        ### STATE MACHINE ###
+        # What the intake, shooter and drivetrain are doing. Change it only by
+        # sending events (self.state.handle); see state_machine.py.
+        self.state = RobotStateMachine()
+
         
         # subsystems
         # self.leds = subsystems.leds.LEDs(self)
@@ -237,57 +244,21 @@ class Robot(CoroutineRobot):
         DataLogManager.start()
         DriverStation.startDataLog(DataLogManager.getLog())
 
-        ### STATE MACHINE VARIABLES ###
-        self.running_pid_lineup = False
-        self.final_lineup_pose = Pose2d()
-        self.intake_at_default = True
-        self.shooter_at_default = True
-        self.trench = True
-        self.down_bad = False
-        self.spin_down = False
-
         self.static_target = Translation2d()
 
-        self.at_climbing_position = False
-
-        self.shoot_fuel = False
-        self.shoot_intent = False
-        self.is_intaking = False
-        self.pulse_indexer = False
-        self.pulse_pivot = False
-        self.clear_jam = False
-        self.ignore_shooter_in_jam = False
-
         self.robot_oriented_angle = self.poseEstimator.getYaw().degrees()
-        
-        # AUTO FLAGS
-        self.run_p1 = False
-        self.done_p1 = False
 
-        self.run_p2 = False
-        self.done_p2 = False
-
-        self.run_p3 = False
-        self.done_p3 = False
-
-        self.run_p4 = False
-        self.done_p4 = False
-
-
+        # Driver assists (currently disabled in oi.py)
         self.snake_intake = False
         self.track_fuel = False
 
-        self.done_rotation_auto = False
-
+        # AUTO
         self.did_autonomous = False
         self.temp_rotation_shoot_auto = 0
         self.auto_time_since_ended_p = 0
         self.auto_submitted = False
 
-        #TESTING
-        self.should_hub_track = False
         self.is_hub_active = True
-        self.velocity_constrain_pid = False
         self.auto_start_time = 0.0
 
         self.time_3_bot = 0.0
@@ -520,8 +491,8 @@ class Robot(CoroutineRobot):
         self.in_teleop_mode = False
         self.did_autonomous = True
         self.in_autonomous_mode = True
-        self.intake_at_default = False
-        
+        self.state.handle(Event.AUTONOMOUS_STARTED)
+
         self.scheduler.schedule(self.auto)
 
     def autonomousExit(self):
@@ -575,15 +546,7 @@ class Robot(CoroutineRobot):
     def teleop_mode(self):
         self.scheduler.cancelAll()
 
-        self.shoot_intent = False
-        self.spin_down = False
-        self.shooter_at_default = True
-        self.shoot_fuel = False
-        self.pulse_pivot = False
-        self.shooter.shoot_ready = False
-        self.shooter.accel_good = False
-
-        self.running_pid_lineup = False
+        self.state.handle(Event.TELEOP_STARTED)
         self.in_autonomous_mode = False
         self.robot_oriented_angle = self.poseEstimator.curEstPose.rotation().degrees()
         self.in_teleop_mode = True
@@ -647,14 +610,11 @@ class Robot(CoroutineRobot):
         SmartDashboard.putNumber("Current Auto Chosen", int(self.auto_chooser.getSelected()))
         SmartDashboard.putBoolean("Connected to FMS", self.driverstation.isFMSAttached())
         SmartDashboard.putBoolean("Auto Submitted", self.auto_submitted)
-        SmartDashboard.putBoolean("States/Running Pid Lineup", self.running_pid_lineup)
-        SmartDashboard.putBoolean("States/Intake at Default", self.intake_at_default)
-        SmartDashboard.putBoolean("States/Shooter at Default", self.shooter_at_default)
-        SmartDashboard.putBoolean("States/Should Hub Track", self.should_hub_track)
-        SmartDashboard.putBoolean("States/Pulse Pivot", self.pulse_pivot)
-        SmartDashboard.putBoolean("States/Down Bad", self.down_bad)
-        SmartDashboard.putBoolean("States/Clear Jam", self.clear_jam)
-        SmartDashboard.putBoolean("States/Spin Down", self.spin_down)
+        SmartDashboard.putString("States/Intake", self.state.intake.value)
+        SmartDashboard.putString("States/Shooter", self.state.shooter.value)
+        SmartDashboard.putString("States/Drive", self.state.drive.value)
+        SmartDashboard.putString("States/Last Event",
+                                 self.state.last_event.value if self.state.last_event else "")
         SmartDashboard.putNumber("Test/Temp Rotaion auto", self.temp_rotation_shoot_auto)
 
         SmartDashboard.putNumber("Shooting Values/Distance to Hub", self.distance)

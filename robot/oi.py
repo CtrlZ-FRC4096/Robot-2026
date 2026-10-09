@@ -59,6 +59,7 @@ from wpilib import RobotController
 from wpimath.units import inchesToMeters, degreesToRadians, radiansToDegrees
 # from phoenix5 import NeutralMode
 from phoenix6.controls import CoastOut
+from state_machine import Event, IntakeState
 
 ###  IMPORTS ###
 
@@ -155,18 +156,19 @@ class OI:
                 # SmartDashboard.putNumber("Left_Right", left_right)
                 # SmartDashboard.putNumber("Rotate", rotate)
 
-                if not self.robot.shoot_intent:
+                state = self.robot.state
+                if not state.aiming:
                     cur_speeds = self.robot.drivetrain.get_field_relative_speeds()
                     raw_mag = Translation2d(cur_speeds.vx, cur_speeds.vy).norm()
                     dummy_val = self.accel_shoot_limiter.calculate(raw_mag)   
                 
-                if not self.robot.running_pid_lineup and not (self.robot.track_fuel and self.robot.poseEstimator.active_intake_tgt is not None):
+                if not state.lining_up and not (self.robot.track_fuel and self.robot.poseEstimator.active_intake_tgt is not None):
                     cur_speeds = self.robot.drivetrain.get_field_relative_speeds()
                     raw_mag_2 = Translation2d(cur_speeds.vx, cur_speeds.vy).norm()
                     dummy_val_2 = self.robot.drivetrain.accel_shoot_limiter.calculate(raw_mag_2)
 
                 # SmartDashboard.putNumber("Test/Limit accel", self.accel_shoot_limiter.lastValue())
-                if self.robot.running_pid_lineup:
+                if state.lining_up:
                     # SmartDashboard.putBoolean("Wheels to X", False)
                     # Cancel drive with pid if robot is moving manually
                     if (
@@ -181,17 +183,17 @@ class OI:
                         forward_back = 0.0
                         left_right = 0.0
                         rotate = 0
-                    if self.robot.shoot_intent:
+                    if state.aiming:
                         rotation = self.robot.drivetrain.get_target_angle(self.robot.time_of_flight, self.robot.static_target)
-                        lineup  = Pose2d(self.robot.final_lineup_pose.X(), self.robot.final_lineup_pose.Y(), rotation)
+                        lineup  = Pose2d(state.lineup_pose.X(), state.lineup_pose.Y(), rotation)
                     else:
-                        lineup = self.robot.final_lineup_pose
+                        lineup = state.lineup_pose
                     self.robot.drivetrain.go_to_pose_profiled_pid(lineup, forward_back, left_right, rotate)
                 # elif (abs(const.SWERVE_KINEMATICS.toChassisSpeeds(self.robot.poseEstimator.get_module_states()).vx) <= 0.005 and
                 #       abs(const.SWERVE_KINEMATICS.toChassisSpeeds(self.robot.poseEstimator.get_module_states()).vy) <= 0.005 and 
                 #       abs(const.SWERVE_KINEMATICS.toChassisSpeeds(self.robot.poseEstimator.get_module_states()).omega_dps) <= 1):
                 #     self.robot.drivetrain.turn_wheels_to_x()
-                elif self.robot.shoot_intent: #and self.robot.should_hub_track:
+                elif state.aiming:
                     rotation_2d = self.robot.drivetrain.get_target_angle(self.robot.time_of_flight, self.robot.static_target)
                     rotation = rotation_2d.degrees()
                     mag_vel = Translation2d(forward_back, left_right).norm()
@@ -220,7 +222,7 @@ class OI:
                                 Translation2d(forward_back, left_right)
                                 * const.SWERVE_MAX_SPEED,
                                 rotation)
-                elif  False and self.robot.is_intaking and ((self.robot.snake_intake and abs(rotate) <= 0.02)): #or (self.robot.track_fuel and self.robot.poseEstimator.active_intake_tgt is not None and False)):
+                elif  False and state.intake is IntakeState.INTAKING and ((self.robot.snake_intake and abs(rotate) <= 0.02)): #or (self.robot.track_fuel and self.robot.poseEstimator.active_intake_tgt is not None and False)):
                     if self.robot.snake_intake and abs(rotate) <= 0.02:
                         self.robot.drivetrain.drive_with_pid(
                                 Translation2d(forward_back, left_right)
@@ -330,12 +332,11 @@ class OI:
         
         @self.driver1.LEFT_TRIGGER_AS_BUTTON.whenHeld
         def _():
-            self.robot.is_intaking = True
-            self.robot.intake_at_default = False
-        
+            self.robot.state.handle(Event.INTAKE_PRESSED)
+
         @self.driver1.LEFT_TRIGGER_AS_BUTTON.whenReleased
         def _():
-            self.robot.is_intaking = False
+            self.robot.state.handle(Event.INTAKE_RELEASED)
         
         @self.driver1.BACK.whenPressed
         def _():
@@ -350,78 +351,40 @@ class OI:
         # def _():
         #     self.robot.coast_intake = False
         
-        # @self.driver1.POV.RIGHT.whenHeld
-        # def _():
-        #     self.robot.shoot_fuel = True
-
-        @self.driver1.POV.RIGHT.whenReleased
-        def _():
-            self.robot.shoot_fuel = False
-
         @self.driver1.POV.LEFT.whenPressed
         def _():
-            self.robot.is_intaking = False
-            self.robot.pulse_pivot = False
-            self.robot.intake_at_default = True
-            self.robot.shoot_intent = False
-            self.robot.shoot_fuel = False
+            self.robot.state.handle(Event.STOW_INTAKE)
 
         @self.driver1.RIGHT_TRIGGER_AS_BUTTON.whenHeld #shoot
         def _():
-            self.robot.shooter_at_default = False
-            self.robot.shoot_intent = True
-            self.robot.shoot_fuel = False
-            self.robot.spin_down = False
+            self.robot.state.handle(Event.SHOOT_PRESSED)
 
         @self.driver1.RIGHT_TRIGGER_AS_BUTTON.whenReleased
         def _():
-            self.robot.shoot_intent = True
-            self.robot.spin_down = True
-            self.robot.shoot_fuel = False
-            # self.robot.shooter_at_default = True
-
-            self.robot.shooter.shoot_ready = False
-            self.robot.shooter.accel_good = False
-            self.robot.pulse_pivot = False
-            self.robot.intake_at_default = False
+            self.robot.state.handle(Event.SHOOT_RELEASED)
             self.robot.robot_oriented_angle = self.robot.poseEstimator.getYaw().degrees()
 
         @self.driver1.RIGHT_BUMPER.whenHeld
         def _():
-            self.robot.final_lineup_pose = self.robot.poseEstimator.get_path_to_trench()
-            self.robot.running_pid_lineup = True
-        
+            self.robot.state.start_lineup(Event.LINEUP_PRESSED, self.robot.poseEstimator.get_path_to_trench())
+
         @self.driver1.RIGHT_BUMPER.whenReleased
         def _():
-            self.robot.running_pid_lineup = False
+            self.robot.state.handle(Event.LINEUP_RELEASED)
             self.robot.robot_oriented_angle = self.robot.poseEstimator.curEstPose.rotation().degrees()
 
         @self.driver1.LEFT_BUMPER.whenPressed
         def _():
-            self.robot.shooter_at_default = True
-            self.robot.intake_at_default = True
-            self.robot.is_intaking = False
-            self.robot.shoot_fuel = False
-            self.robot.shoot_intent = False
-            self.robot.spin_down = False
+            self.robot.state.handle(Event.STOW_ALL)
 
 
-        @self.driver2.POV.RIGHT.whenHeld
+        @self.driver2.POV.RIGHT.whenHeld # manual "down bad" shot
         def _():
-            self.robot.down_bad = True
-            self.robot.shooter_at_default = False
-            self.robot.spin_down = False
-        
+            self.robot.state.handle(Event.MANUAL_SHOT_PRESSED)
+
         @self.driver2.POV.RIGHT.whenReleased
         def _():
-            self.robot.down_bad = False
-            # self.robot.shooter_at_default = True
-            self.robot.pulse_pivot  = False
-            self.robot.shooter.shoot_ready = False
-            self.robot.shooter.accel_good = False
-            self.robot.shoot_intent = True
-            self.robot.spin_down = True
-            self.robot.shoot_fuel = False
+            self.robot.state.handle(Event.MANUAL_SHOT_RELEASED)
 
 
         @self.driver2.POV.UP.whenPressed
@@ -471,22 +434,8 @@ class OI:
 
         @self.driver2.POV.LEFT.whenHeld
         def _():
-            self.robot.clear_jam = True
-            self.robot.ignore_shooter_in_jam = False
-            self.robot.intake_at_default = False
-            self.robot.shooter_at_default = False
-            self.robot.is_intaking = False
-            self.robot.down_bad = False
-            self.robot.shoot_intent = False
-            self.robot.shoot_fuel = False
-        
+            self.robot.state.handle(Event.CLEAR_JAM_PRESSED)
+
         @self.driver2.POV.LEFT.whenReleased
         def _():
-            self.robot.clear_jam = False
-            self.robot.ignore_shooter_in_jam = False
-            self.robot.intake_at_default = False
-            self.robot.shooter_at_default = False
-            self.robot.is_intaking = False
-            self.robot.down_bad = False
-            self.robot.shoot_intent = False
-            self.robot.shoot_fuel = False
+            self.robot.state.handle(Event.CLEAR_JAM_RELEASED)

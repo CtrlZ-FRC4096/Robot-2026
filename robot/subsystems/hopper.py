@@ -17,6 +17,7 @@ import const
 from wpilib import SmartDashboard
 
 from math import sin, pi
+from state_machine import ShooterState
 
 class Hopper(Subsystem):
     def __init__(self, robot: "Robot"):
@@ -53,6 +54,10 @@ class Hopper(Subsystem):
     def stop(self):
         self.commanded_speed = 0.0
         self.indexer_motor.set_control(controls.DutyCycleOut(0.0))
+
+    def set_duty_cycle(self, output):
+        self.commanded_speed = output
+        self.indexer_motor.set_control(controls.DutyCycleOut(output))
 
     def periodic(self):
         start_time = wpilib.RobotController.getFPGATime()
@@ -142,16 +147,13 @@ class Hopper(Subsystem):
                         
                         self.robot.auto = SequentialCommandGroup()
                         
-        if not self.robot.shoot_intent and self.robot.is_intaking:
-            # self.commanded_speed = -0.95
-            # self.indexer_motor.set_control(controls.DutyCycleOut(-0.95, enable_foc=False))
-            pass
-        # elif self.robot.pulse_indexer:
-        #     self.set_speed(abs(sin(self.time.get()*pi*self.hz)*self.amp)) # moves fuel towards shooter
-        elif (not self.robot.shoot_intent and not self.robot.down_bad) and self.robot.intake_at_default:
-            self.commanded_speed = 0
-            self.indexer_motor.set_control(controls.DutyCycleOut(0.0))
-        elif self.robot.shooter_at_default:
+        # The indexer follows the shooter (which runs just before this, so a
+        # shot that starts feeding this loop feeds this loop).
+        if self.robot.state.shooter is ShooterState.CLEARING_JAM:
+            self.set_duty_cycle(-0.7)
+        elif self.robot.state.feeding:
+            self.set_duty_cycle(0.95)
+        else:
             self.stop()
 
         # ADD WEIGHT CODE HERE

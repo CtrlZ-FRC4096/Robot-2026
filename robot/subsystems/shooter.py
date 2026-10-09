@@ -20,6 +20,7 @@ from collections import deque
 # import shot_calc
 import numpy as np
 from lookup_table import LookupTableAll, LookupTableAngle, LookupTableVel
+from state_machine import Event, ShooterState
 
 class Shooter(Subsystem):
     def __init__(self, robot: "Robot"):
@@ -76,8 +77,7 @@ class Shooter(Subsystem):
         self.test_accelerator_speed = 85
         self.test_hood_position = 36
 
-        self.shoot_ready = False
-        self.accel_good = False
+        self.shoot_ready = False  # result of the last ready_to_shoot() check
 
         self.flywheel_spun_deque_length = 22 # / 3.5
         self.flywheel_spun = deque(maxlen=self.flywheel_spun_deque_length)
@@ -177,7 +177,7 @@ class Shooter(Subsystem):
     def ready_to_shoot(self):
         rotation = self.robot.drivetrain.get_target_angle(self.robot.time_of_flight, self.robot.static_target)
         cur_speeds = self.robot.drivetrain.get_field_relative_speeds()
-        if (abs(abs(self.get_fly_speed()) - self.commanded_fly_speed <= 3)) and (abs(abs(self.get_hood_position()) - self.commanded_hood_position) < 2) and (self.robot.down_bad or abs((self.robot.poseEstimator.curEstPose.rotation() - rotation).degrees()) <= 12 or (abs((self.robot.poseEstimator.curEstPose.rotation() - rotation).degrees()) <= 30 and Translation2d(cur_speeds.vx, cur_speeds.vy).norm() > 0.3)):# and self.robot.drivetrain.cur_accel.norm() > 0.28)): #and pointed at hub   
+        if (abs(abs(self.get_fly_speed()) - self.commanded_fly_speed <= 3)) and (abs(abs(self.get_hood_position()) - self.commanded_hood_position) < 2) and (self.robot.state.manual_shot or abs((self.robot.poseEstimator.curEstPose.rotation() - rotation).degrees()) <= 12 or (abs((self.robot.poseEstimator.curEstPose.rotation() - rotation).degrees()) <= 30 and Translation2d(cur_speeds.vx, cur_speeds.vy).norm() > 0.3)):# and self.robot.drivetrain.cur_accel.norm() > 0.28)): #and pointed at hub   
             self.shoot_ready = True
             return True
         # elif:
@@ -189,7 +189,7 @@ class Shooter(Subsystem):
             return False
         
     def done_with_shooting(self):
-        return self.accel_good and all(self.flywheel_spun)
+        return self.robot.state.feeding and all(self.flywheel_spun)
 
     def periodic(self):
         start_time = wpilib.RobotController.getFPGATime()
@@ -201,72 +201,61 @@ class Shooter(Subsystem):
 
 
 
-        if self.robot.shooter_at_default:
+        state = self.robot.state
+        if not state.shooting:
+            self.shoot_ready = False
+
+        if state.shooter in (ShooterState.STOWED, ShooterState.AIMING):
             self.set_hood_position(0.0)
             self.stop_accelerator()
             self.stop_fly()
-        elif self.robot.clear_jam and not self.robot.ignore_shooter_in_jam:
+        elif state.shooter is ShooterState.CLEARING_JAM:
             self.set_hood_position(0.0)
             self.set_accelerator_speed(-50)
             self.set_fly_speed(-50)
-            self.robot.hopper.indexer_motor.set_control(controls.DutyCycleOut(-0.7))
-        elif self.robot.spin_down:
+        elif state.shooter is ShooterState.SPINNING_DOWN:
+            # Stop feeding first; keep the flywheels spinning until the
+            # indexer and accelerator have actually stopped.
             self.set_accelerator_speed(0)
-            self.robot.hopper.commanded_speed = 0
-            self.robot.hopper.indexer_motor.set_control(controls.DutyCycleOut(0.0))
+            self.robot.hopper.stop()
             if abs(self.robot.hopper.get_speed()) <= 5 and abs(self.get_accelerator_speed()) <= 5:
-                self.robot.spin_down = False
-                self.robot.shoot_intent = False
-                self.shoot_ready = False
-                self.accel_good = False
-                self.robot.pulse_pivot = False
                 self.stop_fly()
-                self.robot.shooter_at_default = True
                 self.reset_flywheel_spun_deque()
                 self.set_hood_position(0.0)
-        elif self.robot.shoot_intent or self.robot.down_bad:
-                if not self.robot.in_autonomous_mode or (self.robot.in_autonomous_mode and self.robot.poseEstimator.cur_pos_in_zone()):
-                    if self.robot.down_bad:
-                        fly_speed = self.robot.down_bad_fly_speed
-                        hood_angle = self.robot.down_bad_hood_angle
-                    else:   
-                        fly_speed = self.robot.fly_speed
-                        hood_angle = self.robot.hood_angle
-                    if (not self.accel_good and abs(abs(self.get_accelerator_speed()) - self.commanded_accelerator_speed) >= 20):
-                        if self.robot.in_autonomous_mode:
-                            self.set_fly_speed(fly_speed*1.15)
-                        else:
-                            self.set_fly_speed(fly_speed*1.065)
+                state.handle(Event.SPIN_DOWN_FINISHED)
+        elif state.shooting:
+            # In auto, only shoot from inside the alliance zone; elsewhere hold
+            # the last motor requests.
+            if not self.robot.in_autonomous_mode or self.robot.poseEstimator.cur_pos_in_zone():
+                if state.manual_shot:
+                    fly_speed = self.robot.down_bad_fly_speed
+                    hood_angle = self.robot.down_bad_hood_angle
+                else:
+                    fly_speed = self.robot.fly_speed
+                    hood_angle = self.robot.hood_angle
+                if not state.feeding and abs(abs(self.get_accelerator_speed()) - self.commanded_accelerator_speed) >= 20:
+                    # Overspeed the flywheels while the accelerator spins up.
+                    if self.robot.in_autonomous_mode:
+                        self.set_fly_speed(fly_speed*1.15)
                     else:
-                        self.set_fly_speed(fly_speed)
-                    self.set_hood_position(hood_angle + self.robot.hood_fudge_value)
-                    if self.robot.shoot_fuel  or self.ready_to_shoot() or self.shoot_ready:
-                        self.set_accelerator_speed(self.test_accelerator_speed)
-                        if self.robot.shoot_fuel or (abs(abs(self.get_accelerator_speed()) - self.commanded_accelerator_speed) <= 50 or self.accel_good) and (not self.robot.in_autonomous_mode or self.robot.poseEstimator.cur_pos_in_zone()):
-                            if not self.accel_good:
-                                self.robot.intake.tick_count = start_time
-                                self.flywheel_spun.append(False) # to initialize not all True
-                            self.accel_good = True
-                            self.robot.hopper.commanded_speed = 0.95
-                            self.robot.hopper.indexer_motor.set_control(controls.DutyCycleOut(0.95))
-                            self.robot.pulse_pivot = True 
-
-                            # self.robot.hopper.set_speed(self.robot.hopper.test_indexer_speed) 
-                        # else:
-                        #     self.robot.hopper.commanded_speed = -0.2
-                        #     self.robot.hopper.indexer_motor.set_control(controls.DutyCycleOut(-0.2, enable_foc=False))
-        else:
-            self.set_hood_position(0.0)
-            self.stop_accelerator()
-            self.stop_fly()
-            self.robot.hopper.indexer_motor.set_control(controls.DutyCycleOut(0.0))
+                        self.set_fly_speed(fly_speed*1.065)
+                else:
+                    self.set_fly_speed(fly_speed)
+                self.set_hood_position(hood_angle + self.robot.hood_fudge_value)
+                if self.ready_to_shoot():
+                    self.set_accelerator_speed(self.test_accelerator_speed)
+                    accelerator_ready = abs(abs(self.get_accelerator_speed()) - self.commanded_accelerator_speed) <= 50
+                    if not state.feeding and accelerator_ready:
+                        self.robot.intake.tick_count = start_time  # starts the intake's agitation timer
+                        self.flywheel_spun.append(False) # to initialize not all True
+                        state.handle(Event.FEEDING_STARTED)
 
         elapsed_ms = (wpilib.RobotController.getFPGATime() - start_time) / 1000.0
         SmartDashboard.putNumber("Loop Times/Shooter", elapsed_ms)
 
     def log(self):
 
-        if self.robot.shoot_intent or self.robot.down_bad:
+        if self.robot.state.aiming or self.robot.state.manual_shot:
             rotation = self.robot.drivetrain.get_target_angle(self.robot.time_of_flight, self.robot.static_target)
             SmartDashboard.putNumber("rotation lock error", (self.robot.poseEstimator.curEstPose.rotation() - rotation).degrees())
         SmartDashboard.putNumber("Shooter/Right Fly Speed", self.right_fly_motor.get_velocity().value)
@@ -280,8 +269,6 @@ class Shooter(Subsystem):
         SmartDashboard.putNumber("Shooter/Hood Position", self.get_hood_position())
         SmartDashboard.putNumber("Shooter/Commanded Hood Position", self.commanded_hood_position)
 
-        SmartDashboard.putBoolean("States/Shoot Fuel", self.robot.shoot_fuel)
-        SmartDashboard.putBoolean("States/Shoot Intent", self.robot.shoot_intent)
 
         SmartDashboard.putBoolean("Shooter/Near Trench", self.pose_in_trench())
         
@@ -290,4 +277,4 @@ class Shooter(Subsystem):
         SmartDashboard.putNumber("Test/Test hood position", self.test_hood_position)
 
         SmartDashboard.putBoolean("Test/Done with Shooting", self.done_with_shooting())
-        SmartDashboard.putBoolean("Test/Accel Good", self.accel_good)
+        SmartDashboard.putBoolean("Test/Accel Good", self.robot.state.feeding)

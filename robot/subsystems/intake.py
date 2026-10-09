@@ -17,6 +17,7 @@ import const
 from wpilib import SmartDashboard
 from wpimath.units import radiansToDegrees, inchesToMeters
 from wpimath.controller import PIDController
+from state_machine import IntakeState
 
 class Intake(Subsystem):
     def __init__(self, robot: "Robot"):
@@ -124,7 +125,7 @@ class Intake(Subsystem):
             return False
 
     def can_intake_sim(self):
-        return self.robot.is_intaking and self.robot.fuel_in_hopper < 24
+        return self.robot.state.intake is IntakeState.INTAKING and self.robot.fuel_in_hopper < 24
 
     def intake_sim_callback(self):
         self.robot.fuel_in_hopper += 1
@@ -151,17 +152,20 @@ class Intake(Subsystem):
     def periodic(self):
         start_time = wpilib.RobotController.getFPGATime()
 
-        if self.robot.intake_at_default:
+        state = self.robot.state.intake
+        if state is IntakeState.STOWED:
             self.stop_intake()
             self.set_position(-0.04)
-        elif self.robot.clear_jam:
+        elif state is IntakeState.CLEARING_JAM:
             self.set_intake_speed(-0.3 * 100)
             self.set_position(-0.35)
-        elif self.robot.is_intaking:
+        elif state is IntakeState.INTAKING:
             # if self.robot.fieldConstants.LinesVertical.starting < self.robot.poseEstimator.curEstPose.X() < self.robot.fieldConstants.fieldLength - self.robot.fieldConstants.LinesVertical.starting: # neutral zone
             self.set_intake_speed(0.85 * 100) # TUNE
             self.set_position(-0.35) # TUNE
-        elif self.robot.pulse_pivot:
+        elif self.robot.state.feeding:
+            # DEPLOYED while the shooter feeds: pulse the pivot to push fuel
+            # toward the indexer. tick_count is set when feeding starts.
             if ((start_time - self.tick_count) / 1000) < 800.0:
                 pass
             else:
@@ -182,7 +186,6 @@ class Intake(Subsystem):
         SmartDashboard.putNumber("Loop Times/Intake", elapsed_ms)
 
     def log(self):
-        SmartDashboard.putBoolean("States/Is Intaking", self.robot.is_intaking)
         SmartDashboard.putNumber("Intake/Tick Count", self.tick_count )
         SmartDashboard.putNumber("Intake/Commanded Intake Speed", self.commanded_intake_speed)
         SmartDashboard.putNumber("Intake/Commanded Intake Position", self.commanded_position)

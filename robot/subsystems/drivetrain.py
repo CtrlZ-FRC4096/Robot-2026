@@ -336,7 +336,7 @@ class Drivetrain(Subsystem):
 
 
         cur_speeds = self.get_field_relative_speeds()
-        if Translation2d(cur_speeds.vx, cur_speeds.vy).norm() <= 0.05 and (abs(self.robot.poseEstimator.curEstPose.rotation().degrees() - target_angle) < 3.5 and not self.robot.shoot_intent):
+        if Translation2d(cur_speeds.vx, cur_speeds.vy).norm() <= 0.05 and (abs(self.robot.poseEstimator.curEstPose.rotation().degrees() - target_angle) < 3.5 and not self.robot.state.aiming):
             pid_output = 0
 
 
@@ -380,9 +380,6 @@ class Drivetrain(Subsystem):
     def should_mirror_path(self):
         return self.robot.mirror_bline_auto
     
-    def stop_intaking(self):
-        self.robot.is_intaking = False
-
     def go_to_pose_profiled_pid(self, target_pose : Translation2d, feedforward_x=0.0, feedforward_y=0.0, feedfoward_theta=0.0):
 
         current_pose = self.robot.poseEstimator.curEstPose
@@ -399,7 +396,7 @@ class Drivetrain(Subsystem):
         ) + feedfoward_theta
 
 
-        if self.robot.velocity_constrain_pid:
+        if self.robot.state.lineup_speed_limited:
             mag_vel = Translation2d(vx, vy).norm()
             if mag_vel > 1e-3:
                 direction = Translation2d(vx, vy) / mag_vel
@@ -443,14 +440,7 @@ class Drivetrain(Subsystem):
             #and (self.theta_controller.atSetpoint() and not self.robot.shoot_intent)
         
             # self.robot.running_pid_lineup = False
-            if self.robot.run_p1:
-                self.robot.done_p1 = True
-            if self.robot.run_p2:
-                self.robot.done_p2 = True
-            if self.robot.run_p3:
-                self.robot.done_p3 = True
-            if self.robot.run_p4:
-                self.robot.done_p4 = True
+            self.robot.state.lineup_arrived = True
 
             
             
@@ -525,7 +515,7 @@ class Drivetrain(Subsystem):
         return (pos - hub_pos).norm()
 
     def _get_final_lineup_pose(self, pose : Pose2d):
-        if not self.robot.shoot_intent:
+        if not self.robot.state.aiming:
             return pose
         else:
             return Pose2d(pose.translation(), self.get_hub_angle())
@@ -643,7 +633,7 @@ class Drivetrain(Subsystem):
         phase_delay_twist = Twist2d(cur_speeds.vx * phase_delay + 0.5 * self.cur_accel.X() * (phase_delay ** 2), cur_speeds.vy * phase_delay + 0.5 * self.cur_accel.Y() * (phase_delay ** 2), cur_speeds.omega * phase_delay)
         cur_pos = self.robot.poseEstimator.curEstPose.exp(phase_delay_twist)
         self.robot.distance = self.get_hub_distance(cur_pos.translation())
-        if self.robot.shoot_intent:
+        if self.robot.state.aiming:
             cur_rot = cur_pos.rotation().radians()
             shooter_pos = cur_pos.translation() + Translation2d(0, 0.196).rotateBy(Rotation2d(cur_rot))
             if self.robot.poseEstimator.cur_pos_in_zone(4.55) or self.robot.in_autonomous_mode:
@@ -700,15 +690,16 @@ class Drivetrain(Subsystem):
         self.previous_chassisspeeds = self.get_robot_relative_speeds()
 
         if self.robot.in_autonomous_mode:
-            if self.robot.running_pid_lineup:
-                if self.robot.shoot_intent and self.robot.poseEstimator.cur_pos_in_zone(4.5):
+            state = self.robot.state
+            if state.lining_up:
+                if state.aiming and self.robot.poseEstimator.cur_pos_in_zone(4.5):
                         rotation = self.robot.drivetrain.get_hub_angle(self.robot.time_of_flight)
-                        lineup  = Pose2d(self.robot.final_lineup_pose.X(), self.robot.final_lineup_pose.Y(), rotation)
+                        lineup  = Pose2d(state.lineup_pose.X(), state.lineup_pose.Y(), rotation)
                         # SmartDashboard.putNumber("Shooter/Rotation to Hub", rotation.degrees())
                 else:
-                    lineup = self.robot.final_lineup_pose
+                    lineup = state.lineup_pose
                 self.go_to_pose_profiled_pid(lineup)
-            elif not self.robot.running_pid_lineup and self.robot.shoot_intent:
+            elif state.aiming:
                 if ((RobotController.getFPGATime() / 1000) - self.robot.auto_time_since_ended_p) < 450:
                     rotation = Rotation2d.fromDegrees(self.robot.temp_rotation_shoot_auto)
                 else:

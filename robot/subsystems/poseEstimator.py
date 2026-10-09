@@ -559,7 +559,7 @@ class PoseEstimator(Subsystem):
         SmartDashboard.putData("Field", self.field)
         self.field.setRobotPose(self.poseEst.getEstimatedPosition())
         final_lineup = self.field.getObject("target pose")
-        final_lineup.setPose(self.robot.final_lineup_pose)
+        final_lineup.setPose(self.robot.state.lineup_pose if self.robot.state.lineup_pose is not None else Pose2d())
 
         SmartDashboard.putNumber("Skidding Ratio", self.get_skidding_ratio())
         for module in self.modules:
