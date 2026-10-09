@@ -323,6 +323,7 @@ class PoseEstimator(Subsystem):
     def reset_pose(self, pose):
         if self.robot.isSimulation() and hasattr(self.robot, "sim"):
             self.robot.sim.reset_pose(pose)
+            pose = self.robot.sim.pose  # pushed clear of the hubs if needed
             yaw = pose.rotation()
         else:
             yaw = self.getYaw()
@@ -601,7 +602,10 @@ class PoseEstimator(Subsystem):
         SmartDashboard.putNumber("Gyro/Pitch", self.gyro.get_pitch().value)
 
         SmartDashboard.putData("Field", self.field)
-        self.field.setRobotPose(self.poseEst.getEstimatedPosition())
+        # In simulation physics.py draws the physical robot here, and the
+        # estimate is the "Estimated Pose" object; shots leave the physical robot.
+        if not self.robot.isSimulation():
+            self.field.setRobotPose(self.poseEst.getEstimatedPosition())
         final_lineup = self.field.getObject("target pose")
         final_lineup.setPose(self.robot.final_lineup_pose)
 

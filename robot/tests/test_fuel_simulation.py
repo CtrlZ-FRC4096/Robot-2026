@@ -28,12 +28,35 @@ def advance(sim, seconds):
 def test_rolling_fuel_stops_in_finite_time_and_stays_put():
     sim = make_fuel_sim()
     sim.spawnFuel(Translation3d(7, 1, sim.FUEL_RADIUS), Translation3d(2, 0, 0))
-    advance(sim, 2)
+    advance(sim, 3)
     assert np.array_equal(sim.velocities[0], [0, 0, 0])
-    assert 7.9 < sim.positions[0, 0] < 8.3
+    # v^2 / (2 * FRICTION * g): a firm 2 m/s push rolls about 2.5 m.
+    assert 9.3 < sim.positions[0, 0] < 9.8
     settled = sim.positions[0].copy()
     advance(sim, 2)
     assert np.array_equal(sim.positions[0], settled)
+    assert not sim._awake(sim.positions[:1], sim.velocities[:1]).size
+
+
+def test_landing_shot_skids_on_bounces_instead_of_sliding_forever():
+    sim = make_fuel_sim()
+    sim.simulateAirResistance = False
+    sim.spawnFuel(Translation3d(3, 2, 1.5), Translation3d(4, 0, 0))
+    advance(sim, 0.6)  # first impact after ~0.53 s
+    assert sim.velocities[0, 0] == pytest.approx(4 * sim.BOUNCE_TANGENTIAL_COR)
+    advance(sim, 8)
+    assert np.array_equal(sim.velocities[0], [0, 0, 0])
+    assert sim.positions[0, 0] < 13
+
+
+def test_late_loop_shots_are_staggered_along_their_arc():
+    sim = make_fuel_sim()
+    sim.registerRobot(0.8, 0.8, 0.2, lambda: Pose2d(7, 1, Rotation2d(math.pi / 2)), lambda: ChassisSpeeds())
+    first = sim.launchFuel(8, math.pi / 4, 0, Translation3d(7, 1, 0.52), age=0.06)
+    sim.launchFuel(8, math.pi / 4, 0, Translation3d(7, 1, 0.52))
+    assert sim.positions[0, 0] == pytest.approx(7 + 8 * math.cos(math.pi / 4) * 0.06)
+    assert np.linalg.norm(sim.positions[0] - sim.positions[1]) > 0.4
+    assert first.Z() == pytest.approx(8 * math.sin(math.pi / 4) - 9.81 * 0.06)
 
 
 def test_dropped_fuel_settles_without_persistent_micro_bounces():
@@ -71,7 +94,7 @@ def test_separating_contacts_do_not_pull_balls_together():
     assert np.array_equal(sim.velocities[:2], before)
     assert np.linalg.norm(sim.positions[0] - sim.positions[1]) == pytest.approx(0.15)
     sim.positions[1] = sim.positions[0]
-    sim._resolve_one_collision(0, 1)
+    sim._handle_fuel_collisions(sim.positions[:2], sim.velocities[:2])
     assert np.linalg.norm(sim.positions[0] - sim.positions[1]) == pytest.approx(0.15)
 
 
@@ -88,6 +111,8 @@ def test_crowded_moving_field_fuel_loses_energy_and_all_settles():
     settled = sim.positions[:sim.count].copy()
     advance(sim, 0.2)
     assert np.array_equal(settled, sim.positions[:sim.count])
+    # Settled fuel sleeps: no per-ball work until something touches it.
+    assert not sim._awake(sim.positions[:sim.count], sim.velocities[:sim.count]).size
 
 
 def test_resting_ball_wakes_on_contact_with_moving_ball():

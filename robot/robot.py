@@ -177,7 +177,10 @@ class Robot(CoroutineRobot):
         # self.pathplanner_config = RobotConfig.fromGUISettings()
 
         ### FIELD LOGGING ###
-        self.field = Field2d()
+        # One dashboard "Field": the pose estimator republishes its Field2d
+        # under this key every loop, so a second Field2d here would be
+        # silently replaced (and anything drawn on it never shown).
+        self.field = self.poseEstimator.field
         wpilib.SmartDashboard.putData("Field", self.field)
         ### LOGGING ###
         self.remote_shell = RemoteShell(self)
@@ -300,6 +303,9 @@ class Robot(CoroutineRobot):
         self.hood_angle = 35
         self.virtual_goal = Translation2d()
         self.fuel_in_hopper = 8
+        self.preload_fuel = self.fuel_in_hopper
+        self.submitted_auto_choice = None
+        self.auto_start_pose = None
 
         self.down_bad_fly_speed = 55 # TODO: TUNE
         self.down_bad_hood_angle = 40 # TODO: TUNE
@@ -356,6 +362,9 @@ class Robot(CoroutineRobot):
             # self.fuel_sim.clearFuel()
             self.fuel_sim.start()
             self.sim = RobotSimulation(self)
+            # Start the estimate where the physical robot actually is (the
+            # no-auto default pose overlaps the hub and is pushed clear).
+            self.poseEstimator.reset_pose(self.poseEstimator.curEstPose)
 
         # path flip code - KEEP COMMENTED IF DEPLOYING
         # RUN IN SIM if you want to mirror a path; check terminal output for anchors
@@ -525,8 +534,41 @@ class Robot(CoroutineRobot):
         self.in_teleop_mode = False
         self.did_autonomous = True
         self.in_autonomous_mode = True
-        
+
+        if self.isSimulation():
+            self.start_sim_auto()
+
         self.scheduler.schedule(self.auto)
+
+    def start_sim_auto(self):
+        """Simulation only: treat every autonomous enable as a match start.
+
+        Submits the chooser's routine if the dashboard "Submit Auto?" step was
+        skipped (otherwise there is no command and the robot sits still), then
+        restores the starting pose, preload, field fuel and state flags so the
+        routine can be run again without restarting the simulator.
+        """
+        if not self.auto_submitted:
+            self.hopper.submit_auto()
+        elif self.auto_chooser.getSelected() != self.submitted_auto_choice:
+            log.warning("Auto Chooser changed after an auto was submitted; restart the "
+                        "simulator to run a different routine. Re-running the submitted one.")
+        if not self.submitted_auto_choice:
+            log.warning("No autonomous routine selected in Auto Chooser; the robot will not move.")
+        self.poseEstimator.reset_pose(self.auto_start_pose)
+        self.robot_oriented_angle = self.auto_start_pose.rotation().degrees()
+        self.running_pid_lineup = False
+        self.velocity_constrain_pid = False
+        self.shoot_intent = self.shoot_fuel = self.spin_down = False
+        self.is_intaking = self.down_bad = self.clear_jam = self.pulse_pivot = False
+        self.shooter_at_default = True
+        self.shooter.shoot_ready = self.shooter.accel_good = False
+        self.run_p1 = self.run_p2 = self.run_p3 = self.run_p4 = False
+        self.done_p1 = self.done_p2 = self.done_p3 = self.done_p4 = False
+        self.fuel_in_hopper = self.preload_fuel
+        self.fuel_sim.spawnStartingFuel()
+        self.fuel_sim.blueHub.resetScore()
+        self.fuel_sim.redHub.resetScore()
 
     def autonomousExit(self):
         for idx in range(len(self.poseEstimator.modules)):

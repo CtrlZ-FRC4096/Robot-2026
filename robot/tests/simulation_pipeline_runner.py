@@ -77,7 +77,7 @@ def run():
         assert time.monotonic() - commanded_at < 1.5, "Forward response is too slow with starting fuel"
         assert robot.oi.driver1.LEFT_JOY_Y() == -0.5
         assert abs(robot.drivetrain.log_chassis.vx) > 0.1
-        assert max(abs(p.motor.sim_state.motor_voltage) for p in robot.sim.drive_plants) > 0.05
+        assert max(abs(m.sim_state.motor_voltage) for m in robot.sim.drive_plants) > 0.05
         assert max(abs(s.speed) for s in robot.poseEstimator.get_module_states()) > 0.05
         wait_until(lambda: robot.poseEstimator.curEstPose.translation().distance(start_pose.translation()) > 0.15,
                    "Encoders never updated the estimated pose")
@@ -115,11 +115,12 @@ def run():
         shots = []
         launch_fuel = robot.fuel_sim.launchFuel
 
-        def capture_launch(*args):
-            launch_fuel(*args)
+        def capture_launch(*args, **kwargs):
+            launched = launch_fuel(*args, **kwargs)
             index = robot.fuel_sim.count - 1
             shots.append((robot.fuel_sim.positions[index].copy(),
                           robot.fuel_sim.velocities[index].copy(), robot.static_target))
+            return launched
 
         robot.fuel_sim.launchFuel = capture_launch
         held_count = robot.fuel_in_hopper
@@ -160,15 +161,30 @@ def run():
         wait_until(lambda: robot.in_autonomous_mode
                    and robot.sim.pose.translation().distance(auto_start.translation()) > 0.2,
                    "Scheduled autonomous path never moved the physical robot")
-        assert max(abs(p.motor.sim_state.motor_voltage) for p in robot.sim.drive_plants) > 0.05
+        assert max(abs(m.sim_state.motor_voltage) for m in robot.sim.drive_plants) > 0.05
         wait_until(lambda: robot.poseEstimator.curEstPose.translation().distance(auto_start.translation()) > 0.15,
                    "Autonomous encoders never updated the estimated pose")
         print("PASS: chooser -> autonomous scheduler -> PathPlanner -> motor output -> pose", flush=True)
 
+        # Re-enabling autonomous in the same session restarts the routine from
+        # its starting pose (a fresh "match"), rather than following the path
+        # from wherever the robot stopped.
+        DriverStationSim.setEnabled(False)
+        disabled_at = robot.sim.step_count
+        # Let the robot loop itself run the disabled transition.
+        wait_until(lambda: robot.sim.step_count > disabled_at + 5, "Robot loop did not run while disabled")
+        DriverStationSim.setEnabled(True)
+        wait_until(lambda: robot.in_autonomous_mode
+                   and robot.sim.pose.translation().distance(auto_start.translation()) < 0.15,
+                   "Autonomous re-run did not return to the starting pose", timeout=3)
+        wait_until(lambda: robot.sim.pose.translation().distance(auto_start.translation()) > 0.2,
+                   "Autonomous re-run never moved the physical robot")
+        print("PASS: autonomous re-run restarts from the submitted starting pose", flush=True)
+
         before_disabled = robot.sim.step_count
         DriverStationSim.setEnabled(False)
         wait_until(lambda: robot.sim.step_count > before_disabled + 15
-                   and max(abs(p.model.getAngularVelocity()) for p in robot.sim.drive_plants) < 0.5,
+                   and max(abs(w) for w in robot.sim.chassis.wheel_velocity) < 0.5,
                    "Disabling did not stop the simulated drive motors")
         assert not wpilib.SmartDashboard.getBoolean("Sim/Enabled", True)
         print("PASS: simulation heartbeat continues while disabled; motors stop", flush=True)

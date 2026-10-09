@@ -1,11 +1,13 @@
 """Deterministic physics checks without native CAN threads or robot startup."""
 
+import math
 from types import SimpleNamespace
 import numpy as np
 
 import pytest
-from robot_sim import MotorPlant, RobotSimulation
-from wpimath.geometry import Pose2d, Pose3d, Rotation2d, Rotation3d, Translation3d, Transform3d
+from robot_sim import MotorPlant, RobotSimulation, SwerveChassis
+from wpimath.geometry import Pose2d, Pose3d, Rotation2d, Rotation3d, Translation2d, Translation3d, Transform3d
+from wpimath.system.plant import DCMotor
 from wpimath.kinematics import ChassisSpeeds
 from fuel_sim import FuelSim
 from subsystems.shooter import Shooter
@@ -120,7 +122,7 @@ def test_fuel_feed_uses_measured_speed_and_requires_enabled_indexer():
                               get_hood_position=lambda: 30)
     hopper = SimpleNamespace(get_speed=lambda: 0)
     fuel = SimpleNamespace(FUEL_MASS=0.2, updateSim=lambda period=None: None,
-                           launchFuel=lambda *args: launches.append(args))
+                           launchFuel=lambda *args, **kwargs: launches.append(args))
     drivetrain = SimpleNamespace(
         vel_lookup_table=SimpleNamespace(data=[(6, 50), (9, 90)]),
         angle_lookup_table=SimpleNamespace(data=[(60, 45), (80, 0)]))
@@ -147,28 +149,92 @@ def test_fuel_launch_radians_upward_velocity_and_robot_motion():
     sim.robotFieldSpeedsSupplier = lambda: ChassisSpeeds(1, 2, 0)
     launches = []
     sim.spawnFuel = lambda pos, vel: launches.append((pos, vel))
-    import math
     sim.launchFuel(10, math.pi / 6, 0, Translation3d(0, 0, 0.5))
     assert launches[0][1].X() == pytest.approx(1)
     assert launches[0][1].Y() == pytest.approx(2 - 10 * math.cos(math.pi / 6))
     assert launches[0][1].Z() == pytest.approx(5)
 
 
-def test_fuel_contacts_preserve_impulse_and_grid_cache_invalidates():
-    sim = FuelSim.__new__(FuelSim)
-    sim.count = 2
-    sim.positions = np.array([[1.0, 1.0, 0.075], [1.12, 1.0, 0.075]])
-    sim.velocities = np.array([[1.0, 0.0, 0.0], [-1.0, 0.0, 0.0]])
-    sim._handle_fuel_collisions(sim.positions, sim.velocities)
-    assert np.linalg.norm(sim.positions[0] - sim.positions[1]) == pytest.approx(0.15)
-    assert sim.velocities[0, 0] == pytest.approx(-sim.FUEL_COR)
-    assert sim.velocities[1, 0] == pytest.approx(sim.FUEL_COR)
-    sim.positions[1] = [3.0, 1.0, 0.075]
-    sim._handle_fuel_collisions(sim.positions, sim.velocities)
-    assert len(sim._collision_pairs) == 0
-    sim.positions[1] = [sim.positions[0, 0] + 0.1, 1.0, 0.075]
-    sim._handle_fuel_collisions(sim.positions, sim.velocities)
-    assert np.linalg.norm(sim.positions[0] - sim.positions[1]) == pytest.approx(0.15)
+def test_fuel_contacts_preserve_impulse_and_ignore_distant_fuel():
+    sim = FuelSim(None, lambda: False, None)
+    sim.spawnFuel(Translation3d(1.0, 1.0, 0.075), Translation3d(1, 0, 0))
+    sim.spawnFuel(Translation3d(1.12, 1.0, 0.075), Translation3d(-1, 0, 0))
+    pos, vel = sim.positions[:2], sim.velocities[:2]
+    sim._handle_fuel_collisions(pos, vel)
+    assert np.linalg.norm(pos[0] - pos[1]) == pytest.approx(0.15)
+    assert vel[0, 0] == pytest.approx(-sim.FUEL_COR)
+    assert vel[1, 0] == pytest.approx(sim.FUEL_COR)
+    pos[1] = [3.0, 1.0, 0.075]
+    first, second = sim._contact_candidates(pos, np.array([0]))
+    assert len(first) == 0
+    pos[1] = [pos[0, 0] + 0.1, 1.0, 0.075]
+    sim._handle_fuel_collisions(pos, vel)
+    assert np.linalg.norm(pos[0] - pos[1]) == pytest.approx(0.15)
+
+
+def make_chassis(**overrides):
+    options = dict(mass=61.69, moi=7.955,
+                   module_positions=[Translation2d(0.267, 0.298), Translation2d(0.267, -0.298),
+                                     Translation2d(-0.267, 0.298), Translation2d(-0.267, -0.298)],
+                   wheel_radius=0.0508, gearing=5.68, motor=DCMotor.krakenX60FOC(1),
+                   wheel_cof=1.2, wheel_inertia=RobotSimulation.WHEEL_INERTIA,
+                   friction_torque=RobotSimulation.DRIVE_FRICTION_TORQUE,
+                   viscous_drag=RobotSimulation.DRIVE_VISCOUS_DRAG,
+                   current_limit=80.0, half_size=(0.41, 0.44), field_size=(16.5, 8.0),
+                   obstacles=((4.6, 4.0, 0.6),))
+    options.update(overrides)
+    chassis = SwerveChassis(**options)
+    chassis.reset(Pose2d(2, 2, Rotation2d()))
+    return chassis
+
+
+def test_chassis_acceleration_is_traction_limited_and_reaches_free_speed():
+    chassis = make_chassis(current_limit=500.0)  # stall torque would exceed traction
+    speeds = []
+    for _ in range(400):  # 2 s of full voltage, wheels pointing forward
+        chassis.step(0.005, [12.0] * 4, [0.0] * 4)
+        speeds.append(chassis.vx)
+    accel = np.diff(speeds) / 0.005
+    assert max(accel) <= chassis.wheel_cof * 9.81 + 0.05
+    assert max(accel) > 10
+    # Free speed with losses: Kraken FOC at 12 V through 5.68:1, 4 in wheels.
+    assert 4.6 < speeds[-1] < 5.4
+    assert abs(chassis.vy) < 1e-3 and abs(chassis.omega) < 1e-3
+
+
+def test_chassis_wheels_stall_against_a_wall_and_hub():
+    chassis = make_chassis()
+    chassis.reset(Pose2d(15.5, 2, Rotation2d()))
+    for _ in range(400):
+        chassis.step(0.005, [1.0] * 4, [0.0] * 4)
+    assert chassis.pose.X() == pytest.approx(16.5 - 0.41, abs=1e-3)
+    assert abs(chassis.vx) < 1e-3
+    # Torque below the traction limit stalls the wheels, so odometry stops
+    # rather than running away while the bumper is against the wall.
+    assert max(abs(w) for w in chassis.wheel_velocity) < 0.05
+    # Torque beyond tread friction spins the wheels in place.
+    chassis.current_limit = 150.0
+    for _ in range(200):
+        chassis.step(0.005, [12.0] * 4, [0.0] * 4)
+    assert chassis.pose.X() == pytest.approx(16.5 - 0.41, abs=1e-3)
+    assert min(chassis.wheel_velocity) > 5
+    chassis.reset(Pose2d(2.5, 4.0, Rotation2d()))
+    for _ in range(600):
+        chassis.step(0.005, [6.0] * 4, [0.0] * 4)
+    assert chassis.pose.X() <= 4.0 - 0.41 + 1e-6  # bumper stops at the hub face
+
+
+def test_chassis_holds_still_and_rotates_about_its_center():
+    chassis = make_chassis()
+    for _ in range(100):
+        chassis.step(0.005, [0.0] * 4, [0.0] * 4)
+    assert chassis.pose.translation().distance(Pose2d(2, 2, Rotation2d()).translation()) < 1e-9
+    # Modules tangent to the rotation circle, all driven forward.
+    angles = [math.atan2(x, -y) for x, y in chassis.module_positions]
+    for _ in range(200):
+        chassis.step(0.005, [6.0] * 4, angles)
+    assert chassis.omega > 2
+    assert math.hypot(chassis.vx, chassis.vy) < 0.05
 
 
 @pytest.mark.parametrize("distance,ambiguity,accepted", [(4, 0.1, True), (4, 0.31, False), (6, 0.1, False)])

@@ -51,119 +51,125 @@ class Hopper(Subsystem):
         self.commanded_speed = 0.0
         self.indexer_motor.set_control(controls.DutyCycleOut(0.0))
 
+    def submit_auto(self):
+        """Lock in the chooser's routine, alliance and starting pose."""
+        self.robot.auto_submitted = True
+        self.robot.fieldConstants.shouldFlip = self.robot.driverstation.getAlliance() == self.robot.driverstation.Alliance.kRed
+        if self.robot.fieldConstants.shouldFlip:
+            gyro_offset = 90
+        else:
+            gyro_offset = -90
+        self.robot.poseEstimator.gyro.set_yaw(gyro_offset)
+        self.robot.robot_oriented_angle = gyro_offset
+        match self.robot.auto_chooser.getSelected():
+            # case 1: # Left Default Trench Bump PP Auto Robust
+            #     self.robot.temp_rotation_shoot_auto = self.robot.fieldConstants.flip_Rotation2d(Rotation2d.fromDegrees(45)).degrees()
+            #     self.robot.poseEstimator.poseEst.resetPosition(
+            #         Rotation2d.fromDegrees(gyro_offset),
+            #         self.robot.poseEstimator.get_module_positions(),
+            #         Pose2d(self.robot.fieldConstants.flip_Translation2d(Translation2d(4.471, 7.587)), Rotation2d.fromDegrees(gyro_offset)))
+            #     self.robot.poseEstimator.curEstPose = Pose2d(self.robot.fieldConstants.flip_Translation2d(Translation2d(4.471, 7.587)), Rotation2d.fromDegrees(gyro_offset))
+                        
+            #     self.robot.auto = self.robot.autoroutines.left_trench_bump_robust_new()
+            # case 2: # Right Default Trench Bump PP Auto Robust
+            #     self.robot.temp_rotation_shoot_auto = self.robot.fieldConstants.flip_Rotation2d(Rotation2d.fromDegrees(135)).degrees()
+            #     self.robot.poseEstimator.poseEst.resetPosition(
+            #         Rotation2d.fromDegrees(gyro_offset),
+            #         self.robot.poseEstimator.get_module_positions(),
+            #         Pose2d(self.robot.fieldConstants.flip_Translation2d(Translation2d(4.47, 0.6)), Rotation2d.fromDegrees(gyro_offset)))
+            #     self.robot.poseEstimator.curEstPose = Pose2d(self.robot.fieldConstants.flip_Translation2d(Translation2d(4.47, 0.6)), Rotation2d.fromDegrees(gyro_offset))
+                        
+            #     self.robot.auto = self.robot.autoroutines.right_trench_bump_robust_new()
+            case 5: # Right Trench & Bump PP Auto Robust MVR
+                self.robot.temp_rotation_shoot_auto = self.robot.fieldConstants.flip_Rotation2d(Rotation2d.fromDegrees(135)).degrees()
+                self.robot.poseEstimator.poseEst.resetPosition(
+                    Rotation2d.fromDegrees(gyro_offset),
+                    self.robot.poseEstimator.get_module_positions(),
+                    Pose2d(self.robot.fieldConstants.flip_Translation2d(Translation2d(4.439, 0.628)), Rotation2d.fromDegrees(gyro_offset))
+                )
+                self.robot.poseEstimator.curEstPose = Pose2d(self.robot.fieldConstants.flip_Translation2d(Translation2d(4.439, 0.628)), Rotation2d.fromDegrees(gyro_offset))
+
+                self.robot.auto = self.robot.autoroutines.right_trench_bump_robust_new_mvr()
+
+                self.robot.P1_T_B_R_ROBUST_MVR.initialize()
+            case 6: # Left Trench & Bump PP Auto Robust MVR
+                self.robot.temp_rotation_shoot_auto = self.robot.fieldConstants.flip_Rotation2d(Rotation2d.fromDegrees(45)).degrees()
+                self.robot.poseEstimator.poseEst.resetPosition(
+                    Rotation2d.fromDegrees(gyro_offset),
+                    self.robot.poseEstimator.get_module_positions(),
+                    Pose2d(self.robot.fieldConstants.flip_Translation2d(Translation2d(4.439, 7.441)), Rotation2d.fromDegrees(gyro_offset)))
+                self.robot.poseEstimator.curEstPose = Pose2d(self.robot.fieldConstants.flip_Translation2d(Translation2d(4.439, 7.441)), Rotation2d.fromDegrees(gyro_offset))
+
+                self.robot.auto = self.robot.autoroutines.left_trench_bump_robust_new_mvr()
+                        
+                self.robot.P1_T_B_L_ROBUST_MVR.initialize()
+            case 7: # Right Trench & Bump Safe MVR PP
+                self.robot.temp_rotation_shoot_auto = self.robot.fieldConstants.flip_Rotation2d(Rotation2d.fromDegrees(135)).degrees()
+                self.robot.poseEstimator.poseEst.resetPosition(
+                    Rotation2d.fromDegrees(gyro_offset),
+                    self.robot.poseEstimator.get_module_positions(),
+                    Pose2d(self.robot.fieldConstants.flip_Translation2d(Translation2d(4.439, 0.628)), Rotation2d.fromDegrees(gyro_offset))
+                )
+                self.robot.poseEstimator.curEstPose = Pose2d(self.robot.fieldConstants.flip_Translation2d(Translation2d(4.439, 0.628)), Rotation2d.fromDegrees(gyro_offset))
+
+                self.robot.auto = self.robot.autoroutines.right_trench_bump_robust_new_mvr_safe()
+            case 8: # Left Trench & Bump Safe MVR PP
+                self.robot.temp_rotation_shoot_auto = self.robot.fieldConstants.flip_Rotation2d(Rotation2d.fromDegrees(45)).degrees()
+                self.robot.poseEstimator.poseEst.resetPosition(
+                    Rotation2d.fromDegrees(gyro_offset),
+                    self.robot.poseEstimator.get_module_positions(),
+                    Pose2d(self.robot.fieldConstants.flip_Translation2d(Translation2d(4.439, 7.441)), Rotation2d.fromDegrees(gyro_offset)))
+                self.robot.poseEstimator.curEstPose = Pose2d(self.robot.fieldConstants.flip_Translation2d(Translation2d(4.439, 7.441)), Rotation2d.fromDegrees(gyro_offset))
+
+                self.robot.auto = self.robot.autoroutines.left_trench_bump_robust_new_mvr_safe()
+            case 14: # Slow Left Safe 3-Bot + Depot After PP
+                self.robot.temp_rotation_shoot_auto = self.robot.fieldConstants.flip_Rotation2d(Rotation2d.fromDegrees(60)).degrees()
+                self.robot.poseEstimator.poseEst.resetPosition(
+                    Rotation2d.fromDegrees(gyro_offset),
+                    self.robot.poseEstimator.get_module_positions(),
+                    Pose2d(self.robot.fieldConstants.flip_Translation2d(Translation2d(3.572, 6.028)), Rotation2d.fromDegrees(gyro_offset)))
+                self.robot.poseEstimator.curEstPose = Pose2d(self.robot.fieldConstants.flip_Translation2d(Translation2d(3.572, 6.028)), Rotation2d.fromDegrees(gyro_offset))
+
+                self.robot.auto = self.robot.autoroutines.left_trench_bump_3bot_safe()
+            case 15: # Steph Curry 3-Bot + Depot First
+                self.robot.temp_rotation_shoot_auto = self.robot.fieldConstants.flip_Rotation2d(Rotation2d.fromDegrees(60)).degrees()
+                self.robot.poseEstimator.poseEst.resetPosition(
+                    Rotation2d.fromDegrees(gyro_offset),
+                    self.robot.poseEstimator.get_module_positions(),
+                    Pose2d(self.robot.fieldConstants.flip_Translation2d(Translation2d(3.550, 5.950)), Rotation2d.fromDegrees(gyro_offset)))
+                self.robot.poseEstimator.curEstPose = Pose2d(self.robot.fieldConstants.flip_Translation2d(Translation2d(3.550, 5.950)), Rotation2d.fromDegrees(gyro_offset))
+
+                self.robot.auto = self.robot.autoroutines.steph_curry_auto()
+            case 16: # JUST DEPOT 3-bot START IN FRONT OF BUMP
+                self.robot.temp_rotation_shoot_auto = self.robot.fieldConstants.flip_Rotation2d(Rotation2d.fromDegrees(60)).degrees()
+                self.robot.poseEstimator.poseEst.resetPosition(
+                    Rotation2d.fromDegrees(gyro_offset),
+                    self.robot.poseEstimator.get_module_positions(),
+                    Pose2d(self.robot.fieldConstants.flip_Translation2d(Translation2d(3.550, 5.950)), Rotation2d.fromDegrees(gyro_offset))
+                )
+                self.robot.poseEstimator.curEstPose = Pose2d(self.robot.fieldConstants.flip_Translation2d(Translation2d(3.550, 5.950)), Rotation2d.fromDegrees(gyro_offset))
+
+                self.robot.auto = self.robot.autoroutines.just_depot_auto()
+            case 0: # NO AUTO SELECTED
+                self.robot.poseEstimator.poseEst.resetPosition(
+                    Rotation2d.fromDegrees(gyro_offset),
+                    self.robot.poseEstimator.get_module_positions(),
+                    Pose2d(self.robot.fieldConstants.flip_Translation2d(Translation2d(4.471, 4.411)), Rotation2d.fromDegrees(gyro_offset)))
+                self.robot.poseEstimator.curEstPose = Pose2d(self.robot.fieldConstants.flip_Translation2d(Translation2d(4.471, 4.411)), Rotation2d.fromDegrees(gyro_offset))
+                        
+                self.robot.auto = SequentialCommandGroup()
+                        
+        # The auto chooser explicitly places the simulated robot too.
+        self.robot.poseEstimator.reset_pose(self.robot.poseEstimator.curEstPose)
+        self.robot.submitted_auto_choice = self.robot.auto_chooser.getSelected()
+        self.robot.auto_start_pose = self.robot.poseEstimator.curEstPose
+
     def periodic(self):
         start_time = wpilib.RobotController.getFPGATime()
 
         if not self.robot.did_autonomous and self.robot.using_auto:
             if not self.robot.auto_submitted and SmartDashboard.getNumber("Submit Auto? (and FMS Connected)", 0):
-                self.robot.auto_submitted = True
-                self.robot.fieldConstants.shouldFlip = self.robot.driverstation.getAlliance() == self.robot.driverstation.Alliance.kRed
-                if self.robot.fieldConstants.shouldFlip:
-                    gyro_offset = 90
-                else:
-                    gyro_offset = -90
-                self.robot.poseEstimator.gyro.set_yaw(gyro_offset)
-                self.robot.robot_oriented_angle = gyro_offset
-                match self.robot.auto_chooser.getSelected():
-                    # case 1: # Left Default Trench Bump PP Auto Robust
-                    #     self.robot.temp_rotation_shoot_auto = self.robot.fieldConstants.flip_Rotation2d(Rotation2d.fromDegrees(45)).degrees()
-                    #     self.robot.poseEstimator.poseEst.resetPosition(
-                    #         Rotation2d.fromDegrees(gyro_offset),
-                    #         self.robot.poseEstimator.get_module_positions(),
-                    #         Pose2d(self.robot.fieldConstants.flip_Translation2d(Translation2d(4.471, 7.587)), Rotation2d.fromDegrees(gyro_offset)))
-                    #     self.robot.poseEstimator.curEstPose = Pose2d(self.robot.fieldConstants.flip_Translation2d(Translation2d(4.471, 7.587)), Rotation2d.fromDegrees(gyro_offset))
-                        
-                    #     self.robot.auto = self.robot.autoroutines.left_trench_bump_robust_new()
-                    # case 2: # Right Default Trench Bump PP Auto Robust
-                    #     self.robot.temp_rotation_shoot_auto = self.robot.fieldConstants.flip_Rotation2d(Rotation2d.fromDegrees(135)).degrees()
-                    #     self.robot.poseEstimator.poseEst.resetPosition(
-                    #         Rotation2d.fromDegrees(gyro_offset),
-                    #         self.robot.poseEstimator.get_module_positions(),
-                    #         Pose2d(self.robot.fieldConstants.flip_Translation2d(Translation2d(4.47, 0.6)), Rotation2d.fromDegrees(gyro_offset)))
-                    #     self.robot.poseEstimator.curEstPose = Pose2d(self.robot.fieldConstants.flip_Translation2d(Translation2d(4.47, 0.6)), Rotation2d.fromDegrees(gyro_offset))
-                        
-                    #     self.robot.auto = self.robot.autoroutines.right_trench_bump_robust_new()
-                    case 5: # Right Trench & Bump PP Auto Robust MVR
-                        self.robot.temp_rotation_shoot_auto = self.robot.fieldConstants.flip_Rotation2d(Rotation2d.fromDegrees(135)).degrees()
-                        self.robot.poseEstimator.poseEst.resetPosition(
-                            Rotation2d.fromDegrees(gyro_offset),
-                            self.robot.poseEstimator.get_module_positions(),
-                            Pose2d(self.robot.fieldConstants.flip_Translation2d(Translation2d(4.439, 0.628)), Rotation2d.fromDegrees(gyro_offset))
-                        )
-                        self.robot.poseEstimator.curEstPose = Pose2d(self.robot.fieldConstants.flip_Translation2d(Translation2d(4.439, 0.628)), Rotation2d.fromDegrees(gyro_offset))
-
-                        self.robot.auto = self.robot.autoroutines.right_trench_bump_robust_new_mvr()
-
-                        self.robot.P1_T_B_R_ROBUST_MVR.initialize()
-                    case 6: # Left Trench & Bump PP Auto Robust MVR
-                        self.robot.temp_rotation_shoot_auto = self.robot.fieldConstants.flip_Rotation2d(Rotation2d.fromDegrees(45)).degrees()
-                        self.robot.poseEstimator.poseEst.resetPosition(
-                            Rotation2d.fromDegrees(gyro_offset),
-                            self.robot.poseEstimator.get_module_positions(),
-                            Pose2d(self.robot.fieldConstants.flip_Translation2d(Translation2d(4.439, 7.441)), Rotation2d.fromDegrees(gyro_offset)))
-                        self.robot.poseEstimator.curEstPose = Pose2d(self.robot.fieldConstants.flip_Translation2d(Translation2d(4.439, 7.441)), Rotation2d.fromDegrees(gyro_offset))
-
-                        self.robot.auto = self.robot.autoroutines.left_trench_bump_robust_new_mvr()
-                        
-                        self.robot.P1_T_B_L_ROBUST_MVR.initialize()
-                    case 7: # Right Trench & Bump Safe MVR PP
-                        self.robot.temp_rotation_shoot_auto = self.robot.fieldConstants.flip_Rotation2d(Rotation2d.fromDegrees(135)).degrees()
-                        self.robot.poseEstimator.poseEst.resetPosition(
-                            Rotation2d.fromDegrees(gyro_offset),
-                            self.robot.poseEstimator.get_module_positions(),
-                            Pose2d(self.robot.fieldConstants.flip_Translation2d(Translation2d(4.439, 0.628)), Rotation2d.fromDegrees(gyro_offset))
-                        )
-                        self.robot.poseEstimator.curEstPose = Pose2d(self.robot.fieldConstants.flip_Translation2d(Translation2d(4.439, 0.628)), Rotation2d.fromDegrees(gyro_offset))
-
-                        self.robot.auto = self.robot.autoroutines.right_trench_bump_robust_new_mvr_safe()
-                    case 8: # Left Trench & Bump Safe MVR PP
-                        self.robot.temp_rotation_shoot_auto = self.robot.fieldConstants.flip_Rotation2d(Rotation2d.fromDegrees(45)).degrees()
-                        self.robot.poseEstimator.poseEst.resetPosition(
-                            Rotation2d.fromDegrees(gyro_offset),
-                            self.robot.poseEstimator.get_module_positions(),
-                            Pose2d(self.robot.fieldConstants.flip_Translation2d(Translation2d(4.439, 7.441)), Rotation2d.fromDegrees(gyro_offset)))
-                        self.robot.poseEstimator.curEstPose = Pose2d(self.robot.fieldConstants.flip_Translation2d(Translation2d(4.439, 7.441)), Rotation2d.fromDegrees(gyro_offset))
-
-                        self.robot.auto = self.robot.autoroutines.left_trench_bump_robust_new_mvr_safe()
-                    case 14: # Slow Left Safe 3-Bot + Depot After PP
-                        self.robot.temp_rotation_shoot_auto = self.robot.fieldConstants.flip_Rotation2d(Rotation2d.fromDegrees(60)).degrees()
-                        self.robot.poseEstimator.poseEst.resetPosition(
-                            Rotation2d.fromDegrees(gyro_offset),
-                            self.robot.poseEstimator.get_module_positions(),
-                            Pose2d(self.robot.fieldConstants.flip_Translation2d(Translation2d(3.572, 6.028)), Rotation2d.fromDegrees(gyro_offset)))
-                        self.robot.poseEstimator.curEstPose = Pose2d(self.robot.fieldConstants.flip_Translation2d(Translation2d(3.572, 6.028)), Rotation2d.fromDegrees(gyro_offset))
-
-                        self.robot.auto = self.robot.autoroutines.left_trench_bump_3bot_safe()
-                    case 15: # Steph Curry 3-Bot + Depot First
-                        self.robot.temp_rotation_shoot_auto = self.robot.fieldConstants.flip_Rotation2d(Rotation2d.fromDegrees(60)).degrees()
-                        self.robot.poseEstimator.poseEst.resetPosition(
-                            Rotation2d.fromDegrees(gyro_offset),
-                            self.robot.poseEstimator.get_module_positions(),
-                            Pose2d(self.robot.fieldConstants.flip_Translation2d(Translation2d(3.550, 5.950)), Rotation2d.fromDegrees(gyro_offset)))
-                        self.robot.poseEstimator.curEstPose = Pose2d(self.robot.fieldConstants.flip_Translation2d(Translation2d(3.550, 5.950)), Rotation2d.fromDegrees(gyro_offset))
-
-                        self.robot.auto = self.robot.autoroutines.steph_curry_auto()
-                    case 16: # JUST DEPOT 3-bot START IN FRONT OF BUMP
-                        self.robot.temp_rotation_shoot_auto = self.robot.fieldConstants.flip_Rotation2d(Rotation2d.fromDegrees(60)).degrees()
-                        self.robot.poseEstimator.poseEst.resetPosition(
-                            Rotation2d.fromDegrees(gyro_offset),
-                            self.robot.poseEstimator.get_module_positions(),
-                            Pose2d(self.robot.fieldConstants.flip_Translation2d(Translation2d(3.550, 5.950)), Rotation2d.fromDegrees(gyro_offset))
-                        )
-                        self.robot.poseEstimator.curEstPose = Pose2d(self.robot.fieldConstants.flip_Translation2d(Translation2d(3.550, 5.950)), Rotation2d.fromDegrees(gyro_offset))
-
-                        self.robot.auto = self.robot.autoroutines.just_depot_auto()
-                    case 0: # NO AUTO SELECTED
-                        self.robot.poseEstimator.poseEst.resetPosition(
-                            Rotation2d.fromDegrees(gyro_offset),
-                            self.robot.poseEstimator.get_module_positions(),
-                            Pose2d(self.robot.fieldConstants.flip_Translation2d(Translation2d(4.471, 4.411)), Rotation2d.fromDegrees(gyro_offset)))
-                        self.robot.poseEstimator.curEstPose = Pose2d(self.robot.fieldConstants.flip_Translation2d(Translation2d(4.471, 4.411)), Rotation2d.fromDegrees(gyro_offset))
-                        
-                        self.robot.auto = SequentialCommandGroup()
-                        
-                # The auto chooser explicitly places the simulated robot too.
-                self.robot.poseEstimator.reset_pose(self.robot.poseEstimator.curEstPose)
+                self.submit_auto()
 
         if not self.robot.shoot_intent and self.robot.is_intaking:
             # self.commanded_speed = -0.95
