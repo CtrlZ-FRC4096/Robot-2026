@@ -71,6 +71,112 @@ when no path is running). `lineup_arrived` replaces `done_p1`/`done_p2`.
 | `FEEDING_STARTED` | shooter, when the accelerator reaches speed |
 | `SPIN_DOWN_FINISHED` | shooter, when the indexer and accelerator have stopped |
 
+## Complete state machine
+
+The three regions run together: the robot has one intake state, one shooter
+state, and one drive state at the same time. Each event is sent to all three
+transition tables. The overview shows the event sources and the dependencies
+between the regions and motor control.
+
+```mermaid
+flowchart TD
+    OI[Driver buttons] --> EVENTS[RobotStateMachine.handle]
+    AUTO[Autonomous steps] --> EVENTS
+    PHASE[Autonomous / teleop start] --> EVENTS
+    SENSORS[Shooter sensors: feeding started / spin down finished] --> EVENTS
+    EVENTS --> INTAKE[Intake transition table]
+    EVENTS --> SHOOTER[Shooter transition table]
+    EVENTS --> DRIVE[Drive transition table]
+    INTAKE --> IM[Intake pivot and rollers]
+    SHOOTER --> SM[Flywheels, hood and accelerator]
+    SHOOTER --> HM[Hopper indexer]
+    SHOOTER -->|feeding: agitation when deployed| IM
+    SHOOTER -->|aiming: target heading| DM[Drivetrain control]
+    DRIVE --> DM
+    TARGET[Lineup pose and speed limit] --> DM
+```
+
+The diagrams below are expanded from the actual transition tables, including
+wildcard (`ANY`) rows and their explicit exceptions. Every arrow changes a
+state; unlisted events and explicit self-transitions leave that region
+unchanged and are omitted. Labels use the event values from `Event`.
+The initial arrows show power-on defaults, not match-phase resets.
+
+`start_lineup()` also sets the target pose and speed limit and clears
+`lineup_arrived`; the drivetrain sets `lineup_arrived` when it reaches the
+target. These data updates are separate from the enum transitions.
+
+### Intake: all state-changing transitions
+
+```mermaid
+%% Intake
+stateDiagram-v2
+    direction LR
+    [*] --> STOWED
+    STOWED --> INTAKING: intake pressed, auto intake, auto intake and spin down
+    DEPLOYED --> INTAKING: intake pressed, auto intake, auto intake and spin down
+    INTAKING --> DEPLOYED: intake released, clear jam released, auto stop shooting, auto shoot, auto lineup finished
+    STOWED --> DEPLOYED: shoot released, clear jam released, auto stop shooting, auto shoot, auto lineup started, autonomous started
+    DEPLOYED --> STOWED: stow intake, stow all
+    INTAKING --> STOWED: stow intake, stow all
+    CLEARING_JAM --> STOWED: stow intake, stow all
+    STOWED --> CLEARING_JAM: clear jam pressed
+    DEPLOYED --> CLEARING_JAM: clear jam pressed
+    INTAKING --> CLEARING_JAM: clear jam pressed
+    CLEARING_JAM --> DEPLOYED: clear jam released
+```
+
+### Shooter: all state-changing transitions
+
+```mermaid
+%% Shooter
+stateDiagram-v2
+    direction LR
+    [*] --> STOWED
+    STOWED --> SPINNING_UP: shoot pressed, auto shoot
+    AIMING --> SPINNING_UP: shoot pressed, auto shoot
+    SPINNING_DOWN --> SPINNING_UP: shoot pressed, auto shoot
+    STOWED --> SPINNING_DOWN: shoot released, manual shot released, auto intake and spin down, auto stop shooting
+    AIMING --> SPINNING_DOWN: shoot released, manual shot released, auto intake and spin down, auto stop shooting
+    SPINNING_UP --> SPINNING_DOWN: shoot released, manual shot released, auto intake and spin down, auto stop shooting
+    FEEDING --> SPINNING_DOWN: shoot released, manual shot released, auto intake and spin down, auto stop shooting
+    MANUAL_SPINNING_UP --> SPINNING_DOWN: shoot released, manual shot released, auto intake and spin down, auto stop shooting
+    MANUAL_FEEDING --> SPINNING_DOWN: shoot released, manual shot released, auto intake and spin down, auto stop shooting
+    AIMING --> STOWED: stow intake, stow all, clear jam released, auto intake, teleop started
+    SPINNING_UP --> STOWED: stow intake, stow all, clear jam released, auto intake, teleop started
+    FEEDING --> STOWED: stow intake, stow all, clear jam released, auto intake, teleop started
+    SPINNING_DOWN --> STOWED: stow intake, stow all, auto intake, teleop started, spin down finished
+    MANUAL_SPINNING_UP --> STOWED: stow all, clear jam released, auto intake, teleop started
+    MANUAL_FEEDING --> STOWED: stow all, clear jam released, auto intake, teleop started
+    CLEARING_JAM --> STOWED: stow all, clear jam released, auto intake, teleop started
+    STOWED --> MANUAL_SPINNING_UP: manual shot pressed
+    AIMING --> MANUAL_SPINNING_UP: manual shot pressed
+    SPINNING_UP --> MANUAL_SPINNING_UP: manual shot pressed
+    FEEDING --> MANUAL_FEEDING: manual shot pressed
+    SPINNING_DOWN --> MANUAL_SPINNING_UP: manual shot pressed
+    STOWED --> CLEARING_JAM: clear jam pressed
+    AIMING --> CLEARING_JAM: clear jam pressed
+    SPINNING_UP --> CLEARING_JAM: clear jam pressed
+    FEEDING --> CLEARING_JAM: clear jam pressed
+    MANUAL_SPINNING_UP --> CLEARING_JAM: clear jam pressed
+    MANUAL_FEEDING --> CLEARING_JAM: clear jam pressed
+    SPINNING_DOWN --> CLEARING_JAM: clear jam pressed
+    STOWED --> AIMING: auto lineup finished
+    SPINNING_UP --> FEEDING: feeding started
+    MANUAL_SPINNING_UP --> MANUAL_FEEDING: feeding started
+```
+
+### Drive: all state-changing transitions
+
+```mermaid
+%% Drive
+stateDiagram-v2
+    direction LR
+    [*] --> DRIVER_CONTROL
+    DRIVER_CONTROL --> LINEUP: lineup pressed, auto lineup started
+    LINEUP --> DRIVER_CONTROL: lineup released, auto lineup finished, auto intake, auto intake and spin down, auto stop shooting, teleop started
+```
+
 ## Main flows
 
 Shooter in teleop:
