@@ -97,12 +97,9 @@ class Intake(Subsystem):
                 self.deploy_motor.set_control(controls.MotionMagicTorqueCurrentFOC(position)) # USING MOTION MAGIC
 
     def get_position(self):
-        if self.robot.isSimulation():
-            return self.commanded_position
-        else:
-            rotations = self.deploy_motor.get_position().value
-            position = rotations# ADD GEAR RATIOS STUFF
-            return position
+        rotations = self.deploy_motor.get_position().value
+        position = rotations# ADD GEAR RATIOS STUFF
+        return position
 
     def intake_pose_in_trench(self):
         pose = self.robot.poseEstimator.curEstPose.translation() + Translation2d(0, -0.2).rotateBy(self.robot.poseEstimator.curEstPose.rotation())
@@ -124,21 +121,12 @@ class Intake(Subsystem):
         else:
             return False
 
-    def can_intake_sim(self):
-        return self.robot.state.intake is IntakeState.INTAKING and self.robot.fuel_in_hopper < 24
-
-    def intake_sim_callback(self):
-        self.robot.fuel_in_hopper += 1
-
     def set_intake_speed(self, speed):
         self.commanded_intake_speed = speed / 100
         self.left_intake_motor.set_control(controls.DutyCycleOut(speed / 100))
 
     def get_intake_speed(self):
-        if self.robot.isSimulation():
-            return self.commanded_intake_speed
-        else:
-            return self.left_intake_motor.get_velocity().value
+        return self.left_intake_motor.get_velocity().value
 
     def get_snake_intake_angle(self):
         cur_speeds = self.robot.drivetrain.get_field_relative_speeds()

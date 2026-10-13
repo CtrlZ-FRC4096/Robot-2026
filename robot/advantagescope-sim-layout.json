@@ -1,0 +1,141 @@
+{
+  "hubs": [
+    {
+      "x": 90,
+      "y": 75,
+      "width": 1100,
+      "height": 650,
+      "state": {
+        "sidebar": {
+          "width": 266,
+          "expanded": [
+            "/Robot",
+            "/Sim",
+            "/FuelSimulation",
+            "/SmartDashboard"
+          ]
+        },
+        "tabs": {
+          "selected": 1,
+          "tabs": [
+            {
+              "type": 0,
+              "title": "",
+              "controller": null,
+              "controllerUUID": "ewub5ab0dg5fufluqqtlhorrzw4iaah0",
+              "renderer": "",
+              "controlsHeight": 0
+            },
+            {
+              "type": 3,
+              "title": "3D Field",
+              "controller": {
+                "sources": [
+                  {
+                    "type": "robot",
+                    "logKey": "NT:/Sim/Robot Pose",
+                    "logType": "Pose2d",
+                    "visible": true,
+                    "options": {
+                      "model": "Jonez"
+                    }
+                  },
+                  {
+                    "type": "component",
+                    "logKey": "NT:/Robot/Component Poses",
+                    "logType": "Pose3d[]",
+                    "visible": true,
+                    "options": {}
+                  },
+                  {
+                    "type": "vision",
+                    "logKey": "NT:/Vision/Seen Tags",
+                    "logType": "Pose3d[]",
+                    "visible": true,
+                    "options": {
+                      "color": "#00ff00",
+                      "size": "normal"
+                    }
+                  },
+                  {
+                    "type": "ghost",
+                    "logKey": "NT:/Robot/Estimated Pose",
+                    "logType": "Pose2d",
+                    "visible": true,
+                    "options": {
+                      "model": "Jonez",
+                      "color": "#00ffff"
+                    }
+                  },
+                  {
+                    "type": "gamePiece",
+                    "logKey": "NT:/FuelSimulation/Fuels",
+                    "logType": "Translation3d[]",
+                    "visible": true,
+                    "options": {
+                      "variant": "Fuel"
+                    }
+                  }
+                ],
+                "game": "FRC:2026 Field"
+              },
+              "controllerUUID": "ci5jwmca00m3v7h2gev9nfl01pdkh67o",
+              "renderer": {
+                "cameraIndex": -1,
+                "orbitFov": 50,
+                "cameraPosition": [
+                  -12.377117300859467,
+                  7.869171186299245,
+                  -1.1586258112298358
+                ],
+                "cameraTarget": [
+                  -0.17129425101232318,
+                  -4.8471442154174555,
+                  0.9775731481618706
+                ]
+              },
+              "controlsHeight": 0
+            },
+            {
+              "type": 1,
+              "title": "Line Graph",
+              "controller": {
+                "leftSources": [
+                  {
+                    "type": "stepped",
+                    "logKey": "NT:/SmartDashboard/Test/ Target Angle",
+                    "logType": "Number",
+                    "visible": true,
+                    "options": {
+                      "color": "#af2437",
+                      "size": "normal"
+                    }
+                  }
+                ],
+                "rightSources": [],
+                "discreteSources": [],
+                "leftLockedRange": null,
+                "rightLockedRange": null,
+                "leftUnitConversion": {
+                  "autoTarget": null,
+                  "preset": null
+                },
+                "rightUnitConversion": {
+                  "autoTarget": null,
+                  "preset": null
+                },
+                "leftFilter": 0,
+                "rightFilter": 0
+              },
+              "controllerUUID": "ip2ho0sxuq7a1akxah7q4rb42hpgxjby",
+              "renderer": null,
+              "controlsHeight": 200
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "satellites": [],
+  "version": "26.0.0"
+}

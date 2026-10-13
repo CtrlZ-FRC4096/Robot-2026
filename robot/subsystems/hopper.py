@@ -42,10 +42,7 @@ class Hopper(Subsystem):
 
 
     def get_speed(self):
-        if self.robot.isSimulation():
-            return self.commanded_speed
-        else:
-            return self.indexer_motor.get_velocity().value
+        return self.indexer_motor.get_velocity().value
                     
     def set_speed(self, speed):
         self.commanded_speed = speed
@@ -146,7 +143,15 @@ class Hopper(Subsystem):
                         self.robot.poseEstimator.curEstPose = Pose2d(self.robot.fieldConstants.flip_Translation2d(Translation2d(4.471, 4.411)), Rotation2d.fromDegrees(gyro_offset))
                         
                         self.robot.auto = SequentialCommandGroup()
-                        
+
+                if self.robot.isSimulation():
+                    # On the field the robot is set on its starting spot by
+                    # hand; in simulation, put it there with a fresh field.
+                    from simulation.arena import SimulatedArena
+                    arena = SimulatedArena.instance()
+                    if arena is not None:
+                        arena.reset_for_auto(self.robot.poseEstimator.curEstPose)
+
         # The indexer follows the shooter (which runs just before this, so a
         # shot that starts feeding this loop feeds this loop).
         if self.robot.state.shooter is ShooterState.CLEARING_JAM:

@@ -88,10 +88,7 @@ class Shooter(Subsystem):
             self.flywheel_spun.append(False)
 
     def get_fly_speed(self):
-        if self.robot.isSimulation():
-            return self.commanded_fly_speed
-        else:
-            return self.left_up_fly_motor.get_velocity().value
+        return self.left_up_fly_motor.get_velocity().value
                     
     def set_fly_speed(self, speed):
         self.commanded_fly_speed = speed
@@ -101,10 +98,7 @@ class Shooter(Subsystem):
         self.left_up_fly_motor.set_control(controls.VelocityTorqueCurrentFOC(-1 * speed))
 
     def get_accelerator_speed(self):
-        if self.robot.isSimulation():
-            return self.commanded_accelerator_speed
-        else:
-            return self.accelerator_motor.get_velocity().value
+        return self.accelerator_motor.get_velocity().value
 
     def set_accelerator_speed(self, speed):
         self.commanded_accelerator_speed = speed
@@ -131,12 +125,9 @@ class Shooter(Subsystem):
             self.hood_motor.set_control(controls.MotionMagicVoltage(rotations)) # USING MOTION MAGIC
     
     def get_hood_position(self):
-        if self.robot.isSimulation():
-            return self.commanded_hood_position
-        else:
-            rotations = self.hood_motor.get_position().value 
-            position = rotations# ADD GEAR RATIOS STUFF
-            return position
+        rotations = self.hood_motor.get_position().value
+        position = rotations# ADD GEAR RATIOS STUFF
+        return position
 
     def stop_hood(self):
         self.hood_motor.set_control(controls.DutyCycleOut(0.0))

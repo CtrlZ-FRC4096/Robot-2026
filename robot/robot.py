@@ -90,7 +90,6 @@ from pathplannerlib.path import DriveFeedforwards
 from wpimath.kinematics import ChassisSpeeds, SwerveModuleState
 from bline_command import BLineCommand, Builder
 
-from fuel_sim import FuelSim
 from state_machine import RobotStateMachine, Event
 
 log = logging.getLogger("robot")
@@ -310,19 +309,9 @@ class Robot(CoroutineRobot):
             # self.poseEstimator.poseEst.resetPose(Pose2d(self.fieldConstants.flip_Translation2d(Translation2d(4.471, 7.587)), self.poseEstimator.getYaw())) # for left auto
 
 
-        ## SIMMING STUFF ##
-        if self.isSimulation():
-            self.max_fuel_in_hopper = 24
-            self.x_hopper_max = inchesToMeters(25)
-            self.y_hopper_max = inchesToMeters(18)
-            self.z_hopper_max = inchesToMeters(15)
-            
-            self.tick_count = 0
-
-            self.fuel_sim = FuelSim(self, self.intake.can_intake_sim, self.intake.intake_sim_callback)
-            # self.fuel_sim.stop()
-            # self.fuel_sim.clearFuel()
-            self.fuel_sim.start()
+        # Mechanism poses on the robot model, for AdvantageScope.
+        self.component_poses_pub = ntcore.NetworkTableInstance.getDefault().getStructArrayTopic(
+            "/Robot/Component Poses", Pose3d).publish()
 
         # path flip code - KEEP COMMENTED IF DEPLOYING
         # RUN IN SIM if you want to mirror a path; check terminal output for anchors
@@ -659,79 +648,27 @@ class Robot(CoroutineRobot):
 
 
 
+        # Articulated robot model: hood, inner and outer intake arms.
+        cur_hood_pos = self.shooter.get_hood_position()
+        hood = Pose3d(Translation3d(-0.23, 0.15, 0.5), Rotation3d(degreesToRadians(cur_hood_pos), 0, 0))
+        # Intake drawn at 30 deg stowed (-0.04 rot) down to 0 deg deployed (-0.35 rot).
+        deployed = min(1.0, max(0.0, (-0.04 - self.intake.get_position()) / 0.31))
+        cur_inner_pos = 30 * (1 - deployed)
+        inner = Pose3d(Translation3d(0.3, 0.355, 0.2), Rotation3d(0, degreesToRadians(cur_inner_pos), 0))
+        arc_vec = Translation2d(0.307975, 0).rotateBy(Rotation2d.fromDegrees(cur_inner_pos))
+        inner_outer_transform = Translation3d(arc_vec.Y(), 0, arc_vec.X()) - Translation3d(0, 0, 0.307975)
+        outer = Pose3d(Translation3d(0.2825, 0.32, 0.505) + inner_outer_transform,
+                       Rotation3d(0, degreesToRadians(-cur_inner_pos / 6.43), 0))
+        # Then the model's 24 hopper balls (simulation only; the robot can't
+        # count them) and the climber at rest.
+        balls = [Pose3d(0, 0, -0.5, Rotation3d())] * 24
         if self.isSimulation():
-            wpilib.SmartDashboard.putNumberArray("RobotPose", [self.poseEstimator.curEstPose.X(), self.poseEstimator.curEstPose.Y(), self.poseEstimator.curEstPose.rotation().degrees()])
-            # SmartDashboard.putNumberArray("ZeroedComponentPoses/Pose0", [0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0])
-            # SmartDashboard.putNumberArray("ZeroedComponentPoses/Pose1", [0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0])
-            # SmartDashboard.putNumberArray("ZeroedComponentPoses/Pose2", [0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0])5
+            from simulation.arena import SimulatedArena
+            arena = SimulatedArena.instance()
+            if arena is not None:
+                balls = arena.hopper_ball_poses()
+        self.component_poses_pub.set([hood, inner, outer, *balls, Pose3d()])
 
-
-            default_shooter_hood = Translation3d(-0.23, 0.15, 0.5)
-            cur_hood_pos = self.shooter.get_hood_position()
-            final_shooter_hood_quat = Rotation3d(degreesToRadians(cur_hood_pos), 0, 0).getQuaternion()
-            final_shooter_hood_trans = default_shooter_hood
-            SmartDashboard.putNumberArray("FinalComponentPoses/Pose0", [final_shooter_hood_trans.X(), final_shooter_hood_trans.Y(), final_shooter_hood_trans.Z(), final_shooter_hood_quat.W(), final_shooter_hood_quat.X(), final_shooter_hood_quat.Y(), final_shooter_hood_quat.Z()])
-            
-
-            default_inner = Translation3d(0.3, 0.355, 0.2)
-            if self.intake.get_position() ==  -0.06:
-                cur_inner_pos = 30
-            else:
-                cur_inner_pos = 0
-            # cur_inner_pos = self.intake.get_position()
-            final_inner_quat = Rotation3d(0, degreesToRadians(cur_inner_pos), 0).getQuaternion()
-            final_inner_trans = default_inner
-            SmartDashboard.putNumberArray("FinalComponentPoses/Pose1", [final_inner_trans.X(), final_inner_trans.Y(), final_inner_trans.Z(), final_inner_quat.W(), final_inner_quat.X(), final_inner_quat.Y(), final_inner_quat.Z()])
-            
-            default_outer = Translation3d(0.2825, 0.32, 0.505)
-            arc_vec = Translation2d(0.307975, 0).rotateBy(Rotation2d.fromDegrees(cur_inner_pos))
-            inner_outer_transform = Translation3d(arc_vec.Y(),
-                                                  0,
-                                                  arc_vec.X()) - Translation3d(0, 0, 0.307975) 
-            final_outer_quat = Rotation3d(0, degreesToRadians(-cur_inner_pos / 6.43), 0).getQuaternion()
-            final_outer_trans = default_outer + inner_outer_transform
-            SmartDashboard.putNumberArray("FinalComponentPoses/Pose2", [final_outer_trans.X(), final_outer_trans.Y(), final_outer_trans.Z(), final_outer_quat.W(), final_outer_quat.X(), final_outer_quat.Y(), final_outer_quat.Z()])
-            
-            # cur_climber_pos = self.climber.get_position()
-            # SmartDashboard.putNumberArray("FinalComponentPoses/Pose3", [0, 0, cur_climber_pos / 5, 0, 0, 0, 0])
-
-
-            default_fuel_pose = Translation3d(-0.26, -0.28, 0.28)
-            for fuel_num in range(1,self.max_fuel_in_hopper + 1):
-                if fuel_num <= self.fuel_in_hopper:
-                    #put the fuel in
-                    fuel_diam = self.fieldConstants.fuelDiameter
-                    per_x = int(self.x_hopper_max / fuel_diam)
-                    per_y = int(self.y_hopper_max / fuel_diam)
-                    if per_x < 1: per_x = 1
-                    if per_y < 1: per_y = 1
-
-                    idx = fuel_num - 1
-                    x_coord = (idx % per_x) * fuel_diam
-                    y_coord = ((idx // per_x) % per_y) * fuel_diam
-                    z_coord = (idx // (per_x * per_y)) * fuel_diam + 0.5
-                    SmartDashboard.putNumberArray(f"Hopper/Sim Fuels/Fuel {fuel_num}", [default_fuel_pose.X() + x_coord, default_fuel_pose.Y() + y_coord, default_fuel_pose.Z() + z_coord, 1.0, 0.0, 0.0, 0.0])
-                else:
-                    SmartDashboard.putNumberArray(f"Hopper/Sim Fuels/Fuel {fuel_num}", [0, 0, -0.5, 1.0, 0.0, 0.0, 0.0])
-
-            fly_speed = self.shooter.get_fly_speed()
-            accel_speed = self.shooter.get_accelerator_speed()
-            if fly_speed >= 5 and accel_speed >= 5 and self.fuel_in_hopper > 0:
-                #we are shooting every 0.06 seconds
-                if self.tick_count % 2 == 0:
-                    vals = self.drivetrain.dist_lookup_table.interpolate((self.virtual_goal - self.poseEstimator.curEstPose.translation()).norm())
-                    launch_vel = vals[0]
-                    launch_angle = vals[1]
-
-                    trans = Translation3d(0, 0.27, 0.52) + Translation3d(0, -0.11, 0) + Translation3d(0, 0.11* math.cos(degreesToRadians(cur_hood_pos)), 0.11*math.sin(degreesToRadians(cur_hood_pos)))
-                    launch_pos = Translation3d(self.poseEstimator.curEstPose.translation()) + trans.rotateBy(Rotation3d(0, 0, self.poseEstimator.curEstPose.rotation().radians()))
-                    self.fuel_sim.launchFuel(launch_vel, launch_angle, 0, launch_pos)
-                    self.fuel_in_hopper -= 1
-
-            if self.fuel_sim.running:
-                self.fuel_sim.updateSim()
-            SmartDashboard.putNumber("Sim/Fuel in Hopper", self.fuel_in_hopper)
-            self.tick_count += 1
         for s in self.subsystems:
             s.log()
         

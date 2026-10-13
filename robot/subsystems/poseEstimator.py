@@ -78,6 +78,7 @@ from wpimath.units import degreesToRadians, inchesToMeters
 from robotpy_apriltag import AprilTagField, AprilTagFieldLayout
 
 from wpilib import RobotController
+from ntcore import NetworkTableInstance
 
 
 
@@ -225,6 +226,14 @@ class PoseEstimator(Subsystem):
         
         self.active_intake_tgt = Translation2d()
         self.active_intake_tgt_score = 0
+        self.single_tag_IDs = set()
+
+        # Struct topics for AdvantageScope (also recorded in the DataLog).
+        nt = NetworkTableInstance.getDefault()
+        self.estimated_pose_pub = nt.getStructTopic("/Robot/Estimated Pose", Pose2d).publish()
+        self.module_states_pub = nt.getStructArrayTopic("/Robot/Module States", SwerveModuleState).publish()
+        self.module_setpoints_pub = nt.getStructArrayTopic("/Robot/Module Setpoints", SwerveModuleState).publish()
+        self.seen_tags_pub = nt.getStructArrayTopic("/Vision/Seen Tags", Pose3d).publish()
 
     def cur_pos_in_zone(self, alt_pos=4.4):
         cur_pos = self.curEstPose
@@ -307,8 +316,6 @@ class PoseEstimator(Subsystem):
         self.set_yaw(0)
 
     def set_yaw(self, yaw):
-        if self.robot.isSimulation():
-            self.poseEst.resetPose(Pose2d(self.curEstPose.X(), self.curEstPose.Y(), Rotation2d.fromDegrees(yaw)))
         self.gyro.set_yaw(yaw)
         SmartDashboard.putNumber("Gyro/Set Yaw", yaw)
 
@@ -425,6 +432,7 @@ class PoseEstimator(Subsystem):
         bl = SwerveModuleState(0, Rotation2d.fromDegrees(315))
         br = SwerveModuleState(0, Rotation2d.fromDegrees(45))
         desired_states = (fl, fr, bl, br)
+        self.robot.drivetrain.module_setpoints = desired_states
         for idx, module in enumerate(self.modules):
             module.set_desired_state(desired_states[idx], False, ignore_speed_for_angle=True)        
 
@@ -512,7 +520,7 @@ class PoseEstimator(Subsystem):
 
         possible_pose = self.poseEst.getEstimatedPosition()
 
-        if not self.robot.isSimulation() and self.candidate_pose_OK(possible_pose):
+        if self.candidate_pose_OK(possible_pose):
             self.curEstPose = possible_pose
 
         self.poseConverge = True
@@ -555,6 +563,11 @@ class PoseEstimator(Subsystem):
         SmartDashboard.putNumber("Gyro/Yaw", self.getYaw().degrees())
         SmartDashboard.putNumber("Gyro/Roll", self.gyro.get_roll().value)
         SmartDashboard.putNumber("Gyro/Pitch", self.gyro.get_pitch().value)
+
+        self.estimated_pose_pub.set(self.curEstPose)
+        self.module_states_pub.set(list(self.get_module_states()))
+        self.module_setpoints_pub.set(list(self.robot.drivetrain.module_setpoints))
+        self.seen_tags_pub.set([self.tag_layout.getTagPose(i) for i in sorted(self.single_tag_IDs)])
 
         SmartDashboard.putData("Field", self.field)
         self.field.setRobotPose(self.poseEst.getEstimatedPosition())

@@ -19,6 +19,11 @@ robot attributes (pose estimate, fuel counts) are touched here, so the same
 recorder works before and after a refactor of the state handling. The gyro
 and motor sensors are replaced by deterministic fakes: Phoenix simulation
 updates them from its own real-time threads, which would make runs differ.
+
+The physics (physics.py) isn't run here, and since the robot code reads its
+encoders in simulation too, the recorded robot doesn't move and mechanisms
+stay at zero speed: traces compare control requests and state handling, not
+driving or shooting. Use tests/sim_auto.py to watch the physics.
 """
 
 import json
@@ -266,8 +271,12 @@ class Driver:
     def place(self, x, y, heading):
         from wpimath.geometry import Pose2d, Rotation2d
         robot = self.robot
-        robot.poseEstimator.curEstPose = Pose2d(x, y, Rotation2d.fromDegrees(heading))
+        pose = Pose2d(x, y, Rotation2d.fromDegrees(heading))
+        robot.poseEstimator.curEstPose = pose
         robot.poseEstimator.gyro.set_yaw(heading)
+        # The pose estimate comes from the estimator in simulation too now.
+        robot.poseEstimator.poseEst.resetPosition(
+            Rotation2d.fromDegrees(heading), robot.poseEstimator.get_module_positions(), pose)
 
     def set_fuel(self, count):
         self.robot.fuel_in_hopper = count
@@ -286,6 +295,8 @@ class Driver:
 
 def snapshot(robot, motors):
     pose = robot.poseEstimator.curEstPose
+    # Fuel is simulated by physics.py (simulation/arena.py), which this
+    # recorder doesn't run; older revisions kept a FuelSim on the robot.
     fuel = getattr(robot, "fuel_sim", None)
     return {
         "controls": {str(m.device_id): getattr(m, "_recorded_control", None) for m in motors},
@@ -330,7 +341,8 @@ def run(robot_dir, scenario_name, out_path):
     thread = threading.Thread(target=competition, daemon=True)
     thread.start()
     deadline = time.monotonic() + 60
-    while not hasattr(robot, "fuel_sim"):
+    # robot_start has finished setting up once the last attribute it creates exists.
+    while not (hasattr(robot, "fuel_sim") or hasattr(robot, "component_poses_pub")):
         if errors or time.monotonic() > deadline:
             raise RuntimeError(f"robot did not initialise: {errors}")
         time.sleep(0.01)
